@@ -6,6 +6,7 @@ import morgan from "morgan";
 import { env } from "./config/env.js";
 import healthRoutes from "./routes/health.routes.js";
 import projectRoutes from "./routes/project.routes.js";
+import authRoutes from "./routes/auth.routes.js";
 import {
 	notFoundHandler,
 	errorHandler,
@@ -31,6 +32,7 @@ app.get("/", (req, res) => {
 });
 
 app.use(`/api/${env.apiVersion}/health`, healthRoutes);
+app.use(`/api/${env.apiVersion}/auth`, authRoutes);
 app.use(`/api/${env.apiVersion}/projects`, projectRoutes);
 
 app.use(notFoundHandler);
