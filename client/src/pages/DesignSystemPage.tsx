@@ -1,68 +1,99 @@
 import { useState } from 'react'
 import {
-  Type,
-  MousePointer2,
-  AlignLeft,
-  Activity,
-  Table2,
-  LayoutGrid,
-  BellRing,
-  Pencil,
-  Trash2,
-  Plus,
-  TrendingUp,
-  MessageSquare,
-  GitPullRequest,
-  ArrowRight,
-  ChevronRight,
-  MoreHorizontal,
-  Calendar,
-  Layers,
-  AlertTriangle,
-  Info,
+  Type, MousePointer2, AlignLeft, Activity, Table2, LayoutGrid, BellRing,
+  Pencil, Trash2, Plus, TrendingUp, MessageSquare, GitPullRequest,
+  ArrowRight, ChevronRight, MoreHorizontal, Calendar, Layers, AlertTriangle,
+  Info, Palette,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Card } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogFooter,
-  DialogTitle,
-  DialogDescription,
-  DialogClose,
+  Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter,
+  DialogTitle, DialogDescription, DialogClose,
 } from '@/components/ui/dialog'
 
 function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: string }) {
   return (
     <div className="flex items-center gap-2 mb-4">
-      <Icon className="h-4 w-4 text-[#0058be]" />
-      <h2 className="text-base font-semibold text-[#191b23]">{title}</h2>
+      <Icon className="h-4 w-4 text-primary" />
+      <h2 className="text-base font-semibold text-foreground">{title}</h2>
     </div>
   )
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[10px] font-medium tracking-widest uppercase text-[#727785] mb-2">
-      {children}
-    </p>
+    <p className="text-[10px] font-medium tracking-widest uppercase text-muted mb-2">{children}</p>
   )
 }
+
+const colorTokens = [
+  {
+    group: 'Primary',
+    swatches: [
+      { label: 'primary',            bg: 'bg-primary',          text: 'text-primary-foreground', hex: '#0058be' },
+      { label: 'primary-hover',      bg: 'bg-primary-hover',    text: 'text-primary-foreground', hex: '#004395' },
+      { label: 'primary-subtle',     bg: 'bg-primary-subtle',   text: 'text-primary',            hex: '#eff5ff' },
+    ],
+  },
+  {
+    group: 'Secondary',
+    swatches: [
+      { label: 'secondary',          bg: 'bg-secondary',        text: 'text-secondary-foreground', hex: '#006c49' },
+      { label: 'secondary-hover',    bg: 'bg-secondary-hover',  text: 'text-secondary-foreground', hex: '#005236' },
+      { label: 'secondary-subtle',   bg: 'bg-secondary-subtle', text: 'text-secondary',             hex: '#f0fdf9' },
+    ],
+  },
+  {
+    group: 'Accent',
+    swatches: [
+      { label: 'accent',             bg: 'bg-accent',           text: 'text-accent-foreground', hex: '#d97706' },
+      { label: 'accent-hover',       bg: 'bg-accent-hover',     text: 'text-accent-foreground', hex: '#b45309' },
+      { label: 'accent-subtle',      bg: 'bg-accent-subtle',    text: 'text-accent',            hex: '#fffbeb' },
+    ],
+  },
+  {
+    group: 'Danger',
+    swatches: [
+      { label: 'danger',             bg: 'bg-danger',           text: 'text-danger-foreground', hex: '#ba1a1a' },
+      { label: 'danger-hover',       bg: 'bg-danger-hover',     text: 'text-danger-foreground', hex: '#93000a' },
+      { label: 'danger-subtle',      bg: 'bg-danger-subtle',    text: 'text-danger',            hex: '#fff0ee' },
+    ],
+  },
+  {
+    group: 'Warning',
+    swatches: [
+      { label: 'warning',            bg: 'bg-warning',          text: 'text-warning-foreground', hex: '#c2410c' },
+      { label: 'warning-hover',      bg: 'bg-warning-hover',    text: 'text-warning-foreground', hex: '#9a3412' },
+      { label: 'warning-subtle',     bg: 'bg-warning-subtle',   text: 'text-warning',            hex: '#fff7ed' },
+    ],
+  },
+  {
+    group: 'Muted',
+    swatches: [
+      { label: 'muted',              bg: 'bg-muted',            text: 'text-surface',            hex: '#727785' },
+      { label: 'muted-foreground',   bg: 'bg-muted-foreground', text: 'text-surface',            hex: '#424754' },
+      { label: 'muted-subtle',       bg: 'bg-muted-subtle',     text: 'text-muted-foreground',   hex: '#f2f3fd' },
+    ],
+  },
+  {
+    group: 'Layout',
+    swatches: [
+      { label: 'background',         bg: 'bg-background',       text: 'text-foreground',         hex: '#f9f9ff', border: true },
+      { label: 'foreground',         bg: 'bg-foreground',       text: 'text-surface',            hex: '#191b23' },
+      { label: 'surface',            bg: 'bg-surface',          text: 'text-foreground',         hex: '#ffffff', border: true },
+      { label: 'border',             bg: 'bg-border',           text: 'text-foreground',         hex: '#e1e2ec', border: true },
+      { label: 'border-strong',      bg: 'bg-border-strong',    text: 'text-surface',            hex: '#c2c6d6' },
+    ],
+  },
+]
 
 export default function DesignSystemPage() {
   const [checked, setChecked] = useState(true)
@@ -70,13 +101,35 @@ export default function DesignSystemPage() {
 
   return (
     <div className="mx-auto max-w-[1280px] px-6 py-8">
-      {/* Page header */}
       <div className="mb-10">
-        <h1 className="text-3xl font-semibold text-[#191b23] mb-1">Design System</h1>
-        <p className="text-sm text-[#727785]">Central reference for TaskHub's UI components and styles.</p>
+        <h1 className="text-3xl font-semibold text-foreground mb-1">Design System</h1>
+        <p className="text-sm text-muted">Central reference for TaskHub's UI components and styles.</p>
       </div>
 
       <div className="space-y-10">
+
+        {/* ── COLORS ───────────────────────────────────────────── */}
+        <section>
+          <SectionHeader icon={Palette} title="Colors" />
+          <div className="space-y-6">
+            {colorTokens.map((group) => (
+              <div key={group.group}>
+                <SectionLabel>{group.group}</SectionLabel>
+                <div className="flex flex-wrap gap-3">
+                  {group.swatches.map((s) => (
+                    <div key={s.label} className="flex flex-col gap-1.5 w-[160px]">
+                      <div className={`${s.bg} ${s.border ? 'border border-border' : ''} h-14 rounded-lg flex items-end px-3 pb-2`}>
+                        <span className={`${s.text} text-[10px] font-mono font-medium opacity-80`}>{s.hex}</span>
+                      </div>
+                      <p className="text-[11px] font-mono text-muted-foreground">{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* ── TYPOGRAPHY ───────────────────────────────────────── */}
         <section>
           <SectionHeader icon={Type} title="Typography" />
@@ -85,41 +138,29 @@ export default function DesignSystemPage() {
               <div className="space-y-5">
                 <div>
                   <SectionLabel>Heading 1</SectionLabel>
-                  <p className="text-3xl font-semibold text-[#191b23] tracking-tight leading-10">
-                    Design System 32px
-                  </p>
+                  <p className="text-3xl font-semibold text-foreground tracking-tight leading-10">Design System 32px</p>
                 </div>
                 <div>
                   <SectionLabel>Heading 2</SectionLabel>
-                  <p className="text-2xl font-semibold text-[#191b23] tracking-tight leading-8">
-                    Task Management 24px
-                  </p>
+                  <p className="text-2xl font-semibold text-foreground tracking-tight leading-8">Task Management 24px</p>
                 </div>
                 <div>
                   <SectionLabel>Heading 3</SectionLabel>
-                  <p className="text-xl font-semibold text-[#191b23] tracking-tight leading-7">
-                    Component Library 20px
-                  </p>
+                  <p className="text-xl font-semibold text-foreground tracking-tight leading-7">Component Library 20px</p>
                 </div>
               </div>
               <div className="space-y-5">
                 <div>
                   <SectionLabel>Body Large</SectionLabel>
-                  <p className="text-base text-[#191b23] leading-6">
-                    Focused engineering requires visual quiet and clarity.
-                  </p>
+                  <p className="text-base text-foreground leading-6">Focused engineering requires visual quiet and clarity.</p>
                 </div>
                 <div>
                   <SectionLabel>Body Medium</SectionLabel>
-                  <p className="text-sm text-[#191b23] leading-5">
-                    Standard text for descriptions and content blocks.
-                  </p>
+                  <p className="text-sm text-foreground leading-5">Standard text for descriptions and content blocks.</p>
                 </div>
                 <div>
                   <SectionLabel>Muted / Small</SectionLabel>
-                  <p className="text-xs text-[#727785] leading-4">
-                    Secondary information and supportive metadata.
-                  </p>
+                  <p className="text-xs text-muted leading-4">Secondary information and supportive metadata.</p>
                 </div>
               </div>
             </div>
@@ -146,24 +187,20 @@ export default function DesignSystemPage() {
               <div>
                 <SectionLabel>Ghost & Icon</SectionLabel>
                 <div className="space-y-2">
-                  <div>
-                    <Button variant="ghost">Ghost Button</Button>
-                  </div>
+                  <Button variant="ghost">Ghost Button</Button>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="icon">
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <Button variant="outline" size="icon"><Pencil className="h-4 w-4" /></Button>
+                    <Button variant="outline" size="icon"><Trash2 className="h-4 w-4" /></Button>
                   </div>
                 </div>
               </div>
             </div>
-            <div className="mt-4">
-              <Button variant="outline" disabled>
-                Disabled
-              </Button>
+            <div className="mt-4 flex gap-3 flex-wrap">
+              <Button variant="accent">Accent</Button>
+              <Button variant="warning">Warning</Button>
+              <Button variant="destructive">Destructive</Button>
+              <Button variant="muted">Muted</Button>
+              <Button variant="outline" disabled>Disabled</Button>
             </div>
           </Card>
         </section>
@@ -172,26 +209,18 @@ export default function DesignSystemPage() {
         <section>
           <div className="flex items-center justify-between mb-4">
             <SectionHeader icon={AlignLeft} title="Data Entry" />
-            <Button size="icon" className="rounded-full h-9 w-9">
-              <Plus className="h-4 w-4" />
-            </Button>
+            <Button size="icon" className="rounded-full h-9 w-9"><Plus className="h-4 w-4" /></Button>
           </div>
           <Card className="p-6">
             <div className="grid grid-cols-3 gap-6 items-end">
               <div>
-                <label className="text-sm font-medium text-[#424754] mb-1.5 block">
-                  Input Label
-                </label>
+                <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Input Label</label>
                 <Input placeholder="Enter task name..." />
               </div>
               <div>
-                <label className="text-sm font-medium text-[#424754] mb-1.5 block">
-                  Select Priority
-                </label>
+                <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Select Priority</label>
                 <Select defaultValue="medium">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="urgent">Urgent</SelectItem>
                     <SelectItem value="high">High</SelectItem>
@@ -202,19 +231,13 @@ export default function DesignSystemPage() {
               </div>
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <Checkbox
-                    checked={checked}
-                    onCheckedChange={(v) => setChecked(!!v)}
-                    id="active-task"
-                  />
-                  <span className="text-sm text-[#424754]">Active Task</span>
+                  <Checkbox checked={checked} onCheckedChange={(v) => setChecked(!!v)} id="active-task" />
+                  <span className="text-sm text-muted-foreground">Active Task</span>
                 </label>
                 <RadioGroup value={radioValue} onValueChange={setRadioValue} className="flex items-center gap-2">
                   <div className="flex items-center gap-1.5">
                     <RadioGroupItem value="internal" id="internal" />
-                    <label htmlFor="internal" className="text-sm text-[#424754] cursor-pointer">
-                      Internal
-                    </label>
+                    <label htmlFor="internal" className="text-sm text-muted-foreground cursor-pointer">Internal</label>
                   </div>
                 </RadioGroup>
               </div>
@@ -256,66 +279,33 @@ export default function DesignSystemPage() {
           <Card className="overflow-hidden p-0">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#e1e2ec]">
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#727785]">
-                    Task Name
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#727785]">
-                    Assignee
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#727785]">
-                    Priority
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#727785]">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-[#727785]">
-                    Action
-                  </th>
+                <tr className="border-b border-border">
+                  {['Task Name', 'Assignee', 'Priority', 'Status', 'Action'].map((h, i) => (
+                    <th key={h} className={`px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted ${i === 4 ? 'text-right' : 'text-left'}`}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {[
-                  {
-                    name: 'Fix CSS Grid overflow issue',
-                    initials: 'JD',
-                    assignee: 'John Doe',
-                    priority: 'high' as const,
-                    status: 'in-progress' as const,
-                  },
-                  {
-                    name: 'Update API Documentation',
-                    initials: 'AS',
-                    assignee: 'Anna Smith',
-                    priority: 'medium' as const,
-                    status: 'todo' as const,
-                  },
+                  { name: 'Fix CSS Grid overflow issue',   initials: 'JD', assignee: 'John Doe',  priority: 'high' as const,   status: 'in-progress' as const },
+                  { name: 'Update API Documentation',      initials: 'AS', assignee: 'Anna Smith', priority: 'medium' as const, status: 'todo' as const },
                 ].map((row, i) => (
-                  <tr
-                    key={i}
-                    className="border-b border-[#e1e2ec] last:border-0 hover:bg-[#f9f9ff] transition-colors"
-                  >
-                    <td className="px-4 py-3 text-[#191b23] font-medium">{row.name}</td>
+                  <tr key={i} className="border-b border-border last:border-0 hover:bg-muted-subtle transition-colors">
+                    <td className="px-4 py-3 text-foreground font-medium">{row.name}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6">
-                          <AvatarFallback className="text-[9px]">{row.initials}</AvatarFallback>
-                        </Avatar>
-                        <span className="text-[#424754]">{row.assignee}</span>
+                        <Avatar className="h-6 w-6"><AvatarFallback className="text-[9px]">{row.initials}</AvatarFallback></Avatar>
+                        <span className="text-muted-foreground">{row.assignee}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge variant={row.priority}>
-                        {row.priority.charAt(0).toUpperCase() + row.priority.slice(1)}
-                      </Badge>
+                      <Badge variant={row.priority}>{row.priority.charAt(0).toUpperCase() + row.priority.slice(1)}</Badge>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge variant={row.status}>
-                        {{ 'in-progress': 'In Progress', todo: 'To Do' }[row.status] ?? row.status}
-                      </Badge>
+                      <Badge variant={row.status}>{{ 'in-progress': 'In Progress', todo: 'To Do' }[row.status] ?? row.status}</Badge>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <button className="text-[#727785] hover:text-[#191b23] transition-colors p-1 rounded">
+                      <button className="text-muted hover:text-foreground transition-colors p-1 rounded">
                         <MoreHorizontal className="h-4 w-4" />
                       </button>
                     </td>
@@ -330,70 +320,54 @@ export default function DesignSystemPage() {
         <section>
           <SectionHeader icon={LayoutGrid} title="Cards & Layouts" />
           <div className="grid grid-cols-2 gap-4">
-            {/* Stat card */}
             <Card className="p-5">
               <div className="flex items-start justify-between mb-3">
-                <p className="text-xs font-medium text-[#727785] uppercase tracking-wider">
-                  Active Sprints
-                </p>
-                <TrendingUp className="h-4 w-4 text-[#006c49]" />
+                <p className="text-xs font-medium text-muted uppercase tracking-wider">Active Sprints</p>
+                <TrendingUp className="h-4 w-4 text-secondary" />
               </div>
-              <p className="text-3xl font-bold text-[#191b23] mb-3">12</p>
-              <div className="w-full h-1 bg-[#e1e2ec] rounded-full overflow-hidden">
-                <div className="h-full w-3/4 bg-[#006c49] rounded-full" />
+              <p className="text-3xl font-bold text-foreground mb-3">12</p>
+              <div className="w-full h-1 bg-border rounded-full overflow-hidden">
+                <div className="h-full w-3/4 bg-secondary rounded-full" />
               </div>
-              <p className="text-xs text-[#006c49] mt-2 font-medium">
-                ↑ +2 from last week
-              </p>
+              <p className="text-xs text-secondary mt-2 font-medium">↑ +2 from last week</p>
             </Card>
 
-            {/* Feature card */}
             <Card className="p-0 overflow-hidden flex">
-              <div className="w-[140px] shrink-0 bg-[#0d1117] flex items-center justify-center">
+              <div className="w-[140px] shrink-0 bg-foreground flex items-center justify-center">
                 <div className="grid grid-cols-3 gap-0.5 p-3 opacity-60">
                   {Array.from({ length: 9 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="h-3 w-3 rounded-sm"
-                      style={{
-                        backgroundColor: ['#00ff88', '#0066cc', '#004499', '#003377'][i % 4],
-                        opacity: 0.4 + (i % 3) * 0.2,
-                      }}
-                    />
+                    <div key={i} className="h-3 w-3 rounded-sm"
+                      style={{ backgroundColor: ['#1a6fff', '#004395', '#0058be', '#eff5ff'][i % 4], opacity: 0.4 + (i % 3) * 0.2 }} />
                   ))}
                 </div>
               </div>
               <div className="flex-1 p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Badge variant="open" className="text-[10px]">New Feature</Badge>
-                  <span className="text-[10px] text-[#727785]">v2.4 Release</span>
+                  <span className="text-[10px] text-muted">v2.4 Release</span>
                 </div>
-                <h3 className="text-sm font-semibold text-[#191b23] mb-1">
-                  Advanced Velocity Insights
-                </h3>
-                <p className="text-xs text-[#727785] leading-4 mb-3">
+                <h3 className="text-sm font-semibold text-foreground mb-1">Advanced Velocity Insights</h3>
+                <p className="text-xs text-muted leading-4 mb-3">
                   Track your team's momentum with our new real-time velocity engine.
-                  Optimized for high-performance engineering teams.
                 </p>
-                <button className="flex items-center gap-1 text-xs text-[#0058be] font-medium hover:underline">
+                <button className="flex items-center gap-1 text-xs text-primary font-medium hover:underline">
                   Learn more <ArrowRight className="h-3 w-3" />
                 </button>
               </div>
             </Card>
 
-            {/* Activity card */}
-            <Card className="col-span-2 hover:bg-[#f9f9ff] transition-colors cursor-pointer">
+            <Card className="col-span-2 hover:bg-muted-subtle transition-colors cursor-pointer">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-[#f2f3fd] flex items-center justify-center shrink-0">
-                    <GitPullRequest className="h-4 w-4 text-[#0058be]" />
+                  <div className="h-8 w-8 rounded-lg bg-primary-subtle flex items-center justify-center shrink-0">
+                    <GitPullRequest className="h-4 w-4 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-[#191b23]">Database migration</p>
-                    <p className="text-xs text-[#727785]">2 hours ago • PR #104</p>
+                    <p className="text-sm font-medium text-foreground">Database migration</p>
+                    <p className="text-xs text-muted">2 hours ago • PR #104</p>
                   </div>
                 </div>
-                <ChevronRight className="h-4 w-4 text-[#727785]" />
+                <ChevronRight className="h-4 w-4 text-muted" />
               </div>
             </Card>
           </div>
@@ -403,41 +377,29 @@ export default function DesignSystemPage() {
         <section>
           <SectionHeader icon={BellRing} title="Specific Cards" />
           <div className="grid grid-cols-2 gap-4">
-            {/* Task card */}
-            <Card className="p-4 border-l-4 border-l-[#b75b00]">
+            <Card className="p-4 border-l-4 border-l-warning">
               <div className="flex items-start justify-between mb-3">
                 <Badge variant="high">High</Badge>
-                <button className="text-[#727785] hover:text-[#191b23]">
-                  <MoreHorizontal className="h-4 w-4" />
-                </button>
+                <button className="text-muted hover:text-foreground"><MoreHorizontal className="h-4 w-4" /></button>
               </div>
-              <h3 className="text-sm font-semibold text-[#191b23] mb-1">
-                Refactor Auth Service
-              </h3>
-              <p className="text-xs text-[#727785] leading-4 mb-4">
+              <h3 className="text-sm font-semibold text-foreground mb-1">Refactor Auth Service</h3>
+              <p className="text-xs text-muted leading-4 mb-4">
                 Clean up the legacy JWT implementation and migrate to the new Identity provider logic.
               </p>
               <div className="flex items-center justify-between">
-                <Avatar className="h-6 w-6">
-                  <AvatarFallback className="text-[9px] bg-[#2170e4]">JD</AvatarFallback>
-                </Avatar>
-                <div className="flex items-center gap-3 text-xs text-[#727785]">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" /> Oct 24
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <MessageSquare className="h-3 w-3" /> 5
-                  </span>
+                <Avatar className="h-6 w-6"><AvatarFallback className="text-[9px]">JD</AvatarFallback></Avatar>
+                <div className="flex items-center gap-3 text-xs text-muted">
+                  <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Oct 24</span>
+                  <span className="flex items-center gap-1"><MessageSquare className="h-3 w-3" /> 5</span>
                 </div>
               </div>
             </Card>
 
-            {/* Ticket card */}
             <Card className="p-4">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <p className="text-[10px] font-medium text-[#727785] mb-0.5">#TKT-204</p>
-                  <h3 className="text-sm font-semibold text-[#191b23]">VPN Access Request</h3>
+                  <p className="text-[10px] font-medium text-muted mb-0.5">#TKT-204</p>
+                  <h3 className="text-sm font-semibold text-foreground">VPN Access Request</h3>
                 </div>
                 <Badge variant="open">Open</Badge>
               </div>
@@ -448,45 +410,30 @@ export default function DesignSystemPage() {
                   { label: 'Priority', value: null, badge: 'medium' as const },
                 ].map((row) => (
                   <div key={row.label} className="flex items-center justify-between text-xs">
-                    <span className="text-[#727785]">{row.label}</span>
-                    {row.badge ? (
-                      <Badge variant={row.badge}>
-                        {row.badge.charAt(0).toUpperCase() + row.badge.slice(1)}
-                      </Badge>
-                    ) : (
-                      <span className="font-medium text-[#191b23]">{row.value}</span>
-                    )}
+                    <span className="text-muted">{row.label}</span>
+                    {row.badge
+                      ? <Badge variant={row.badge}>{row.badge.charAt(0).toUpperCase() + row.badge.slice(1)}</Badge>
+                      : <span className="font-medium text-foreground">{row.value}</span>}
                   </div>
                 ))}
               </div>
-              <Button className="w-full" size="sm">
-                View Details
-              </Button>
+              <Button className="w-full" size="sm">View Details</Button>
             </Card>
           </div>
         </section>
+
         {/* ── DIALOGS & MODALS ──────────────────────────────────── */}
         <section>
           <SectionHeader icon={Layers} title="Dialogs & Modals" />
           <Card className="p-6">
-            <p className="text-xs text-[#727785] mb-5">
+            <p className="text-xs text-muted mb-5">
               Reusable dialog built on Radix UI. Compose with{' '}
-              <code className="font-mono text-[11px] bg-[#f2f3fd] px-1 py-0.5 rounded text-[#0058be]">
-                DialogContent
-              </code>
-              ,{' '}
-              <code className="font-mono text-[11px] bg-[#f2f3fd] px-1 py-0.5 rounded text-[#0058be]">
-                DialogHeader
-              </code>
-              , and{' '}
-              <code className="font-mono text-[11px] bg-[#f2f3fd] px-1 py-0.5 rounded text-[#0058be]">
-                DialogFooter
-              </code>{' '}
-              to build any modal variant.
+              <code className="font-mono text-[11px] bg-muted-subtle px-1 py-0.5 rounded text-primary">DialogContent</code>,{' '}
+              <code className="font-mono text-[11px] bg-muted-subtle px-1 py-0.5 rounded text-primary">DialogHeader</code>, and{' '}
+              <code className="font-mono text-[11px] bg-muted-subtle px-1 py-0.5 rounded text-primary">DialogFooter</code>.
             </p>
 
             <div className="flex flex-wrap gap-3">
-              {/* Default dialog */}
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="outline">Open Dialog</Button>
@@ -494,26 +441,18 @@ export default function DesignSystemPage() {
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Create New Task</DialogTitle>
-                    <DialogDescription>
-                      Add a new task to the current sprint. Fill in the details below.
-                    </DialogDescription>
+                    <DialogDescription>Add a new task to the current sprint. Fill in the details below.</DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
-                      <label className="text-sm font-medium text-[#424754] mb-1.5 block">
-                        Task name
-                      </label>
+                      <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Task name</label>
                       <Input placeholder="e.g. Refactor auth service" />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-sm font-medium text-[#424754] mb-1.5 block">
-                          Priority
-                        </label>
+                        <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Priority</label>
                         <Select defaultValue="medium">
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="urgent">Urgent</SelectItem>
                             <SelectItem value="high">High</SelectItem>
@@ -523,13 +462,9 @@ export default function DesignSystemPage() {
                         </Select>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-[#424754] mb-1.5 block">
-                          Assignee
-                        </label>
+                        <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Assignee</label>
                         <Select defaultValue="jd">
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="jd">John Doe</SelectItem>
                             <SelectItem value="as">Anna Smith</SelectItem>
@@ -540,67 +475,48 @@ export default function DesignSystemPage() {
                     </div>
                   </div>
                   <DialogFooter>
-                    <DialogClose asChild>
-                      <Button variant="outline">Cancel</Button>
-                    </DialogClose>
+                    <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
                     <Button>Create Task</Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
 
-              {/* Info dialog */}
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="ghost">
-                    <Info className="h-4 w-4 mr-2" />
-                    Info Dialog
-                  </Button>
+                  <Button variant="ghost"><Info className="h-4 w-4 mr-2" />Info Dialog</Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-sm">
                   <DialogHeader>
                     <div className="flex items-center gap-2 mb-1">
-                      <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                        <Info className="h-4 w-4 text-[#0058be]" />
+                      <div className="h-8 w-8 rounded-full bg-primary-subtle flex items-center justify-center shrink-0">
+                        <Info className="h-4 w-4 text-primary" />
                       </div>
                       <DialogTitle>Sprint Info</DialogTitle>
                     </div>
-                    <DialogDescription>
-                      Sprint 14 runs from Oct 21 to Nov 4. 12 tasks are active with 3 in review.
-                    </DialogDescription>
+                    <DialogDescription>Sprint 14 runs from Oct 21 to Nov 4. 12 tasks are active with 3 in review.</DialogDescription>
                   </DialogHeader>
                   <DialogFooter>
-                    <DialogClose asChild>
-                      <Button className="w-full">Got it</Button>
-                    </DialogClose>
+                    <DialogClose asChild><Button className="w-full">Got it</Button></DialogClose>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
 
-              {/* Destructive / confirm dialog */}
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="destructive">
-                    <AlertTriangle className="h-4 w-4 mr-2" />
-                    Delete Dialog
-                  </Button>
+                  <Button variant="destructive"><AlertTriangle className="h-4 w-4 mr-2" />Delete Dialog</Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-sm">
                   <DialogHeader>
                     <div className="flex items-center gap-2 mb-1">
-                      <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-                        <AlertTriangle className="h-4 w-4 text-[#ba1a1a]" />
+                      <div className="h-8 w-8 rounded-full bg-danger-subtle flex items-center justify-center shrink-0">
+                        <AlertTriangle className="h-4 w-4 text-danger" />
                       </div>
                       <DialogTitle>Delete Task</DialogTitle>
                     </div>
-                    <DialogDescription>
-                      This action cannot be undone. The task and all associated comments will be
-                      permanently removed.
-                    </DialogDescription>
+                    <DialogDescription>This action cannot be undone. The task and all associated comments will be permanently removed.</DialogDescription>
                   </DialogHeader>
                   <DialogFooter>
-                    <DialogClose asChild>
-                      <Button variant="outline">Cancel</Button>
-                    </DialogClose>
+                    <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
                     <Button variant="destructive">Delete</Button>
                   </DialogFooter>
                 </DialogContent>
@@ -611,16 +527,16 @@ export default function DesignSystemPage() {
       </div>
 
       {/* Footer */}
-      <footer className="mt-16 border-t border-[#e1e2ec] pt-6 pb-4 flex items-center justify-between text-xs text-[#727785]">
+      <footer className="mt-16 border-t border-border pt-6 pb-4 flex items-center justify-between text-xs text-muted">
         <div className="flex items-center gap-2">
-          <span className="font-medium text-[#0058be]">TaskHub Design System</span>
-          <span className="text-[#c2c6d6]">•</span>
+          <span className="font-medium text-primary">TaskHub Design System</span>
+          <span className="text-border-strong">•</span>
           <span>v1.2.0</span>
         </div>
         <div className="flex items-center gap-6">
-          <a href="#" className="hover:text-[#191b23] transition-colors">Documentation</a>
-          <a href="#" className="hover:text-[#191b23] transition-colors">Release Notes</a>
-          <a href="#" className="hover:text-[#191b23] transition-colors">GitHub</a>
+          <a href="#" className="hover:text-foreground transition-colors">Documentation</a>
+          <a href="#" className="hover:text-foreground transition-colors">Release Notes</a>
+          <a href="#" className="hover:text-foreground transition-colors">GitHub</a>
         </div>
       </footer>
     </div>

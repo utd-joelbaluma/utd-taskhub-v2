@@ -4,7 +4,7 @@
 -- ============================================================
 
 -- Enable required extensions
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA extensions;
 
 -- ============================================================
 -- TRIGGER FUNCTION: auto-update updated_at
@@ -229,7 +229,7 @@ CREATE TABLE public.invitations (
   email       TEXT NOT NULL,
   role        TEXT NOT NULL DEFAULT 'member'
               CHECK (role IN ('owner', 'manager', 'member', 'viewer')),
-  token       TEXT NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(32), 'hex'),
+  token       TEXT NOT NULL UNIQUE DEFAULT encode(extensions.gen_random_bytes(32), 'hex'),
   status      TEXT NOT NULL DEFAULT 'pending'
               CHECK (status IN ('pending', 'accepted', 'expired', 'cancelled')),
   expires_at  TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '7 days'),

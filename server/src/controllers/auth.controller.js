@@ -20,6 +20,7 @@ export async function register(req, res, next) {
 				email: email.trim().toLowerCase(),
 				password,
 				email_confirm: true,
+				user_metadata: { full_name: full_name?.trim() || null },
 			});
 
 		if (authError) {
@@ -32,19 +33,15 @@ export async function register(req, res, next) {
 			throw authError;
 		}
 
+		// Trigger has already inserted the profile row; update full_name if provided
 		const { data: profile, error: profileError } = await supabase
 			.from("profiles")
-			.insert({
-				id: authData.user.id,
-				email: email.trim().toLowerCase(),
-				full_name: full_name?.trim() || null,
-				status: "active",
-			})
+			.update({ full_name: full_name?.trim() || null })
+			.eq("id", authData.user.id)
 			.select()
 			.single();
 
 		if (profileError) {
-			// Roll back the auth user if profile insert fails
 			await supabase.auth.admin.deleteUser(authData.user.id);
 			throw profileError;
 		}

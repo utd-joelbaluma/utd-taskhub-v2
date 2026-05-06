@@ -7,18 +7,24 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        urgent: 'bg-red-100 text-red-700',
-        high: 'bg-orange-100 text-orange-700',
-        medium: 'bg-blue-100 text-blue-700',
-        low: 'bg-gray-100 text-gray-600',
-        backlog: 'bg-gray-100 text-gray-600 border border-gray-300',
-        todo: 'bg-gray-100 text-gray-700 border border-gray-300',
-        'in-progress': 'bg-blue-600 text-white',
-        review: 'bg-emerald-100 text-emerald-700 border border-emerald-300',
-        done: 'bg-emerald-600 text-white',
-        cancelled: 'bg-gray-200 text-gray-500',
-        open: 'bg-emerald-100 text-emerald-700',
-        default: 'bg-[#e6e7f2] text-[#424754]',
+        /* priority */
+        urgent:  'bg-danger-subtle text-danger border border-danger/20',
+        high:    'bg-warning-subtle text-warning border border-warning/20',
+        medium:  'bg-primary-subtle text-primary border border-primary/20',
+        low:     'bg-muted-subtle text-muted border border-border',
+
+        /* workflow */
+        backlog:      'bg-muted-subtle text-muted border border-border',
+        todo:         'bg-muted-subtle text-muted-foreground border border-border',
+        'in-progress': 'bg-primary text-primary-foreground',
+        review:       'bg-secondary-subtle text-secondary border border-secondary/20',
+        done:         'bg-secondary text-secondary-foreground',
+        cancelled:    'bg-border text-muted',
+
+        /* general */
+        open:    'bg-secondary-subtle text-secondary border border-secondary/20',
+        accent:  'bg-accent-subtle text-accent border border-accent/20',
+        default: 'bg-muted-subtle text-muted-foreground',
       },
     },
     defaultVariants: {

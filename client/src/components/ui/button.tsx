@@ -4,21 +4,24 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0058be] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 cursor-pointer',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 cursor-pointer',
   {
     variants: {
       variant: {
-        default: 'bg-[#0058be] text-white hover:bg-[#004395]',
-        secondary: 'bg-[#006c49] text-white hover:bg-[#005236]',
-        outline: 'border border-[#c2c6d6] bg-white text-[#191b23] hover:bg-[#f2f3fd]',
-        ghost: 'text-[#0058be] hover:bg-[#f2f3fd]',
-        destructive: 'bg-[#ba1a1a] text-white hover:bg-[#93000a]',
+        default:     'bg-primary text-primary-foreground hover:bg-primary-hover',
+        secondary:   'bg-secondary text-secondary-foreground hover:bg-secondary-hover',
+        accent:      'bg-accent text-accent-foreground hover:bg-accent-hover',
+        outline:     'border border-border-strong bg-surface text-foreground hover:bg-muted-subtle',
+        ghost:       'text-primary hover:bg-primary-subtle',
+        muted:       'bg-muted-subtle text-muted-foreground hover:bg-border',
+        destructive: 'bg-danger text-danger-foreground hover:bg-danger-hover',
+        warning:     'bg-warning text-warning-foreground hover:bg-warning-hover',
       },
       size: {
         default: 'h-9 px-4 py-2',
-        sm: 'h-7 px-3 text-xs',
-        lg: 'h-11 px-6',
-        icon: 'h-9 w-9',
+        sm:      'h-7 px-3 text-xs',
+        lg:      'h-11 px-6',
+        icon:    'h-9 w-9',
       },
     },
     defaultVariants: {

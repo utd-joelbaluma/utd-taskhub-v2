@@ -1,48 +1,63 @@
 @import "tailwindcss";
 
 @theme {
+  /* ── Primary (Blue) ─────────────────────────────── */
+  --color-primary:            #0058be;
+  --color-primary-hover:      #004395;
+  --color-primary-subtle:     #eff5ff;
+  --color-primary-foreground: #ffffff;
+
+  /* ── Secondary (Emerald) ────────────────────────── */
+  --color-secondary:            #006c49;
+  --color-secondary-hover:      #005236;
+  --color-secondary-subtle:     #f0fdf9;
+  --color-secondary-foreground: #ffffff;
+
+  /* ── Accent (Amber) ─────────────────────────────── */
+  --color-accent:            #d97706;
+  --color-accent-hover:      #b45309;
+  --color-accent-subtle:     #fffbeb;
+  --color-accent-foreground: #ffffff;
+
+  /* ── Danger (Red) ───────────────────────────────── */
+  --color-danger:            #ba1a1a;
+  --color-danger-hover:      #93000a;
+  --color-danger-subtle:     #fff0ee;
+  --color-danger-foreground: #ffffff;
+
+  /* ── Warning (Orange) ───────────────────────────── */
+  --color-warning:            #c2410c;
+  --color-warning-hover:      #9a3412;
+  --color-warning-subtle:     #fff7ed;
+  --color-warning-foreground: #ffffff;
+
+  /* ── Muted ──────────────────────────────────────── */
+  --color-muted:            #727785;
+  --color-muted-foreground: #424754;
+  --color-muted-subtle:     #f2f3fd;
+
+  /* ── Layout ─────────────────────────────────────── */
   --color-background: #f9f9ff;
-  --color-surface: #ffffff;
-  --color-surface-low: #f2f3fd;
-  --color-surface-container: #ecedf7;
-  --color-surface-high: #e6e7f2;
-  --color-surface-highest: #e1e2ec;
+  --color-foreground: #191b23;
+  --color-surface:    #ffffff;
+  --color-border:     #e1e2ec;
+  --color-border-strong: #c2c6d6;
 
-  --color-on-surface: #191b23;
-  --color-on-surface-variant: #424754;
-  --color-outline: #727785;
-  --color-outline-variant: #c2c6d6;
-
-  --color-primary: #0058be;
-  --color-primary-container: #2170e4;
-  --color-on-primary: #ffffff;
-
-  --color-secondary: #006c49;
-  --color-secondary-container: #6cf8bb;
-  --color-on-secondary: #ffffff;
-
-  --color-tertiary: #924700;
-  --color-tertiary-container: #b75b00;
-  --color-on-tertiary: #ffffff;
-
-  --color-error: #ba1a1a;
-  --color-error-container: #ffdad6;
-
+  /* ── Typography ─────────────────────────────────── */
   --font-sans: "Inter", system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  --radius-sm: 0.25rem;
+  /* ── Radius ─────────────────────────────────────── */
+  --radius-sm:   0.25rem;
   --radius-DEFAULT: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.5rem;
+  --radius-md:   0.75rem;
+  --radius-lg:   1rem;
+  --radius-xl:   1.5rem;
   --radius-full: 9999px;
 }
 
 @layer base {
-  *, *::before, *::after {
-    box-sizing: border-box;
-  }
+  *, *::before, *::after { box-sizing: border-box; }
 
   body {
     margin: 0;
@@ -53,7 +68,5 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  #root {
-    min-height: 100svh;
-  }
+  #root { min-height: 100svh; }
 }
