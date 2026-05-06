@@ -25,10 +25,8 @@ async function request<T>(
 	const json = await res.json().catch(() => ({}));
 
 	if (res.status === 401) {
-		// Token expired or invalid -- clear session and reload to trigger redirect
 		localStorage.removeItem("access_token");
 		localStorage.removeItem("refresh_token");
-		window.location.href = "/login";
 		throw new Error("Session expired.");
 	}
 

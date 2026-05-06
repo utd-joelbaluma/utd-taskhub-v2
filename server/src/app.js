@@ -23,7 +23,17 @@ const app = express();
 app.use(helmet());
 app.use(
 	cors({
-		origin: env.appUrl,
+		origin(origin, callback) {
+			// Allow requests with no origin (curl, Postman, server-to-server)
+			if (!origin) return callback(null, true);
+
+			const allowed =
+				env.nodeEnv === "development"
+					? /^http:\/\/localhost(:\d+)?$/.test(origin)
+					: origin === env.appUrl;
+
+			callback(allowed ? null : new Error("Not allowed by CORS"), allowed);
+		},
 		credentials: true,
 	}),
 );
