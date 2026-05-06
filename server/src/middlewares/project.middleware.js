@@ -3,7 +3,7 @@ import { supabase } from "../config/supabase.js";
 // Verifies the authenticated user is a member of the project.
 // Attaches req.membership. Must run after requireAuth.
 export async function requireProjectMember(req, res, next) {
-	const projectId = req.params.id;
+	const projectId = req.params.projectId || req.params.id;
 	const userId = req.profile.id;
 
 	const { data: membership, error } = await supabase
