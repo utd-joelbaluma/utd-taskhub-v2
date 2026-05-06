@@ -10,7 +10,7 @@ export async function getProjects(req, res, next) {
 
 		let query = supabase
 			.from("projects")
-			.select("*")
+			.select("*, project_members(user_id, role, profiles(id, full_name, avatar_url))")
 			.order("created_at", { ascending: false });
 
 		if (status) {
@@ -41,7 +41,7 @@ export async function getProjectById(req, res, next) {
 
 		const { data, error } = await supabase
 			.from("projects")
-			.select("*")
+			.select("*, project_members(user_id, role, profiles(id, full_name, avatar_url))")
 			.eq("id", id)
 			.maybeSingle();
 
@@ -75,14 +75,17 @@ export async function createProject(req, res, next) {
 			});
 		}
 
-		const { name, description, status } = req.body;
+		const { name, description, status, sprint_name, sprint_end_date, tags } = req.body;
 
 		const { data, error } = await supabase
 			.from("projects")
 			.insert({
 				name: name.trim(),
 				description: description?.trim() || null,
-				status: status || "active",
+				status: status || "planning",
+				sprint_name: sprint_name?.trim() || null,
+				sprint_end_date: sprint_end_date || null,
+				tags: Array.isArray(tags) ? tags : [],
 			})
 			.select()
 			.single();
@@ -125,6 +128,18 @@ export async function updateProject(req, res, next) {
 
 		if (req.body.status !== undefined) {
 			updateData.status = req.body.status;
+		}
+
+		if (req.body.sprint_name !== undefined) {
+			updateData.sprint_name = req.body.sprint_name?.trim() || null;
+		}
+
+		if (req.body.sprint_end_date !== undefined) {
+			updateData.sprint_end_date = req.body.sprint_end_date || null;
+		}
+
+		if (req.body.tags !== undefined) {
+			updateData.tags = Array.isArray(req.body.tags) ? req.body.tags : [];
 		}
 
 		if (Object.keys(updateData).length === 0) {

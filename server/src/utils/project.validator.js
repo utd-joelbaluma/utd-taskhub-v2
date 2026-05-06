@@ -1,4 +1,33 @@
-const allowedStatuses = ["active", "completed", "archived"];
+const allowedStatuses = ["planning", "in-progress", "on-hold", "completed"];
+
+function validateSprintFields(payload, errors) {
+	if (
+		payload.sprint_name !== undefined &&
+		payload.sprint_name !== null &&
+		typeof payload.sprint_name !== "string"
+	) {
+		errors.push("Sprint name must be a string.");
+	}
+
+	if (
+		payload.sprint_end_date !== undefined &&
+		payload.sprint_end_date !== null
+	) {
+		const d = new Date(payload.sprint_end_date);
+		if (isNaN(d.getTime())) {
+			errors.push("Sprint end date must be a valid date.");
+		}
+	}
+
+	if (payload.tags !== undefined) {
+		if (
+			!Array.isArray(payload.tags) ||
+			payload.tags.some((t) => typeof t !== "string")
+		) {
+			errors.push("Tags must be an array of strings.");
+		}
+	}
+}
 
 export function validateCreateProject(payload) {
 	const errors = [];
@@ -14,6 +43,8 @@ export function validateCreateProject(payload) {
 	if (payload.status && !allowedStatuses.includes(payload.status)) {
 		errors.push(`Status must be one of: ${allowedStatuses.join(", ")}.`);
 	}
+
+	validateSprintFields(payload, errors);
 
 	return errors;
 }
@@ -36,6 +67,8 @@ export function validateUpdateProject(payload) {
 	) {
 		errors.push(`Status must be one of: ${allowedStatuses.join(", ")}.`);
 	}
+
+	validateSprintFields(payload, errors);
 
 	return errors;
 }

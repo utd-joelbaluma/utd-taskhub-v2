@@ -13,6 +13,7 @@ import boardRoutes from "./routes/board.routes.js";
 import boardColumnRoutes from "./routes/board-column.routes.js";
 import taskRoutes from "./routes/task.routes.js";
 import ticketRoutes from "./routes/ticket.routes.js";
+import projectMemberRoutes from "./routes/project-member.routes.js";
 import {
 	notFoundHandler,
 	errorHandler,
@@ -61,6 +62,7 @@ app.use(`/api/${env.apiVersion}/projects/:projectId/boards`, boardRoutes);
 app.use(`/api/${env.apiVersion}/projects/:projectId/boards/:boardId/columns`, boardColumnRoutes);
 app.use(`/api/${env.apiVersion}/projects/:projectId/tasks`, taskRoutes);
 app.use(`/api/${env.apiVersion}/projects/:projectId/tickets`, ticketRoutes);
+app.use(`/api/${env.apiVersion}/projects/:projectId/members`, projectMemberRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

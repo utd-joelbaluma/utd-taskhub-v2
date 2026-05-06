@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, LayoutGrid, List, ChevronRight, CheckCircle2, X } from 'lucide-react'
+import { Plus, Search, LayoutGrid, List, ChevronRight, CheckCircle2, X, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -14,9 +14,13 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { PROJECTS, type Project, type ProjectStatus } from '@/data/projects'
-import { USERS } from '@/data/tasks'
 import { cn } from '@/lib/utils'
+import {
+  listProjects, createProject,
+  type Project, type ProjectStatus,
+} from '@/services/project.service'
+import { addMember } from '@/services/project-member.service'
+import { listProfiles, type Profile } from '@/services/profile.service'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -35,6 +39,10 @@ const STATUS_BADGE: Record<ProjectStatus, { variant: 'in-progress' | 'todo' | 'd
   'on-hold':     { variant: 'cancelled',   label: 'On Hold' },
 }
 
+const AVATAR_COLORS = [
+  'bg-primary', 'bg-accent', 'bg-secondary', 'bg-warning', 'bg-danger',
+]
+
 const EMPTY_FORM = {
   name:        '',
   status:      'planning' as ProjectStatus,
@@ -48,12 +56,26 @@ const EMPTY_FORM = {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function slugify(name: string) {
-  return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+function getInitials(name: string | null): string {
+  if (!name) return '?'
+  return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+}
+
+function avatarColor(index: number): string {
+  return AVATAR_COLORS[index % AVATAR_COLORS.length]
 }
 
 function safePct(completed: number, total: number) {
   return total === 0 ? 0 : Math.round((completed / total) * 100)
+}
+
+type TeamMember = { initials: string; color: string }
+
+function membersToTeam(members: Project['project_members']): TeamMember[] {
+  return members.map((m, i) => ({
+    initials: getInitials(m.profiles?.full_name ?? null),
+    color:    avatarColor(i),
+  }))
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -66,7 +88,7 @@ function ProgressBar({ pct }: { pct: number }) {
   )
 }
 
-function TeamAvatars({ team, max = 4 }: { team: Project['team']; max?: number }) {
+function TeamAvatars({ team, max = 4 }: { team: TeamMember[]; max?: number }) {
   const visible = team.slice(0, max)
   const extra = team.length - max
   return (
@@ -86,8 +108,9 @@ function TeamAvatars({ team, max = 4 }: { team: Project['team']; max?: number })
 }
 
 function ProjectCard({ project, onClick }: { project: Project; onClick: () => void }) {
-  const pct = safePct(project.tasksCompleted, project.tasksTotal)
+  const pct = safePct(0, 0)
   const { variant, label } = STATUS_BADGE[project.status]
+  const team = membersToTeam(project.project_members ?? [])
   return (
     <Card
       className="p-5 flex flex-col gap-4 hover:shadow-md hover:border-border-strong transition-all cursor-pointer"
@@ -102,7 +125,7 @@ function ProjectCard({ project, onClick }: { project: Project; onClick: () => vo
       </div>
 
       <div className="flex gap-1.5 flex-wrap min-h-[20px]">
-        {project.tags.map((t) => (
+        {(project.tags ?? []).map((t) => (
           <span key={t} className="text-[10px] bg-muted-subtle text-muted-foreground px-2 py-0.5 rounded-full font-medium">{t}</span>
         ))}
       </div>
@@ -113,20 +136,19 @@ function ProjectCard({ project, onClick }: { project: Project; onClick: () => vo
           <span className="font-medium text-foreground">{pct}%</span>
         </div>
         <ProgressBar pct={pct} />
-        <p className="text-[10px] text-muted mt-1.5">{project.tasksCompleted} / {project.tasksTotal} tasks</p>
       </div>
 
       <div className="flex items-center justify-between pt-1 border-t border-border">
-        <TeamAvatars team={project.team} />
-        <span className="text-[10px] text-muted">{project.sprint || 'No sprint'}</span>
+        <TeamAvatars team={team} />
+        <span className="text-[10px] text-muted">{project.sprint_name || 'No sprint'}</span>
       </div>
     </Card>
   )
 }
 
 function ProjectRow({ project, onClick }: { project: Project; onClick: () => void }) {
-  const pct = safePct(project.tasksCompleted, project.tasksTotal)
   const { variant, label } = STATUS_BADGE[project.status]
+  const team = membersToTeam(project.project_members ?? [])
   return (
     <tr
       className="border-b border-border last:border-0 hover:bg-muted-subtle transition-colors cursor-pointer"
@@ -148,15 +170,13 @@ function ProjectRow({ project, onClick }: { project: Project; onClick: () => voi
       <td className="px-4 py-4"><Badge variant={variant}>{label}</Badge></td>
       <td className="px-4 py-4">
         <div className="flex items-center gap-2 min-w-[120px]">
-          <ProgressBar pct={pct} />
-          <span className="text-xs text-muted whitespace-nowrap">{pct}%</span>
+          <ProgressBar pct={0} />
+          <span className="text-xs text-muted whitespace-nowrap">0%</span>
         </div>
       </td>
-      <td className="px-4 py-4 text-xs text-muted-foreground whitespace-nowrap">
-        {project.tasksCompleted} / {project.tasksTotal}
-      </td>
-      <td className="px-4 py-4"><TeamAvatars team={project.team} max={3} /></td>
-      <td className="px-4 py-4 text-xs text-muted whitespace-nowrap">{project.sprint || '—'}</td>
+      <td className="px-4 py-4 text-xs text-muted-foreground whitespace-nowrap">0 / 0</td>
+      <td className="px-4 py-4"><TeamAvatars team={team} max={3} /></td>
+      <td className="px-4 py-4 text-xs text-muted whitespace-nowrap">{project.sprint_name || '—'}</td>
       <td className="px-4 py-4 text-right">
         <ChevronRight className="h-4 w-4 text-muted ml-auto" />
       </td>
@@ -170,17 +190,22 @@ function NewProjectDialog({
   open,
   onClose,
   onCreate,
+  profiles,
+  profilesLoading,
 }: {
   open: boolean
   onClose: () => void
   onCreate: (project: Project) => void
+  profiles: Profile[]
+  profilesLoading: boolean
 }) {
   const [form, setForm] = useState(EMPTY_FORM)
-  const [errors, setErrors] = useState<{ name?: string }>({})
+  const [errors, setErrors] = useState<{ name?: string; submit?: string }>({})
+  const [submitting, setSubmitting] = useState(false)
 
   function set<K extends keyof typeof EMPTY_FORM>(key: K, value: typeof EMPTY_FORM[K]) {
     setForm(prev => ({ ...prev, [key]: value }))
-    if (key === 'name') setErrors({})
+    if (key === 'name') setErrors(prev => ({ ...prev, name: undefined }))
   }
 
   function addTag() {
@@ -201,34 +226,38 @@ function NewProjectDialog({
     )
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!form.name.trim()) {
       setErrors({ name: 'Project name is required.' })
       return
     }
 
-    const team = USERS
-      .filter(u => form.teamIds.includes(u.id))
-      .map(u => ({ initials: u.initials, color: u.color }))
-
-    const project: Project = {
-      id:              slugify(form.name) + '-' + Date.now(),
-      name:            form.name.trim(),
-      status:          form.status,
-      description:     form.description.trim(),
-      tasksCompleted:  0,
-      tasksTotal:      0,
-      sprint:          form.sprint.trim(),
-      sprintEnds:      form.sprintEnds,
-      sprintVelocity:  'N/A — first sprint',
-      team,
-      tags:            form.tags,
-    }
-
-    onCreate(project)
-    setForm(EMPTY_FORM)
+    setSubmitting(true)
     setErrors({})
-    onClose()
+
+    try {
+      const project = await createProject({
+        name:            form.name.trim(),
+        description:     form.description.trim() || undefined,
+        status:          form.status,
+        sprint_name:     form.sprint.trim() || undefined,
+        sprint_end_date: form.sprintEnds || undefined,
+        tags:            form.tags,
+      })
+
+      await Promise.all(
+        form.teamIds.map(userId => addMember(project.id, userId))
+      )
+
+      onCreate(project)
+      setForm(EMPTY_FORM)
+      setErrors({})
+      onClose()
+    } catch {
+      setErrors({ submit: 'Failed to create project. Please try again.' })
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   function handleOpenChange(open: boolean) {
@@ -344,36 +373,52 @@ function NewProjectDialog({
           {/* Team Members */}
           <div>
             <label className="text-sm font-medium text-muted-foreground mb-2 block">Team Members</label>
-            <div className="grid grid-cols-2 gap-2">
-              {USERS.map(user => (
-                <label
-                  key={user.id}
-                  className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors',
-                    form.teamIds.includes(user.id)
-                      ? 'border-primary bg-primary-subtle'
-                      : 'border-border hover:bg-muted-subtle'
-                  )}
-                >
-                  <Checkbox
-                    checked={form.teamIds.includes(user.id)}
-                    onCheckedChange={() => toggleMember(user.id)}
-                  />
-                  <Avatar className="h-6 w-6 shrink-0">
-                    <AvatarFallback className={`text-[9px] text-white ${user.color}`}>{user.initials}</AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm text-foreground">{user.name}</span>
-                </label>
-              ))}
-            </div>
+            {profilesLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted py-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading members...
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {profiles.map((profile, i) => (
+                  <label
+                    key={profile.id}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors',
+                      form.teamIds.includes(profile.id)
+                        ? 'border-primary bg-primary-subtle'
+                        : 'border-border hover:bg-muted-subtle'
+                    )}
+                  >
+                    <Checkbox
+                      checked={form.teamIds.includes(profile.id)}
+                      onCheckedChange={() => toggleMember(profile.id)}
+                    />
+                    <Avatar className="h-6 w-6 shrink-0">
+                      <AvatarFallback className={`text-[9px] text-white ${avatarColor(i)}`}>
+                        {getInitials(profile.full_name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm text-foreground">{profile.full_name ?? profile.email}</span>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
+
+          {errors.submit && (
+            <p className="text-xs text-danger">{errors.submit}</p>
+          )}
         </div>
 
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline" disabled={submitting}>Cancel</Button>
           </DialogClose>
-          <Button onClick={handleSubmit}>Create Project</Button>
+          <Button onClick={handleSubmit} disabled={submitting}>
+            {submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+            Create Project
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -384,21 +429,53 @@ function NewProjectDialog({
 
 export default function ProjectsPage() {
   const navigate = useNavigate()
-  const [projects, setProjects] = useState<Project[]>(PROJECTS)
+  const [projects, setProjects] = useState<Project[]>([])
+  const [profiles, setProfiles] = useState<Profile[]>([])
+  const [loading, setLoading] = useState(true)
+  const [profilesLoading, setProfilesLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [filter, setFilter] = useState<ProjectStatus | 'all'>('all')
   const [search, setSearch] = useState('')
   const [view, setView] = useState<'grid' | 'list'>('grid')
 
-  function handleCreate(project: Project) {
-    setProjects(prev => [project, ...prev])
+  const fetchProjects = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const params: { status?: string; search?: string } = {}
+      if (filter !== 'all') params.status = filter
+      if (search) params.search = search
+      const data = await listProjects(params)
+      setProjects(data)
+    } catch {
+      setError('Failed to load projects.')
+    } finally {
+      setLoading(false)
+    }
+  }, [filter, search])
+
+  useEffect(() => {
+    fetchProjects()
+  }, [fetchProjects])
+
+  useEffect(() => {
+    listProfiles()
+      .then(setProfiles)
+      .catch(() => setProfiles([]))
+      .finally(() => setProfilesLoading(false))
+  }, [])
+
+  async function handleCreate(project: Project) {
+    await fetchProjects()
+    void project
   }
 
   const filtered = projects.filter((p) => {
     const matchStatus = filter === 'all' || p.status === filter
     const matchSearch =
       p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.description.toLowerCase().includes(search.toLowerCase())
+      (p.description ?? '').toLowerCase().includes(search.toLowerCase())
     return matchStatus && matchSearch
   })
 
@@ -469,8 +546,25 @@ export default function ProjectsPage() {
         </div>
       </div>
 
+      {/* Loading */}
+      {loading && (
+        <div className="flex items-center justify-center py-24 gap-2 text-muted">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span className="text-sm">Loading projects...</span>
+        </div>
+      )}
+
+      {/* Error */}
+      {!loading && error && (
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <p className="text-base font-medium text-foreground mb-1">Something went wrong</p>
+          <p className="text-sm text-muted mb-4">{error}</p>
+          <Button variant="outline" onClick={fetchProjects}>Retry</Button>
+        </div>
+      )}
+
       {/* Empty state */}
-      {filtered.length === 0 && (
+      {!loading && !error && filtered.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <CheckCircle2 className="h-10 w-10 text-border-strong mb-4" />
           <p className="text-base font-medium text-foreground mb-1">No projects found</p>
@@ -479,7 +573,7 @@ export default function ProjectsPage() {
       )}
 
       {/* Grid view */}
-      {view === 'grid' && filtered.length > 0 && (
+      {!loading && !error && view === 'grid' && filtered.length > 0 && (
         <div className="grid grid-cols-3 gap-4">
           {filtered.map((p) => (
             <ProjectCard key={p.id} project={p} onClick={() => navigate(`/projects/${p.id}`)} />
@@ -488,7 +582,7 @@ export default function ProjectsPage() {
       )}
 
       {/* List view */}
-      {view === 'list' && filtered.length > 0 && (
+      {!loading && !error && view === 'list' && filtered.length > 0 && (
         <Card className="p-0 overflow-hidden">
           <table className="w-full text-sm">
             <thead>
@@ -519,6 +613,8 @@ export default function ProjectsPage() {
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         onCreate={handleCreate}
+        profiles={profiles}
+        profilesLoading={profilesLoading}
       />
     </div>
   )

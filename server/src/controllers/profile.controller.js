@@ -1,6 +1,26 @@
 import { supabase } from "../config/supabase.js";
 import { validateUpdateProfile } from "../utils/profile.validator.js";
 
+export async function listProfiles(req, res, next) {
+	try {
+		const { data, error } = await supabase
+			.from("profiles")
+			.select("id, full_name, email, avatar_url, role, status")
+			.eq("status", "active")
+			.order("full_name", { ascending: true });
+
+		if (error) throw error;
+
+		res.status(200).json({
+			success: true,
+			count: data.length,
+			data,
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+
 export async function getProfile(req, res, next) {
 	try {
 		const { id } = req.params;
