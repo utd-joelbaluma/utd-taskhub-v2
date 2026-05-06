@@ -1,0 +1,291 @@
+import { supabase } from "../config/supabase.js";
+import { validateCreateTicket, validateUpdateTicket } from "../utils/ticket.validator.js";
+
+const TICKET_SELECT = `
+	id,
+	project_id,
+	converted_task_id,
+	title,
+	description,
+	type,
+	status,
+	priority,
+	due_date,
+	created_at,
+	updated_at,
+	assigned_to:profiles!tickets_assigned_to_fkey (
+		id,
+		full_name,
+		email
+	),
+	created_by:profiles!tickets_created_by_fkey (
+		id,
+		full_name,
+		email
+	)
+`;
+
+export async function getTickets(req, res, next) {
+	try {
+		const { projectId } = req.params;
+		const { status, type, priority, assigned_to } = req.query;
+
+		let query = supabase
+			.from("tickets")
+			.select(TICKET_SELECT)
+			.eq("project_id", projectId)
+			.order("created_at", { ascending: false });
+
+		if (status) query = query.eq("status", status);
+		if (type) query = query.eq("type", type);
+		if (priority) query = query.eq("priority", priority);
+		if (assigned_to) query = query.eq("assigned_to", assigned_to);
+
+		const { data, error } = await query;
+		if (error) throw error;
+
+		res.status(200).json({
+			success: true,
+			count: data.length,
+			data,
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function getTicketById(req, res, next) {
+	try {
+		const { projectId, ticketId } = req.params;
+
+		const { data, error } = await supabase
+			.from("tickets")
+			.select(TICKET_SELECT)
+			.eq("id", ticketId)
+			.eq("project_id", projectId)
+			.maybeSingle();
+
+		if (error) throw error;
+
+		if (!data) {
+			return res.status(404).json({
+				success: false,
+				message: "Ticket not found.",
+			});
+		}
+
+		res.status(200).json({
+			success: true,
+			data,
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function createTicket(req, res, next) {
+	try {
+		const { projectId } = req.params;
+
+		const errors = validateCreateTicket(req.body);
+		if (errors.length > 0) {
+			return res.status(400).json({
+				success: false,
+				message: "Validation failed.",
+				errors,
+			});
+		}
+
+		const { title, description, type, status, priority, assigned_to, due_date } = req.body;
+
+		const { data, error } = await supabase
+			.from("tickets")
+			.insert({
+				project_id: projectId,
+				title: title.trim(),
+				description: description?.trim() || null,
+				type: type || "issue",
+				status: status || "open",
+				priority: priority || "medium",
+				assigned_to: assigned_to || null,
+				due_date: due_date || null,
+				created_by: req.profile.id,
+			})
+			.select(TICKET_SELECT)
+			.single();
+
+		if (error) throw error;
+
+		res.status(201).json({
+			success: true,
+			message: "Ticket created successfully.",
+			data,
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function updateTicket(req, res, next) {
+	try {
+		const { projectId, ticketId } = req.params;
+
+		const errors = validateUpdateTicket(req.body);
+		if (errors.length > 0) {
+			return res.status(400).json({
+				success: false,
+				message: "Validation failed.",
+				errors,
+			});
+		}
+
+		const updateData = {};
+
+		if (req.body.title !== undefined) updateData.title = req.body.title.trim();
+		if (req.body.description !== undefined) updateData.description = req.body.description?.trim() || null;
+		if (req.body.type !== undefined) updateData.type = req.body.type;
+		if (req.body.status !== undefined) updateData.status = req.body.status;
+		if (req.body.priority !== undefined) updateData.priority = req.body.priority;
+		if (req.body.assigned_to !== undefined) updateData.assigned_to = req.body.assigned_to || null;
+		if (req.body.due_date !== undefined) updateData.due_date = req.body.due_date || null;
+
+		if (Object.keys(updateData).length === 0) {
+			return res.status(400).json({
+				success: false,
+				message: "No valid fields provided for update.",
+			});
+		}
+
+		const { data, error } = await supabase
+			.from("tickets")
+			.update(updateData)
+			.eq("id", ticketId)
+			.eq("project_id", projectId)
+			.select(TICKET_SELECT)
+			.maybeSingle();
+
+		if (error) throw error;
+
+		if (!data) {
+			return res.status(404).json({
+				success: false,
+				message: "Ticket not found.",
+			});
+		}
+
+		res.status(200).json({
+			success: true,
+			message: "Ticket updated successfully.",
+			data,
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function deleteTicket(req, res, next) {
+	try {
+		const { projectId, ticketId } = req.params;
+
+		const { data: existing, error: findError } = await supabase
+			.from("tickets")
+			.select("id")
+			.eq("id", ticketId)
+			.eq("project_id", projectId)
+			.maybeSingle();
+
+		if (findError) throw findError;
+
+		if (!existing) {
+			return res.status(404).json({
+				success: false,
+				message: "Ticket not found.",
+			});
+		}
+
+		const { error } = await supabase
+			.from("tickets")
+			.delete()
+			.eq("id", ticketId);
+
+		if (error) throw error;
+
+		res.status(200).json({
+			success: true,
+			message: "Ticket deleted successfully.",
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function convertTicketToTask(req, res, next) {
+	try {
+		const { projectId, ticketId } = req.params;
+
+		const { data: ticket, error: ticketError } = await supabase
+			.from("tickets")
+			.select("id, title, description, priority, assigned_to, due_date, converted_task_id, status")
+			.eq("id", ticketId)
+			.eq("project_id", projectId)
+			.maybeSingle();
+
+		if (ticketError) throw ticketError;
+
+		if (!ticket) {
+			return res.status(404).json({
+				success: false,
+				message: "Ticket not found.",
+			});
+		}
+
+		if (ticket.converted_task_id) {
+			return res.status(409).json({
+				success: false,
+				message: "Ticket has already been converted to a task.",
+				converted_task_id: ticket.converted_task_id,
+			});
+		}
+
+		const { data: task, error: taskError } = await supabase
+			.from("tasks")
+			.insert({
+				project_id: projectId,
+				title: ticket.title,
+				description: ticket.description || null,
+				priority: ticket.priority,
+				assigned_to: ticket.assigned_to || null,
+				due_date: ticket.due_date || null,
+				status: "backlog",
+				created_by: req.profile.id,
+				position: 0,
+			})
+			.select()
+			.single();
+
+		if (taskError) throw taskError;
+
+		const { data: updatedTicket, error: updateError } = await supabase
+			.from("tickets")
+			.update({
+				converted_task_id: task.id,
+				status: "resolved",
+			})
+			.eq("id", ticketId)
+			.select(TICKET_SELECT)
+			.single();
+
+		if (updateError) throw updateError;
+
+		res.status(201).json({
+			success: true,
+			message: "Ticket converted to task successfully.",
+			data: {
+				ticket: updatedTicket,
+				task,
+			},
+		});
+	} catch (error) {
+		next(error);
+	}
+}

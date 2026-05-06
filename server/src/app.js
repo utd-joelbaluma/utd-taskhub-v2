@@ -10,6 +10,9 @@ import authRoutes from "./routes/auth.routes.js";
 import invitationRoutes from "./routes/invitation.routes.js";
 import profileRoutes from "./routes/profile.routes.js";
 import boardRoutes from "./routes/board.routes.js";
+import boardColumnRoutes from "./routes/board-column.routes.js";
+import taskRoutes from "./routes/task.routes.js";
+import ticketRoutes from "./routes/ticket.routes.js";
 import {
 	notFoundHandler,
 	errorHandler,
@@ -40,6 +43,9 @@ app.use(`/api/${env.apiVersion}/projects`, projectRoutes);
 app.use(`/api/${env.apiVersion}/invitations`, invitationRoutes);
 app.use(`/api/${env.apiVersion}/profiles`, profileRoutes);
 app.use(`/api/${env.apiVersion}/projects/:projectId/boards`, boardRoutes);
+app.use(`/api/${env.apiVersion}/projects/:projectId/boards/:boardId/columns`, boardColumnRoutes);
+app.use(`/api/${env.apiVersion}/projects/:projectId/tasks`, taskRoutes);
+app.use(`/api/${env.apiVersion}/projects/:projectId/tickets`, ticketRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
