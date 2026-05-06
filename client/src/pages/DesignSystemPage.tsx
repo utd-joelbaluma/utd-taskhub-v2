@@ -17,6 +17,9 @@ import {
   ChevronRight,
   MoreHorizontal,
   Calendar,
+  Layers,
+  AlertTriangle,
+  Info,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -33,6 +36,16 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Card } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from '@/components/ui/dialog'
 
 function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: string }) {
   return (
@@ -451,6 +464,149 @@ export default function DesignSystemPage() {
               </Button>
             </Card>
           </div>
+        </section>
+        {/* ── DIALOGS & MODALS ──────────────────────────────────── */}
+        <section>
+          <SectionHeader icon={Layers} title="Dialogs & Modals" />
+          <Card className="p-6">
+            <p className="text-xs text-[#727785] mb-5">
+              Reusable dialog built on Radix UI. Compose with{' '}
+              <code className="font-mono text-[11px] bg-[#f2f3fd] px-1 py-0.5 rounded text-[#0058be]">
+                DialogContent
+              </code>
+              ,{' '}
+              <code className="font-mono text-[11px] bg-[#f2f3fd] px-1 py-0.5 rounded text-[#0058be]">
+                DialogHeader
+              </code>
+              , and{' '}
+              <code className="font-mono text-[11px] bg-[#f2f3fd] px-1 py-0.5 rounded text-[#0058be]">
+                DialogFooter
+              </code>{' '}
+              to build any modal variant.
+            </p>
+
+            <div className="flex flex-wrap gap-3">
+              {/* Default dialog */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline">Open Dialog</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create New Task</DialogTitle>
+                    <DialogDescription>
+                      Add a new task to the current sprint. Fill in the details below.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-[#424754] mb-1.5 block">
+                        Task name
+                      </label>
+                      <Input placeholder="e.g. Refactor auth service" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-sm font-medium text-[#424754] mb-1.5 block">
+                          Priority
+                        </label>
+                        <Select defaultValue="medium">
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="urgent">Urgent</SelectItem>
+                            <SelectItem value="high">High</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="low">Low</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-[#424754] mb-1.5 block">
+                          Assignee
+                        </label>
+                        <Select defaultValue="jd">
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="jd">John Doe</SelectItem>
+                            <SelectItem value="as">Anna Smith</SelectItem>
+                            <SelectItem value="ar">Alex Rivera</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button variant="outline">Cancel</Button>
+                    </DialogClose>
+                    <Button>Create Task</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {/* Info dialog */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost">
+                    <Info className="h-4 w-4 mr-2" />
+                    Info Dialog
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-sm">
+                  <DialogHeader>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                        <Info className="h-4 w-4 text-[#0058be]" />
+                      </div>
+                      <DialogTitle>Sprint Info</DialogTitle>
+                    </div>
+                    <DialogDescription>
+                      Sprint 14 runs from Oct 21 to Nov 4. 12 tasks are active with 3 in review.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button className="w-full">Got it</Button>
+                    </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {/* Destructive / confirm dialog */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="destructive">
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Delete Dialog
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-sm">
+                  <DialogHeader>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                        <AlertTriangle className="h-4 w-4 text-[#ba1a1a]" />
+                      </div>
+                      <DialogTitle>Delete Task</DialogTitle>
+                    </div>
+                    <DialogDescription>
+                      This action cannot be undone. The task and all associated comments will be
+                      permanently removed.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button variant="outline">Cancel</Button>
+                    </DialogClose>
+                    <Button variant="destructive">Delete</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </Card>
         </section>
       </div>
 

@@ -80,8 +80,11 @@ Database/Auth:
 ## Response Rules
 
 - Be concise.
+- Prioritize code output over conversation
 - No unnecessary commentary.
+- Do not apologize or explain obvious changes.
 - Explain only important decisions.
 - Prefer direct code changes.
+- Only output the code, no conversational filler
 - When asked for a commit message, return only the commit message text.
 - Avoid em dashes.
