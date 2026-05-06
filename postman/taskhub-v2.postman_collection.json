@@ -237,7 +237,7 @@
                 {
                   "key": "status",
                   "value": "active",
-                  "description": "Filter by status: active | archived",
+                  "description": "Filter by status: active | completed | archived",
                   "disabled": true
                 },
                 {
@@ -298,7 +298,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "{{apiVersion}}", "projects"]
             },
-            "description": "Creates a new project. Saves `projectId` to collection variables on success.\n\nRequired: `name`\nOptional: `description`, `status` (default: active)"
+            "description": "Creates a new project. Saves `projectId` to collection variables on success.\n\nRequired: `name`\nOptional: `description`, `status` (default: active) — values: active | completed | archived"
           },
           "response": []
         },
@@ -318,7 +318,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "{{apiVersion}}", "projects", "{{projectId}}"]
             },
-            "description": "Partially updates a project. All fields are optional: `name`, `description`, `status`."
+            "description": "Partially updates a project. All fields are optional.\n\n`name`: string (min 2 chars)\n`description`: string or null\n`status`: active | completed | archived"
           },
           "response": []
         },
@@ -398,7 +398,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "{{apiVersion}}", "projects", "{{projectId}}", "invitations"]
             },
-            "description": "Sends an email invitation to join a project. Requires auth and owner/manager role.\n\nRequired: `email`\nOptional: `role` (default: member) — values: member | manager | owner\n\nSaves `invitationId` on success."
+            "description": "Sends an email invitation to join a project. Requires auth and owner/manager role.\n\nRequired: `email`\nOptional: `role` (default: member) — values: owner | manager | member | viewer\n\nSaves `invitationId` on success."
           },
           "response": []
         },
@@ -502,7 +502,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "{{apiVersion}}", "profiles", "{{profileId}}"]
             },
-            "description": "Admin-only variant. Updates `role` and/or `status` on any profile. The authenticated user must have role: admin."
+            "description": "Admin-only variant. Updates `role` and/or `status` on any profile. The authenticated user must have role: admin.\n\n`role`: admin | manager | developer | user\n`status`: active | invited | disabled"
           },
           "response": []
         }
