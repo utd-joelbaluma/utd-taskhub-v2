@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import AppLayout from '@/layouts/AppLayout'
 import DesignSystemPage from '@/pages/DesignSystemPage'
 import DashboardPage from '@/pages/DashboardPage'
+import ProjectsPage from '@/pages/ProjectsPage'
+import ProjectPage from '@/pages/ProjectPage'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
 
@@ -13,7 +15,8 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route element={<AppLayout />}>
           <Route path="/" element={<DashboardPage />} />
-          <Route path="/projects" element={<div className="p-6 text-[#191b23]">Projects (coming soon)</div>} />
+          <Route path="/projects" element={<ProjectsPage />} />
+          <Route path="/projects/:id" element={<ProjectPage />} />
           <Route path="/tasks" element={<div className="p-6 text-[#191b23]">Tasks (coming soon)</div>} />
           <Route path="/kanban" element={<div className="p-6 text-[#191b23]">Kanban Board (coming soon)</div>} />
           <Route path="/analytics" element={<div className="p-6 text-[#191b23]">Analytics (coming soon)</div>} />
