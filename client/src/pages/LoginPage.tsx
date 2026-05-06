@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, ArrowRight } from "lucide-react";
-import { loginWithEmail } from "@/services/auth.service";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
 export default function LoginPage() {
+	const { login, isAuthenticated } = useAuth();
 	const navigate = useNavigate();
 	const [showPassword, setShowPassword] = useState(false);
 	const [email, setEmail] = useState("");
@@ -16,6 +17,8 @@ export default function LoginPage() {
 	const [remember, setRemember] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
+
+	if (isAuthenticated) return <Navigate to="/" replace />;
 
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
@@ -26,9 +29,7 @@ export default function LoginPage() {
 		}
 		setLoading(true);
 		try {
-			const data = await loginWithEmail(email, password);
-			localStorage.setItem("access_token", data.access_token);
-			localStorage.setItem("refresh_token", data.refresh_token);
+			await login(email, password);
 			navigate("/");
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Login failed.");
