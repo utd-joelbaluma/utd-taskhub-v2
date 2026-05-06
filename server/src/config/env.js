@@ -8,7 +8,7 @@ export const env = {
 	appName: process.env.APP_NAME || "TaskHub API",
 	apiVersion: process.env.API_VERSION || "v1",
 
-	appUrl: process.env.APP_URL || "http://localhost:3000",
+	appUrl: process.env.APP_URL || "http://localhost:5173",
 
 	supabaseUrl: process.env.SUPABASE_URL,
 	supabaseSecretKey: process.env.SUPABASE_SECRET_KEY,
