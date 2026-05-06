@@ -4,6 +4,7 @@ import DesignSystemPage from '@/pages/DesignSystemPage'
 import DashboardPage from '@/pages/DashboardPage'
 import ProjectsPage from '@/pages/ProjectsPage'
 import ProjectPage from '@/pages/ProjectPage'
+import TasksPage from '@/pages/TasksPage'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
 
@@ -17,7 +18,7 @@ function App() {
           <Route path="/" element={<DashboardPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/projects/:id" element={<ProjectPage />} />
-          <Route path="/tasks" element={<div className="p-6 text-[#191b23]">Tasks (coming soon)</div>} />
+          <Route path="/tasks" element={<TasksPage />} />
           <Route path="/kanban" element={<div className="p-6 text-[#191b23]">Kanban Board (coming soon)</div>} />
           <Route path="/analytics" element={<div className="p-6 text-[#191b23]">Analytics (coming soon)</div>} />
           <Route path="/settings" element={<div className="p-6 text-[#191b23]">Settings (coming soon)</div>} />
