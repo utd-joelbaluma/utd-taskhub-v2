@@ -22,12 +22,16 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Plus, Search, LayoutGrid, List, Calendar, GripVertical } from 'lucide-react'
+import { Plus, Search, LayoutGrid, List, Calendar, GripVertical, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+  DialogFooter, DialogClose,
+} from '@/components/ui/dialog'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
@@ -68,6 +72,241 @@ const PRIORITY_BADGE_VARIANT: Record<TaskPriority, 'urgent' | 'high' | 'medium' 
   high:   'high',
   medium: 'medium',
   low:    'low',
+}
+
+const EMPTY_TASK_FORM = {
+  title:      '',
+  projectId:  '',
+  assigneeId: '',
+  status:     'todo' as TaskStatus,
+  priority:   'medium' as TaskPriority,
+  dueDate:    '',
+  tagInput:   '',
+  tags:       [] as string[],
+}
+
+// ── New Task Dialog ───────────────────────────────────────────────────────────
+
+function NewTaskDialog({
+  open,
+  onClose,
+  onCreate,
+}: {
+  open: boolean
+  onClose: () => void
+  onCreate: (task: Task) => void
+}) {
+  const [form, setForm] = useState(EMPTY_TASK_FORM)
+  const [errors, setErrors] = useState<{ title?: string; projectId?: string }>({})
+
+  function set<K extends keyof typeof EMPTY_TASK_FORM>(key: K, value: typeof EMPTY_TASK_FORM[K]) {
+    setForm(prev => ({ ...prev, [key]: value }))
+    if (key === 'title' || key === 'projectId') setErrors(e => ({ ...e, [key]: undefined }))
+  }
+
+  function addTag() {
+    const tag = form.tagInput.trim()
+    if (!tag || form.tags.includes(tag)) { set('tagInput', ''); return }
+    set('tags', [...form.tags, tag])
+    set('tagInput', '')
+  }
+
+  function removeTag(tag: string) {
+    set('tags', form.tags.filter(t => t !== tag))
+  }
+
+  function validate() {
+    const e: typeof errors = {}
+    if (!form.title.trim())   e.title     = 'Task title is required.'
+    if (!form.projectId)      e.projectId = 'Please select a project.'
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
+
+  function handleSubmit() {
+    if (!validate()) return
+
+    const task: Task = {
+      id:         't-' + Date.now(),
+      title:      form.title.trim(),
+      projectId:  form.projectId,
+      assigneeId: form.assigneeId,
+      status:     form.status,
+      priority:   form.priority,
+      dueDate:    form.dueDate || 'TBD',
+      tags:       form.tags,
+    }
+
+    onCreate(task)
+    setForm(EMPTY_TASK_FORM)
+    setErrors({})
+    onClose()
+  }
+
+  function handleOpenChange(open: boolean) {
+    if (!open) { setForm(EMPTY_TASK_FORM); setErrors({}) }
+    if (!open) onClose()
+  }
+
+  const selectedAssignee = USERS.find(u => u.id === form.assigneeId)
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-w-[520px]">
+        <DialogHeader>
+          <DialogTitle>New Task</DialogTitle>
+          <DialogDescription>Fill in the details to create a new task.</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-5">
+          {/* Title */}
+          <div>
+            <label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+              Task Title <span className="text-danger">*</span>
+            </label>
+            <Input
+              placeholder="e.g. Refactor authentication middleware"
+              value={form.title}
+              onChange={e => set('title', e.target.value)}
+              className={errors.title ? 'border-danger focus:ring-danger' : ''}
+            />
+            {errors.title && <p className="text-xs text-danger mt-1">{errors.title}</p>}
+          </div>
+
+          {/* Project + Status */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+                Project <span className="text-danger">*</span>
+              </label>
+              <Select value={form.projectId} onValueChange={v => set('projectId', v)}>
+                <SelectTrigger className={errors.projectId ? 'border-danger' : ''}>
+                  <SelectValue placeholder="Select project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PROJECTS.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.projectId && <p className="text-xs text-danger mt-1">{errors.projectId}</p>}
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Status</label>
+              <Select value={form.status} onValueChange={v => set('status', v as TaskStatus)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todo">To Do</SelectItem>
+                  <SelectItem value="in-progress">In Progress</SelectItem>
+                  <SelectItem value="review">Review</SelectItem>
+                  <SelectItem value="done">Done</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Priority + Due Date */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Priority</label>
+              <Select value={form.priority} onValueChange={v => set('priority', v as TaskPriority)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Due Date</label>
+              <Input
+                type="date"
+                value={form.dueDate}
+                onChange={e => set('dueDate', e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Assignee */}
+          <div>
+            <label className="text-sm font-medium text-muted-foreground mb-2 block">Assignee</label>
+            <div className="flex flex-wrap gap-2">
+              {USERS.map(user => (
+                <button
+                  key={user.id}
+                  type="button"
+                  onClick={() => set('assigneeId', form.assigneeId === user.id ? '' : user.id)}
+                  className={cn(
+                    'flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors',
+                    form.assigneeId === user.id
+                      ? 'border-primary bg-primary-subtle text-primary font-medium'
+                      : 'border-border hover:bg-muted-subtle text-foreground'
+                  )}
+                >
+                  <Avatar className="h-5 w-5 shrink-0">
+                    <AvatarFallback className={`text-[9px] text-white ${user.color}`}>{user.initials}</AvatarFallback>
+                  </Avatar>
+                  {user.name}
+                </button>
+              ))}
+            </div>
+            {selectedAssignee && (
+              <p className="text-xs text-muted mt-2">
+                Assigned to <span className="font-medium text-foreground">{selectedAssignee.name}</span>
+              </p>
+            )}
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Tags</label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Add tag..."
+                value={form.tagInput}
+                onChange={e => set('tagInput', e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag() } }}
+                className="flex-1"
+              />
+              <Button type="button" variant="outline" size="sm" onClick={addTag} className="shrink-0">
+                Add
+              </Button>
+            </div>
+            {form.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {form.tags.map(tag => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center gap-1 text-[11px] bg-muted-subtle text-muted-foreground px-2 py-0.5 rounded-full font-medium"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                      className="text-muted hover:text-foreground transition-colors"
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline">Cancel</Button>
+          </DialogClose>
+          <Button onClick={handleSubmit}>Create Task</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -243,6 +482,7 @@ function ListRow({ task }: { task: Task }) {
 export default function TasksPage() {
   const [columns, setColumns] = useState<Columns>(() => buildColumns(INITIAL_TASKS))
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
+  const [dialogOpen, setDialogOpen] = useState(false)
   const [view, setView] = useState<'board' | 'list'>('board')
 
   const [filterProject, setFilterProject] = useState('all')
@@ -361,6 +601,13 @@ export default function TasksPage() {
 
   const isFiltered = filterProject !== 'all' || filterUser !== 'all' || filterStatus !== 'all' || search !== ''
 
+  function handleCreateTask(task: Task) {
+    setColumns(prev => ({
+      ...prev,
+      [task.status]: [task, ...prev[task.status]],
+    }))
+  }
+
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
@@ -373,7 +620,7 @@ export default function TasksPage() {
             {COLUMN_IDS.reduce((s, c) => s + columns[c].length, 0)} tasks across all projects
           </p>
         </div>
-        <Button className="flex items-center gap-2">
+        <Button className="flex items-center gap-2" onClick={() => setDialogOpen(true)}>
           <Plus className="h-4 w-4" />
           New Task
         </Button>
@@ -518,6 +765,12 @@ export default function TasksPage() {
           </Card>
         )
       )}
+
+      <NewTaskDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        onCreate={handleCreateTask}
+      />
     </div>
   )
 }
