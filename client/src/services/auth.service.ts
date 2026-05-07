@@ -41,6 +41,18 @@ export async function registerUser(
 	return res.data;
 }
 
+export async function completeInvite(
+	fullName: string,
+	password: string,
+	accessToken: string,
+): Promise<void> {
+	await api.post(
+		"/auth/complete-invite",
+		{ full_name: fullName, password },
+		{ headers: { Authorization: `Bearer ${accessToken}` } },
+	);
+}
+
 export async function logout(): Promise<void> {
 	await api.post("/auth/logout", {}).catch(() => {});
 	localStorage.removeItem("access_token");

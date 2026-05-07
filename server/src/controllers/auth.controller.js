@@ -149,6 +149,33 @@ export async function me(req, res, next) {
 	}
 }
 
+export async function completeInvite(req, res, next) {
+	try {
+		const { full_name, password } = req.body;
+
+		if (!password || password.length < 8) {
+			return res.status(400).json({
+				success: false,
+				message: "Password must be at least 8 characters.",
+			});
+		}
+
+		const { error: updateError } = await req.supabase.auth.updateUser({ password });
+		if (updateError) throw updateError;
+
+		if (full_name?.trim()) {
+			await supabase
+				.from("profiles")
+				.update({ full_name: full_name.trim() })
+				.eq("id", req.profile.id);
+		}
+
+		res.status(200).json({ success: true, message: "Account setup complete." });
+	} catch (error) {
+		next(error);
+	}
+}
+
 // ----------------------------------------------------------------
 // Google Sign-In — not yet implemented.
 // When ready, this will:
