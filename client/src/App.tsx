@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { Toaster } from 'sonner'
 import AppLayout from '@/layouts/AppLayout'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import DesignSystemPage from '@/pages/DesignSystemPage'
@@ -13,6 +14,7 @@ import RegisterPage from '@/pages/RegisterPage'
 function App() {
   return (
     <BrowserRouter>
+      <Toaster position="bottom-right" richColors />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />

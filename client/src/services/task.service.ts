@@ -1,0 +1,108 @@
+import { api } from "@/lib/api";
+
+export type ApiTaskStatus = "backlog" | "todo" | "in_progress" | "review" | "done" | "cancelled";
+export type ApiTaskPriority = "low" | "medium" | "high" | "urgent";
+
+export interface TaskProfile {
+	id: string;
+	full_name: string | null;
+	email: string;
+}
+
+export interface Task {
+	id: string;
+	project_id: string;
+	board_column_id: string | null;
+	title: string;
+	description: string | null;
+	status: ApiTaskStatus;
+	priority: ApiTaskPriority;
+	assigned_to: TaskProfile | null;
+	created_by: TaskProfile;
+	due_date: string | null;
+	tags: string[];
+	position: number;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface CreateTaskPayload {
+	title: string;
+	description?: string;
+	status?: ApiTaskStatus;
+	priority?: ApiTaskPriority;
+	assigned_to?: string;
+	due_date?: string;
+	tags?: string[];
+}
+
+export interface UpdateTaskPayload {
+	title?: string;
+	description?: string;
+	status?: ApiTaskStatus;
+	priority?: ApiTaskPriority;
+	assigned_to?: string;
+	due_date?: string;
+	tags?: string[];
+}
+
+export interface ListAllTasksParams {
+	project_id?: string;
+	status?: ApiTaskStatus;
+	priority?: ApiTaskPriority;
+	assigned_to?: string;
+	search?: string;
+}
+
+export async function listAllTasks(params?: ListAllTasksParams): Promise<Task[]> {
+	const query = new URLSearchParams();
+	if (params?.project_id)  query.set("project_id",  params.project_id);
+	if (params?.status)      query.set("status",       params.status);
+	if (params?.priority)    query.set("priority",     params.priority);
+	if (params?.assigned_to) query.set("assigned_to",  params.assigned_to);
+	if (params?.search)      query.set("search",       params.search);
+	const qs = query.toString();
+	const res = await api.get<{ success: boolean; data: Task[] }>(
+		`/tasks${qs ? `?${qs}` : ""}`
+	);
+	return res.data;
+}
+
+export async function listTasks(
+	projectId: string,
+	params?: { status?: string; priority?: string; assigned_to?: string }
+): Promise<Task[]> {
+	const query = new URLSearchParams();
+	if (params?.status) query.set("status", params.status);
+	if (params?.priority) query.set("priority", params.priority);
+	if (params?.assigned_to) query.set("assigned_to", params.assigned_to);
+	const qs = query.toString();
+	const res = await api.get<{ success: boolean; data: Task[] }>(
+		`/projects/${projectId}/tasks${qs ? `?${qs}` : ""}`
+	);
+	return res.data;
+}
+
+export async function createTask(projectId: string, payload: CreateTaskPayload): Promise<Task> {
+	const res = await api.post<{ success: boolean; data: Task }>(
+		`/projects/${projectId}/tasks`,
+		payload
+	);
+	return res.data;
+}
+
+export async function updateTask(
+	projectId: string,
+	taskId: string,
+	payload: UpdateTaskPayload
+): Promise<Task> {
+	const res = await api.patch<{ success: boolean; data: Task }>(
+		`/projects/${projectId}/tasks/${taskId}`,
+		payload
+	);
+	return res.data;
+}
+
+export async function deleteTask(projectId: string, taskId: string): Promise<void> {
+	await api.delete(`/projects/${projectId}/tasks/${taskId}`);
+}

@@ -21,6 +21,7 @@ import {
 } from '@/services/project.service'
 import { addMember } from '@/services/project-member.service'
 import { listProfiles, type Profile } from '@/services/profile.service'
+import { toast } from 'sonner'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -245,15 +246,17 @@ function NewProjectDialog({
         tags:            form.tags,
       })
 
-      await Promise.all(
-        form.teamIds.map(userId => addMember(project.id, userId))
-      )
+      const currentUserId = project.created_by
+      const membersToAdd = form.teamIds.filter(id => id !== currentUserId)
+      await Promise.all(membersToAdd.map(userId => addMember(project.id, userId)))
 
       onCreate(project)
       setForm(EMPTY_FORM)
       setErrors({})
       onClose()
+      toast.success('Project created', { description: project.name })
     } catch {
+      toast.error('Failed to create project', { description: 'Please try again.' })
       setErrors({ submit: 'Failed to create project. Please try again.' })
     } finally {
       setSubmitting(false)

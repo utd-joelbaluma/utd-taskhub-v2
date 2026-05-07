@@ -86,11 +86,18 @@ export async function createProject(req, res, next) {
 				sprint_name: sprint_name?.trim() || null,
 				sprint_end_date: sprint_end_date || null,
 				tags: Array.isArray(tags) ? tags : [],
+				created_by: req.profile.id,
 			})
 			.select()
 			.single();
 
 		if (error) throw error;
+
+		const { error: memberError } = await supabase
+			.from("project_members")
+			.insert({ project_id: data.id, user_id: req.profile.id, role: "owner" });
+
+		if (memberError) throw memberError;
 
 		res.status(201).json({
 			success: true,

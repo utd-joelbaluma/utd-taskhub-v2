@@ -44,6 +44,14 @@ export function validateCreateTask(payload) {
 		}
 	}
 
+	if (payload.tags !== undefined) {
+		if (!Array.isArray(payload.tags)) {
+			errors.push("tags must be an array of strings.");
+		} else if (payload.tags.some(t => typeof t !== "string" || t.trim().length === 0)) {
+			errors.push("Each tag must be a non-empty string.");
+		}
+	}
+
 	return errors;
 }
 
@@ -85,6 +93,14 @@ export function validateUpdateTask(payload) {
 	if (payload.due_date !== undefined && payload.due_date !== null) {
 		if (isNaN(Date.parse(payload.due_date))) {
 			errors.push("due_date must be a valid date.");
+		}
+	}
+
+	if (payload.tags !== undefined) {
+		if (!Array.isArray(payload.tags)) {
+			errors.push("tags must be an array of strings.");
+		} else if (payload.tags.some(t => typeof t !== "string" || t.trim().length === 0)) {
+			errors.push("Each tag must be a non-empty string.");
 		}
 	}
 

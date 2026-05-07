@@ -22,9 +22,9 @@ const router = express.Router();
 // Project CRUD
 router.get("/", getProjects);
 router.get("/:id", getProjectById);
-router.post("/", createProject);
-router.patch("/:id", updateProject);
-router.delete("/:id", deleteProject);
+router.post("/", requireAuth, createProject);
+router.patch("/:id", requireAuth, updateProject);
+router.delete("/:id", requireAuth, deleteProject);
 
 // Project invitations
 router.get(

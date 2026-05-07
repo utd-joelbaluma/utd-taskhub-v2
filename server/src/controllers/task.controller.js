@@ -15,6 +15,7 @@ const TASK_SELECT = `
 	priority,
 	position,
 	due_date,
+	tags,
 	created_at,
 	updated_at,
 	assigned_to:profiles!tasks_assigned_to_fkey (
@@ -93,7 +94,7 @@ export async function createTask(req, res, next) {
 			return res.status(400).json({ success: false, message: "Validation failed.", errors });
 		}
 
-		const { title, description, status, priority, assigned_to, board_column_id, due_date } = req.body;
+		const { title, description, status, priority, assigned_to, board_column_id, due_date, tags } = req.body;
 
 		// Derive position: place at end of the target column (or project-level if no column)
 		let positionQuery = supabase
@@ -123,6 +124,7 @@ export async function createTask(req, res, next) {
 				priority: priority || "medium",
 				assigned_to: assigned_to || null,
 				due_date: due_date || null,
+				tags: Array.isArray(tags) ? tags.map(t => t.trim()).filter(Boolean) : [],
 				position,
 				created_by: req.profile.id,
 			})
@@ -150,7 +152,7 @@ export async function updateTask(req, res, next) {
 			return res.status(400).json({ success: false, message: "Validation failed.", errors });
 		}
 
-		const ALLOWED = ["title", "description", "status", "priority", "assigned_to", "board_column_id", "due_date"];
+		const ALLOWED = ["title", "description", "status", "priority", "assigned_to", "board_column_id", "due_date", "tags"];
 		const updateData = {};
 
 		for (const field of ALLOWED) {
@@ -161,6 +163,11 @@ export async function updateTask(req, res, next) {
 
 		if (updateData.title) updateData.title = updateData.title.trim();
 		if (updateData.description) updateData.description = updateData.description.trim();
+		if (updateData.tags !== undefined) {
+			updateData.tags = Array.isArray(updateData.tags)
+				? updateData.tags.map(t => t.trim()).filter(Boolean)
+				: [];
+		}
 
 		if (Object.keys(updateData).length === 0) {
 			return res.status(400).json({ success: false, message: "No valid fields provided for update." });
@@ -296,6 +303,44 @@ export async function moveTask(req, res, next) {
 		if (error) throw error;
 
 		res.status(200).json({ success: true, message: "Task moved successfully.", data });
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function getAllTasks(req, res, next) {
+	try {
+		const { data: memberships, error: memberError } = await supabase
+			.from("project_members")
+			.select("project_id")
+			.eq("user_id", req.profile.id);
+
+		if (memberError) throw memberError;
+
+		const projectIds = memberships.map(m => m.project_id);
+
+		if (projectIds.length === 0) {
+			return res.status(200).json({ success: true, count: 0, data: [] });
+		}
+
+		const { project_id, status, priority, assigned_to, search } = req.query;
+
+		let query = supabase
+			.from("tasks")
+			.select(TASK_SELECT)
+			.in("project_id", projectIds)
+			.order("created_at", { ascending: false });
+
+		if (project_id)  query = query.eq("project_id", project_id);
+		if (status)      query = query.eq("status", status);
+		if (priority)    query = query.eq("priority", priority);
+		if (assigned_to) query = query.eq("assigned_to", assigned_to);
+		if (search)      query = query.ilike("title", `%${search}%`);
+
+		const { data, error } = await query;
+		if (error) throw error;
+
+		res.status(200).json({ success: true, count: data.length, data });
 	} catch (error) {
 		next(error);
 	}

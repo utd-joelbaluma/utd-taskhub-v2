@@ -18,6 +18,8 @@ import {
 	notFoundHandler,
 	errorHandler,
 } from "./middlewares/error.middleware.js";
+import { getAllTasks } from "./controllers/task.controller.js";
+import { requireAuth } from "./middlewares/auth.middleware.js";
 
 const app = express();
 
@@ -63,6 +65,8 @@ app.use(`/api/${env.apiVersion}/projects/:projectId/boards/:boardId/columns`, bo
 app.use(`/api/${env.apiVersion}/projects/:projectId/tasks`, taskRoutes);
 app.use(`/api/${env.apiVersion}/projects/:projectId/tickets`, ticketRoutes);
 app.use(`/api/${env.apiVersion}/projects/:projectId/members`, projectMemberRoutes);
+
+app.get(`/api/${env.apiVersion}/tasks`, requireAuth, getAllTasks);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
