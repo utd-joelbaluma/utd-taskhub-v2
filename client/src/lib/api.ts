@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5050";
 
 function getToken(): string | null {
 	return localStorage.getItem("access_token");
@@ -13,10 +13,7 @@ function buildHeaders(extra?: HeadersInit): HeadersInit {
 	};
 }
 
-async function request<T>(
-	path: string,
-	options: RequestInit = {},
-): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 	const res = await fetch(`${API_URL}${path}`, {
 		...options,
 		headers: buildHeaders(options.headers as HeadersInit),
@@ -31,7 +28,9 @@ async function request<T>(
 	}
 
 	if (!res.ok) {
-		throw new Error((json as { message?: string }).message ?? "Request failed.");
+		throw new Error(
+			(json as { message?: string }).message ?? "Request failed.",
+		);
 	}
 
 	return json as T;

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Bell, User, Settings, LogOut, Menu } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -64,6 +65,7 @@ const unreadCount = SAMPLE_NOTIFICATIONS.filter((n) => n.unread).length;
 export default function AppLayout() {
 	const { user, logout } = useAuth();
 	const navigate = useNavigate();
+	const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
 	const initials = user?.full_name
 		? user.full_name
@@ -83,50 +85,18 @@ export default function AppLayout() {
 	}
 
 	return (
-		<div className="min-h-screen bg-background">
+		<div className="flex min-h-screen flex-col bg-background">
 			<header className="sticky top-0 z-40 border-b border-border bg-surface/80 backdrop-blur-sm">
 				<div className="mx-auto flex h-14 max-w-[1280px] items-center gap-2 px-4 sm:px-5 md:gap-6 md:px-6">
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<button
-								className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted-subtle hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary md:hidden"
-								aria-label="Open navigation menu"
-							>
-								<Menu className="h-5 w-5" />
-							</button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent
-							align="start"
-							className="w-56 md:hidden"
-						>
-							<DropdownMenuLabel className="px-3 py-2">
-								Menu
-							</DropdownMenuLabel>
-							<DropdownMenuSeparator />
-							{navLinks.map((link) => (
-								<DropdownMenuItem
-									key={link.to}
-									asChild
-									className="p-0"
-								>
-									<NavLink
-										to={link.to}
-										end={link.end}
-										className={({ isActive }) =>
-											cn(
-												"flex w-full items-center rounded-sm px-3 py-2 text-sm transition-colors",
-												isActive
-													? "bg-primary-subtle font-medium text-primary"
-													: "text-muted-foreground hover:bg-muted-subtle hover:text-foreground",
-											)
-										}
-									>
-										{link.label}
-									</NavLink>
-								</DropdownMenuItem>
-							))}
-						</DropdownMenuContent>
-					</DropdownMenu>
+					<button
+						className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted-subtle hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary md:hidden"
+						aria-label="Open navigation menu"
+						aria-controls="mobile-header-menu"
+						aria-expanded={mobileNavOpen}
+						onClick={() => setMobileNavOpen((open) => !open)}
+					>
+						<Menu className="h-5 w-5" />
+					</button>
 
 					<div className="mr-2 flex min-w-0 shrink-0 items-center gap-2 md:mr-4">
 						<img
@@ -286,11 +256,74 @@ export default function AppLayout() {
 						</DropdownMenu>
 					</div>
 				</div>
+
+				{mobileNavOpen && (
+					<nav
+						id="mobile-header-menu"
+						className="border-t border-border bg-surface px-4 py-2 shadow-sm md:hidden"
+						aria-label="Mobile navigation"
+					>
+						<div className="mx-auto flex max-w-[1280px] flex-col gap-1">
+							{navLinks.map((link) => (
+								<NavLink
+									key={link.to}
+									to={link.to}
+									end={link.end}
+									onClick={() => setMobileNavOpen(false)}
+									className={({ isActive }) =>
+										cn(
+											"flex w-full items-center rounded-md px-3 py-2.5 text-sm transition-colors",
+											isActive
+												? "bg-primary-subtle font-medium text-primary"
+												: "text-muted-foreground hover:bg-muted-subtle hover:text-foreground",
+										)
+									}
+								>
+									{link.label}
+								</NavLink>
+							))}
+						</div>
+					</nav>
+				)}
 			</header>
 
-			<main>
+			<main className="flex-1">
 				<Outlet />
 			</main>
+
+			<footer className="border-t border-border bg-surface">
+				<div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between gap-4 px-4 py-5 sm:px-5 md:flex-row md:px-6">
+					<img
+						src="/logo.svg"
+						alt="TaskHub"
+						className="h-7 w-auto max-w-[120px]"
+					/>
+
+					<nav
+						aria-label="Footer navigation"
+						className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm"
+					>
+						<a
+							href="/terms"
+							className="text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus-visible:text-foreground"
+						>
+							Terms
+						</a>
+						<a
+							href="/privacy"
+							className="text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus-visible:text-foreground"
+						>
+							Privacy
+						</a>
+						<a
+							href="/contact"
+							className="text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus-visible:text-foreground"
+						>
+							Contact
+						</a>
+					</nav>
+				</div>
+			</footer>
 		</div>
 	);
 }

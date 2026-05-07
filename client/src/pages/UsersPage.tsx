@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  UserPlus, Mail, LayoutGrid, List, Search, Loader2, X, Users,
+  UserPlus, Mail, LayoutGrid, List, Search, Loader2, X, Users, Trash2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,9 +16,10 @@ import {
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import {
-  listUsers, inviteUser, listUserInvitations, cancelUserInvitation,
+  listUsers, inviteUser, listUserInvitations, cancelUserInvitation, deleteUser,
   type UserProfile, type UserInvitation,
 } from '@/services/user.service'
+import { listRoles, type Role } from '@/services/role.service'
 import { toast } from 'sonner'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -44,7 +45,13 @@ function formatDate(iso: string) {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function UserCard({ user, index }: { user: UserProfile; index: number }) {
+function UserCard({
+  user, index, onDelete,
+}: {
+  user: UserProfile
+  index: number
+  onDelete: (user: UserProfile) => void
+}) {
   return (
     <Card className="p-5 flex flex-col gap-4">
       <div className="flex items-center gap-3">
@@ -59,6 +66,13 @@ function UserCard({ user, index }: { user: UserProfile; index: number }) {
           </p>
           <p className="text-xs text-muted truncate">{user.email}</p>
         </div>
+        <button
+          onClick={() => onDelete(user)}
+          className="shrink-0 p-1.5 rounded-md text-muted hover:text-danger hover:bg-danger/10 transition-colors"
+          title="Delete user"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
       </div>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
@@ -75,7 +89,13 @@ function UserCard({ user, index }: { user: UserProfile; index: number }) {
   )
 }
 
-function UserRow({ user, index }: { user: UserProfile; index: number }) {
+function UserRow({
+  user, index, onDelete,
+}: {
+  user: UserProfile
+  index: number
+  onDelete: (user: UserProfile) => void
+}) {
   return (
     <tr className="border-b border-border last:border-0 hover:bg-muted-subtle transition-colors">
       <td className="px-5 py-3.5">
@@ -102,7 +122,77 @@ function UserRow({ user, index }: { user: UserProfile; index: number }) {
         </Badge>
       </td>
       <td className="px-4 py-3.5 text-xs text-muted whitespace-nowrap">{formatDate(user.created_at)}</td>
+      <td className="px-4 py-3.5 text-right">
+        <button
+          onClick={() => onDelete(user)}
+          className="p-1.5 rounded-md text-muted hover:text-danger hover:bg-danger/10 transition-colors"
+          title="Delete user"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </td>
     </tr>
+  )
+}
+
+// ── Delete Confirm Dialog ─────────────────────────────────────────────────────
+
+function DeleteConfirmDialog({
+  user,
+  onClose,
+  onDeleted,
+}: {
+  user: UserProfile | null
+  onClose: () => void
+  onDeleted: (id: string) => void
+}) {
+  const [deleting, setDeleting] = useState(false)
+
+  async function handleDelete() {
+    if (!user) return
+    setDeleting(true)
+    try {
+      await deleteUser(user.id)
+      toast.success('User deleted', { description: user.email })
+      onDeleted(user.id)
+      onClose()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to delete user.'
+      toast.error(msg)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  return (
+    <Dialog open={!!user} onOpenChange={(val) => { if (!val) onClose() }}>
+      <DialogContent className="max-w-[400px]">
+        <DialogHeader>
+          <DialogTitle>Delete User</DialogTitle>
+          <DialogDescription>
+            This will permanently delete{' '}
+            <span className="font-medium text-foreground">
+              {user?.full_name ?? user?.email}
+            </span>{' '}
+            and remove them from all projects. This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline" disabled={deleting}>Cancel</Button>
+          </DialogClose>
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={deleting}
+            className="bg-danger text-white hover:bg-danger/90"
+          >
+            {deleting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+            Delete
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -118,9 +208,23 @@ function InviteDialog({
   onInvited: () => void
 }) {
   const [email, setEmail] = useState('')
-  const [role, setRole] = useState('member')
+  const [role, setRole] = useState('')
+  const [roles, setRoles] = useState<Role[]>([])
+  const [loadingRoles, setLoadingRoles] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!open) return
+    setLoadingRoles(true)
+    listRoles('global')
+      .then((data) => {
+        setRoles(data)
+        setRole((prev) => prev || data[0]?.key || '')
+      })
+      .catch(() => toast.error('Failed to load roles.'))
+      .finally(() => setLoadingRoles(false))
+  }, [open])
 
   async function handleSubmit() {
     if (!email.trim()) { setError('Email is required.'); return }
@@ -130,7 +234,7 @@ function InviteDialog({
       await inviteUser(email.trim().toLowerCase(), role)
       toast.success('Invitation sent', { description: email.trim().toLowerCase() })
       setEmail('')
-      setRole('member')
+      setRole(roles[0]?.key || '')
       onInvited()
       onClose()
     } catch (err: unknown) {
@@ -142,7 +246,7 @@ function InviteDialog({
   }
 
   function handleOpenChange(val: boolean) {
-    if (!val) { setEmail(''); setRole('member'); setError('') }
+    if (!val) { setEmail(''); setRole(roles[0]?.key || ''); setError('') }
     if (!val) onClose()
   }
 
@@ -170,20 +274,33 @@ function InviteDialog({
           </div>
           <div>
             <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Role</label>
-            <Select value={role} onValueChange={setRole}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="member">Member</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-              </SelectContent>
-            </Select>
+            {loadingRoles ? (
+              <div className="flex items-center gap-2 text-muted py-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Loading roles...</span>
+              </div>
+            ) : (
+              <Select value={role} onValueChange={setRole}>
+                <SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger>
+                <SelectContent>
+                  {roles.map((r) => (
+                    <SelectItem key={r.key} value={r.key}>
+                      <span className="font-medium">{r.name}</span>
+                      {r.description && (
+                        <span className="ml-2 text-xs text-muted-foreground">{r.description}</span>
+                      )}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </div>
         <DialogFooter>
           <DialogClose asChild>
             <Button variant="outline" disabled={submitting}>Cancel</Button>
           </DialogClose>
-          <Button onClick={handleSubmit} disabled={submitting}>
+          <Button onClick={handleSubmit} disabled={submitting || loadingRoles}>
             {submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
             Send Invite
           </Button>
@@ -342,6 +459,7 @@ export default function UsersPage() {
   const [view, setView] = useState<'grid' | 'list'>('grid')
   const [inviteOpen, setInviteOpen] = useState(false)
   const [invitationsOpen, setInvitationsOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<UserProfile | null>(null)
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -464,7 +582,7 @@ export default function UsersPage() {
       {!loading && !error && view === 'grid' && filtered.length > 0 && (
         <div className="grid grid-cols-3 gap-4">
           {filtered.map((u, i) => (
-            <UserCard key={u.id} user={u} index={i} />
+            <UserCard key={u.id} user={u} index={i} onDelete={setDeleteTarget} />
           ))}
         </div>
       )}
@@ -475,9 +593,9 @@ export default function UsersPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
-                {['User', 'Role', 'Status', 'Joined'].map((h, i) => (
+                {['User', 'Role', 'Status', 'Joined', ''].map((h, i) => (
                   <th
-                    key={h}
+                    key={h + i}
                     className={cn(
                       'px-4 py-3 text-[10px] font-medium uppercase tracking-wider text-muted',
                       i === 0 ? 'pl-5 text-left' : 'text-left'
@@ -490,7 +608,7 @@ export default function UsersPage() {
             </thead>
             <tbody>
               {filtered.map((u, i) => (
-                <UserRow key={u.id} user={u} index={i} />
+                <UserRow key={u.id} user={u} index={i} onDelete={setDeleteTarget} />
               ))}
             </tbody>
           </table>
@@ -506,6 +624,12 @@ export default function UsersPage() {
       <InvitationsDialog
         open={invitationsOpen}
         onClose={() => setInvitationsOpen(false)}
+      />
+
+      <DeleteConfirmDialog
+        user={deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onDeleted={(id) => setUsers((prev) => prev.filter((u) => u.id !== id))}
       />
     </div>
   )

@@ -157,6 +157,40 @@ export async function updateUserRole(req, res, next) {
 	}
 }
 
+export async function deleteUser(req, res, next) {
+	try {
+		const { id } = req.params;
+
+		if (id === req.profile.id) {
+			return res.status(400).json({
+				success: false,
+				message: "You cannot delete your own account.",
+			});
+		}
+
+		const { data: authUser, error: fetchError } =
+			await supabaseAdmin.auth.admin.getUserById(id);
+
+		if (fetchError || !authUser?.user) {
+			return res.status(404).json({
+				success: false,
+				message: "User not found.",
+			});
+		}
+
+		const { error } = await supabaseAdmin.auth.admin.deleteUser(id);
+
+		if (error) throw error;
+
+		res.status(200).json({
+			success: true,
+			message: "User deleted.",
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+
 export async function cancelUserInvitation(req, res, next) {
 	try {
 		const { userId } = req.params;

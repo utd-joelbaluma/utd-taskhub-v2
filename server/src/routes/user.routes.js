@@ -5,6 +5,7 @@ import {
 	listUserInvitations,
 	cancelUserInvitation,
 	updateUserRole,
+	deleteUser,
 } from "../controllers/user.controller.js";
 import { requireAuth } from "../middlewares/auth.middleware.js";
 import { requirePermission } from "../middlewares/permission.middleware.js";
@@ -16,5 +17,6 @@ router.post("/invite", requireAuth, requirePermission("users.invite"), inviteUse
 router.get("/invitations", requireAuth, requirePermission("users.invite"), listUserInvitations);
 router.delete("/invitations/:userId", requireAuth, requirePermission("users.manage"), cancelUserInvitation);
 router.patch("/:id/role", requireAuth, requirePermission("users.manage"), updateUserRole);
+router.delete("/:id", requireAuth, requirePermission("users.manage"), deleteUser);
 
 export default router;

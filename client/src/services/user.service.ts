@@ -44,3 +44,7 @@ export async function cancelUserInvitation(userId: string): Promise<void> {
 export async function updateUserRole(userId: string, roleKey: string): Promise<void> {
 	await api.patch(`/users/${userId}/role`, { role_key: roleKey });
 }
+
+export async function deleteUser(userId: string): Promise<void> {
+	await api.delete(`/users/${userId}`);
+}
