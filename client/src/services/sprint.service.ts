@@ -33,18 +33,26 @@ export interface UpdateSprintPayload {
 }
 
 export async function listSprints(projectId: string): Promise<Sprint[]> {
-  const res = await api.get(`/projects/${projectId}/sprints`);
-  return res.data.data;
+  const res = await api.get<{ success: boolean; data: Sprint[] }>(
+    `/projects/${projectId}/sprints`,
+  );
+  return res.data;
 }
 
 export async function createSprint(projectId: string, payload: CreateSprintPayload): Promise<Sprint> {
-  const res = await api.post(`/projects/${projectId}/sprints`, payload);
-  return res.data.data;
+  const res = await api.post<{ success: boolean; data: Sprint }>(
+    `/projects/${projectId}/sprints`,
+    payload,
+  );
+  return res.data;
 }
 
 export async function updateSprint(projectId: string, sprintId: string, payload: UpdateSprintPayload): Promise<Sprint> {
-  const res = await api.patch(`/projects/${projectId}/sprints/${sprintId}`, payload);
-  return res.data.data;
+  const res = await api.patch<{ success: boolean; data: Sprint }>(
+    `/projects/${projectId}/sprints/${sprintId}`,
+    payload,
+  );
+  return res.data;
 }
 
 export async function deleteSprint(projectId: string, sprintId: string): Promise<void> {

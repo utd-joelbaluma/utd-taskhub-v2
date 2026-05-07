@@ -69,7 +69,10 @@ import {
 	type UpdateTaskPayload,
 } from "@/services/task.service";
 import { listProjects, type Project } from "@/services/project.service";
+import { listSprints, type Sprint } from "@/services/sprint.service";
 import { listProfiles, type Profile } from "@/services/profile.service";
+import { ProjectDescriptionEditor } from "@/components/projects/project-description";
+import { projectDescriptionText } from "@/components/projects/project-description-utils";
 import { cn } from "@/lib/utils";
 import {
 	Tooltip,
@@ -86,6 +89,7 @@ interface UiTask {
 	id: string;
 	project_id: string;
 	title: string;
+	description: string | null;
 	apiStatus: ApiTaskStatus;
 	columnId: ColumnId;
 	priority: ApiTaskPriority;
@@ -154,14 +158,19 @@ const AVATAR_COLORS = [
 
 const EMPTY_TASK_FORM = {
 	title: "",
+	description: "",
 	projectId: "",
+	sprintId: "",
 	assigneeId: "",
 	status: "todo" as ColumnId,
 	priority: "medium" as ApiTaskPriority,
+	estimatedTime: "",
 	dueDate: "",
 	tagInput: "",
 	tags: [] as string[],
 };
+
+const NO_SPRINT_VALUE = "__no_sprint__";
 
 // ── Mapping helpers ───────────────────────────────────────────────────────────
 
@@ -202,6 +211,7 @@ function toUiTask(t: ApiTask): UiTask | null {
 		id: t.id,
 		project_id: t.project_id,
 		title: t.title,
+		description: t.description,
 		apiStatus: t.status,
 		columnId,
 		priority: t.priority,
@@ -257,7 +267,34 @@ function NewTaskDialog({
 		title?: string;
 		projectId?: string;
 	}>({});
+	const [sprints, setSprints] = useState<Sprint[]>([]);
+	const [sprintsLoading, setSprintsLoading] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
+
+	useEffect(() => {
+		if (!open || !form.projectId) {
+			setSprints([]);
+			setSprintsLoading(false);
+			return;
+		}
+
+		let active = true;
+		setSprintsLoading(true);
+		listSprints(form.projectId)
+			.then((data) => {
+				if (active) setSprints(data);
+			})
+			.catch(() => {
+				if (active) setSprints([]);
+			})
+			.finally(() => {
+				if (active) setSprintsLoading(false);
+			});
+
+		return () => {
+			active = false;
+		};
+	}, [form.projectId, open]);
 
 	function set<K extends keyof typeof EMPTY_TASK_FORM>(
 		key: K,
@@ -285,6 +322,11 @@ function NewTaskDialog({
 		);
 	}
 
+	function handleProjectChange(projectId: string) {
+		setForm((prev) => ({ ...prev, projectId, sprintId: "" }));
+		setErrors((e) => ({ ...e, projectId: undefined }));
+	}
+
 	function validate() {
 		const e: typeof errors = {};
 		if (!form.title.trim()) e.title = "Task title is required.";
@@ -299,6 +341,9 @@ function NewTaskDialog({
 		try {
 			await onCreate(form.projectId, {
 				title: form.title.trim(),
+				description: projectDescriptionText(form.description)
+					? form.description
+					: undefined,
 				status: columnIdToApiStatus(form.status),
 				priority: form.priority,
 				assigned_to: form.assigneeId || undefined,
@@ -338,40 +383,73 @@ function NewTaskDialog({
 				</DialogHeader>
 
 				<div className="space-y-5">
-					{/* Project */}
-					<div>
-						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
-							Project <span className="text-danger">*</span>
-						</label>
-						<Select
-							value={form.projectId}
-							onValueChange={(v) => set("projectId", v)}
-						>
-							<SelectTrigger
-								className={
-									errors.projectId ? "border-danger" : ""
-								}
+					{/* Project + Sprint */}
+					<div className="grid grid-cols-2 gap-4">
+						<div>
+							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+								Select Project <span className="text-danger">*</span>
+							</label>
+							<Select
+								value={form.projectId}
+								onValueChange={handleProjectChange}
 							>
-								<SelectValue placeholder="Select project" />
-							</SelectTrigger>
-							<SelectContent>
-								{projects.map((p) => (
-									<SelectItem key={p.id} value={p.id}>
-										{p.name}
+								<SelectTrigger
+									className={
+										errors.projectId ? "border-danger" : ""
+									}
+								>
+									<SelectValue placeholder="Select project" />
+								</SelectTrigger>
+								<SelectContent>
+									{projects.map((p) => (
+										<SelectItem key={p.id} value={p.id}>
+											{p.name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							{errors.projectId && (
+								<p className="text-xs text-danger mt-1">
+									{errors.projectId}
+								</p>
+							)}
+						</div>
+
+						<div>
+							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+								Select Sprint
+							</label>
+							<Select
+								value={form.sprintId || NO_SPRINT_VALUE}
+								onValueChange={(v) =>
+									set("sprintId", v === NO_SPRINT_VALUE ? "" : v)
+								}
+								disabled={!form.projectId || sprintsLoading}
+							>
+								<SelectTrigger>
+									<SelectValue
+										placeholder={
+											sprintsLoading ? "Loading..." : "Select sprint"
+										}
+									/>
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value={NO_SPRINT_VALUE}>
+										No sprint
 									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-						{errors.projectId && (
-							<p className="text-xs text-danger mt-1">
-								{errors.projectId}
-							</p>
-						)}
+									{sprints.map((sprint) => (
+										<SelectItem key={sprint.id} value={sprint.id}>
+											{sprint.name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
 					</div>
 					{/* Title */}
 					<div>
 						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
-							Task Title <span className="text-danger">*</span>
+							Title <span className="text-danger">*</span>
 						</label>
 						<Input
 							placeholder="e.g. Refactor authentication middleware"
@@ -390,34 +468,19 @@ function NewTaskDialog({
 						)}
 					</div>
 
-					{/* Status */}
-					<div className="grid grid-cols-2 gap-4">
-						<div>
-							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
-								Status
-							</label>
-							<Select
-								value={form.status}
-								onValueChange={(v) =>
-									set("status", v as ColumnId)
-								}
-							>
-								<SelectTrigger>
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="todo">To Do</SelectItem>
-									<SelectItem value="in-progress">
-										In Progress
-									</SelectItem>
-									<SelectItem value="review">QA</SelectItem>
-									<SelectItem value="done">Done</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
+					{/* Description */}
+					<div>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+							Description
+						</label>
+						<ProjectDescriptionEditor
+							value={form.description}
+							onChange={(value) => set("description", value)}
+							placeholder="Describe the task details..."
+						/>
 					</div>
 
-					{/* Priority + Due Date */}
+					{/* Priority + Status */}
 					<div className="grid grid-cols-2 gap-4">
 						<div>
 							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
@@ -447,14 +510,53 @@ function NewTaskDialog({
 
 						<div>
 							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
-								Due Date
+								Status
 							</label>
-							<Input
-								type="date"
-								value={form.dueDate}
-								onChange={(e) => set("dueDate", e.target.value)}
-							/>
+							<Select
+								value={form.status}
+								onValueChange={(v) =>
+									set("status", v as ColumnId)
+								}
+							>
+								<SelectTrigger>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="todo">To Do</SelectItem>
+									<SelectItem value="in-progress">
+										In Progress
+									</SelectItem>
+									<SelectItem value="review">QA</SelectItem>
+									<SelectItem value="done">Done</SelectItem>
+								</SelectContent>
+							</Select>
 						</div>
+					</div>
+
+					{/* Estimated Time */}
+					<div>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+							Estimated time
+						</label>
+						<Input
+							type="time"
+							value={form.estimatedTime}
+							onChange={(e) =>
+								set("estimatedTime", e.target.value)
+							}
+						/>
+					</div>
+
+					{/* Due Date */}
+					<div>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+							Due date
+						</label>
+						<Input
+							type="date"
+							value={form.dueDate}
+							onChange={(e) => set("dueDate", e.target.value)}
+						/>
 					</div>
 
 					{/* Assignee */}
@@ -581,9 +683,11 @@ function NewTaskDialog({
 
 const EMPTY_EDIT_FORM = {
 	title: "",
+	description: "",
 	assigneeId: "",
 	status: "todo" as ColumnId,
 	priority: "medium" as ApiTaskPriority,
+	estimatedTime: "",
 	dueDate: "",
 	tagInput: "",
 	tags: [] as string[],
@@ -592,9 +696,11 @@ const EMPTY_EDIT_FORM = {
 function taskToEditForm(task: UiTask): typeof EMPTY_EDIT_FORM {
 	return {
 		title: task.title,
+		description: task.description ?? "",
 		assigneeId: task.assigned_to?.id ?? "",
 		status: task.columnId,
 		priority: task.priority,
+		estimatedTime: "",
 		dueDate: task.due_date ? task.due_date.slice(0, 10) : "",
 		tagInput: "",
 		tags: [...task.tags],
@@ -660,6 +766,9 @@ function EditTaskDialog({
 		try {
 			await onSave(task, {
 				title: form.title.trim(),
+				description: projectDescriptionText(form.description)
+					? form.description
+					: "",
 				status: columnIdToApiStatus(form.status),
 				priority: form.priority,
 				assigned_to: form.assigneeId || undefined,
@@ -697,7 +806,7 @@ function EditTaskDialog({
 					{/* Title */}
 					<div>
 						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
-							Task Title <span className="text-danger">*</span>
+							Title <span className="text-danger">*</span>
 						</label>
 						<Input
 							placeholder="e.g. Refactor authentication middleware"
@@ -716,32 +825,20 @@ function EditTaskDialog({
 						)}
 					</div>
 
-					{/* Status + Priority */}
-					<div className="grid grid-cols-2 gap-4">
-						<div>
-							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
-								Status
-							</label>
-							<Select
-								value={form.status}
-								onValueChange={(v) =>
-									set("status", v as ColumnId)
-								}
-							>
-								<SelectTrigger>
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="todo">To Do</SelectItem>
-									<SelectItem value="in-progress">
-										In Progress
-									</SelectItem>
-									<SelectItem value="review">QA</SelectItem>
-									<SelectItem value="done">Done</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
+					{/* Description */}
+					<div>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+							Description
+						</label>
+						<ProjectDescriptionEditor
+							value={form.description}
+							onChange={(value) => set("description", value)}
+							placeholder="Describe the task details..."
+						/>
+					</div>
 
+					{/* Priority + Status */}
+					<div className="grid grid-cols-2 gap-4">
 						<div>
 							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
 								Priority
@@ -767,12 +864,50 @@ function EditTaskDialog({
 								</SelectContent>
 							</Select>
 						</div>
+
+						<div>
+							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+								Status
+							</label>
+							<Select
+								value={form.status}
+								onValueChange={(v) =>
+									set("status", v as ColumnId)
+								}
+							>
+								<SelectTrigger>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="todo">To Do</SelectItem>
+									<SelectItem value="in-progress">
+										In Progress
+									</SelectItem>
+									<SelectItem value="review">QA</SelectItem>
+									<SelectItem value="done">Done</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+					</div>
+
+					{/* Estimated Time */}
+					<div>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+							Estimated time
+						</label>
+						<Input
+							type="time"
+							value={form.estimatedTime}
+							onChange={(e) =>
+								set("estimatedTime", e.target.value)
+							}
+						/>
 					</div>
 
 					{/* Due Date */}
 					<div>
 						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
-							Due Date
+							Due date
 						</label>
 						<Input
 							type="date"

@@ -49,7 +49,6 @@ import {
 } from "@/components/projects/project-icon-options";
 import {
 	ProjectIcon,
-	ProjectIconPicker,
 } from "@/components/projects/project-icon-picker";
 import { toast } from "sonner";
 
@@ -498,7 +497,7 @@ function NewProjectDialog({
 								<Button
 									type="button"
 									variant="default"
-									size="xs"
+									size="sm"
 									onClick={addTag}
 									className="shrink-0 px-2 py-0.5"
 								>

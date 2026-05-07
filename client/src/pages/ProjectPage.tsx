@@ -60,7 +60,6 @@ import {
 	type ProjectIconType,
 } from "@/components/projects/project-icon-options";
 import {
-	ProjectIcon,
 	ProjectIconPicker,
 } from "@/components/projects/project-icon-picker";
 
@@ -904,11 +903,15 @@ function EditSprintDialog({
 const TASK_EMPTY = {
 	title: "",
 	description: "",
+	sprintId: "",
 	status: "todo" as ApiTaskStatus,
 	priority: "medium" as ApiTaskPriority,
 	assignedTo: "",
+	estimatedTime: "",
 	dueDate: "",
 };
+
+const NO_TASK_SPRINT_VALUE = "__no_task_sprint__";
 
 function NewTaskDialog({
 	open,
@@ -924,10 +927,37 @@ function NewTaskDialog({
 	onCreated: (task: Task) => void;
 }) {
 	const [form, setForm] = useState(TASK_EMPTY);
+	const [sprints, setSprints] = useState<Sprint[]>([]);
+	const [sprintsLoading, setSprintsLoading] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
 	const [errors, setErrors] = useState<{ title?: string; submit?: string }>(
 		{},
 	);
+
+	useEffect(() => {
+		if (!open) {
+			setSprints([]);
+			setSprintsLoading(false);
+			return;
+		}
+
+		let active = true;
+		setSprintsLoading(true);
+		listSprints(projectId)
+			.then((data) => {
+				if (active) setSprints(data);
+			})
+			.catch(() => {
+				if (active) setSprints([]);
+			})
+			.finally(() => {
+				if (active) setSprintsLoading(false);
+			});
+
+		return () => {
+			active = false;
+		};
+	}, [open, projectId]);
 
 	function set<K extends keyof typeof TASK_EMPTY>(
 		key: K,
@@ -948,7 +978,9 @@ function NewTaskDialog({
 		try {
 			const task = await createTask(projectId, {
 				title: form.title.trim(),
-				description: form.description.trim() || undefined,
+				description: projectDescriptionText(form.description)
+					? form.description
+					: undefined,
 				status: form.status,
 				priority: form.priority,
 				assigned_to: form.assignedTo || undefined,
@@ -983,6 +1015,41 @@ function NewTaskDialog({
 				</DialogHeader>
 
 				<div className="space-y-4">
+					{/* Sprint */}
+					<div>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+							Select Sprint
+						</label>
+						<Select
+							value={form.sprintId || NO_TASK_SPRINT_VALUE}
+							onValueChange={(v) =>
+								set(
+									"sprintId",
+									v === NO_TASK_SPRINT_VALUE ? "" : v,
+								)
+							}
+							disabled={sprintsLoading}
+						>
+							<SelectTrigger>
+								<SelectValue
+									placeholder={
+										sprintsLoading ? "Loading..." : "Select sprint"
+									}
+								/>
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value={NO_TASK_SPRINT_VALUE}>
+									No sprint
+								</SelectItem>
+								{sprints.map((sprint) => (
+									<SelectItem key={sprint.id} value={sprint.id}>
+										{sprint.name}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+
 					{/* Title */}
 					<div>
 						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
@@ -1001,8 +1068,45 @@ function NewTaskDialog({
 						)}
 					</div>
 
-					{/* Status + Priority */}
+					{/* Description */}
+					<div>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+							Description
+						</label>
+						<ProjectDescriptionEditor
+							value={form.description}
+							onChange={(value) => set("description", value)}
+							placeholder="Describe the task details..."
+						/>
+					</div>
+
+					{/* Priority + Status */}
 					<div className="grid grid-cols-2 gap-4">
+						<div>
+							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+								Priority
+							</label>
+							<Select
+								value={form.priority}
+								onValueChange={(v) =>
+									set("priority", v as ApiTaskPriority)
+								}
+							>
+								<SelectTrigger>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="low">Low</SelectItem>
+									<SelectItem value="medium">
+										Medium
+									</SelectItem>
+									<SelectItem value="high">High</SelectItem>
+									<SelectItem value="urgent">
+										Urgent
+									</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
 						<div>
 							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
 								Status
@@ -1031,83 +1135,58 @@ function NewTaskDialog({
 								</SelectContent>
 							</Select>
 						</div>
-						<div>
-							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
-								Priority
-							</label>
-							<Select
-								value={form.priority}
-								onValueChange={(v) =>
-									set("priority", v as ApiTaskPriority)
-								}
-							>
-								<SelectTrigger>
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="low">Low</SelectItem>
-									<SelectItem value="medium">
-										Medium
-									</SelectItem>
-									<SelectItem value="high">High</SelectItem>
-									<SelectItem value="urgent">
-										Urgent
-									</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
 					</div>
 
-					{/* Assigned To + Due Date */}
-					<div className="grid grid-cols-2 gap-4">
-						<div>
-							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
-								Assigned To
-							</label>
-							<Select
-								value={form.assignedTo}
-								onValueChange={(v) => set("assignedTo", v)}
-							>
-								<SelectTrigger>
-									<SelectValue placeholder="Unassigned" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="">Unassigned</SelectItem>
-									{members.map((m) => (
-										<SelectItem
-											key={m.user_id}
-											value={m.user_id}
-										>
-											{m.profiles?.full_name ?? m.user_id}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-						<div>
-							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
-								Due Date
-							</label>
-							<Input
-								type="date"
-								value={form.dueDate}
-								onChange={(e) => set("dueDate", e.target.value)}
-							/>
-						</div>
-					</div>
-
-					{/* Description */}
+					{/* Estimated Time */}
 					<div>
 						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
-							Description
+							Estimated time
 						</label>
-						<textarea
-							placeholder="Optional task description..."
-							value={form.description}
-							onChange={(e) => set("description", e.target.value)}
-							rows={3}
-							className="w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted resize-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+						<Input
+							type="time"
+							value={form.estimatedTime}
+							onChange={(e) =>
+								set("estimatedTime", e.target.value)
+							}
 						/>
+					</div>
+
+					{/* Due Date */}
+					<div>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+							Due date
+						</label>
+						<Input
+							type="date"
+							value={form.dueDate}
+							onChange={(e) => set("dueDate", e.target.value)}
+						/>
+					</div>
+
+					{/* Assigned To */}
+					<div>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+							Assigned To
+						</label>
+						<Select
+							value={form.assignedTo}
+							onValueChange={(v) => set("assignedTo", v)}
+						>
+							<SelectTrigger>
+								<SelectValue placeholder="Unassigned" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="">Unassigned</SelectItem>
+								{members.map((m) => (
+									<SelectItem
+										key={m.user_id}
+										value={m.user_id}
+									>
+										{m.profiles?.full_name ?? m.user_id}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
 					</div>
 
 					{errors.submit && (
@@ -1495,6 +1574,9 @@ export default function ProjectPage() {
 									const priorityInfo =
 										TASK_PRIORITY_BADGE[task.priority];
 									const assignee = task.assigned_to ?? null;
+									const description = projectDescriptionText(
+										task.description,
+									);
 									return (
 										<tr
 											key={task.id}
@@ -1504,9 +1586,9 @@ export default function ProjectPage() {
 												<p className="text-sm font-medium text-foreground">
 													{task.title}
 												</p>
-												{task.description && (
+												{description && (
 													<p className="text-[11px] text-muted mt-0.5 truncate max-w-xs">
-														{task.description}
+														{description}
 													</p>
 												)}
 											</td>
