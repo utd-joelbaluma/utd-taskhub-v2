@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Plus, Pencil, TrendingUp, Loader2, X, Trash2 } from "lucide-react";
 import { format } from "date-fns";
@@ -907,8 +907,9 @@ const TASK_EMPTY = {
 	status: "todo" as ApiTaskStatus,
 	priority: "medium" as ApiTaskPriority,
 	assignedTo: "",
-	estimatedTime: "",
 	dueDate: "",
+	tagInput: "",
+	tags: [] as string[],
 };
 
 const NO_TASK_SPRINT_VALUE = "__no_task_sprint__";
@@ -933,6 +934,23 @@ function NewTaskDialog({
 	const [errors, setErrors] = useState<{ title?: string; submit?: string }>(
 		{},
 	);
+	const [estimatedTime, setEstimatedTime] = useState(0);
+
+	const addEstimatedTime = useCallback((minutes: number) => {
+		setEstimatedTime((prev) => prev + minutes);
+	}, []);
+
+	const resetEstimatedTime = useCallback(() => {
+		setEstimatedTime(0);
+	}, []);
+
+	const formatTime = (minutes: number) => {
+		if (minutes < 60) return `${minutes} min`;
+		const hours = Math.floor(minutes / 60);
+		const remainingMinutes = minutes % 60;
+		if (remainingMinutes === 0) return `${hours} hr${hours > 1 ? "s" : ""}`;
+		return `${hours} hr${hours > 1 ? "s" : ""} ${remainingMinutes} min`;
+	};
 
 	useEffect(() => {
 		if (!open) {
@@ -968,6 +986,23 @@ function NewTaskDialog({
 			setErrors((prev) => ({ ...prev, title: undefined }));
 	}
 
+	function addTag() {
+		const tag = form.tagInput.trim();
+		if (!tag || form.tags.includes(tag)) {
+			set("tagInput", "");
+			return;
+		}
+		set("tags", [...form.tags, tag]);
+		set("tagInput", "");
+	}
+
+	function removeTag(tag: string) {
+		set(
+			"tags",
+			form.tags.filter((t) => t !== tag),
+		);
+	}
+
 	async function handleSubmit() {
 		if (!form.title.trim()) {
 			setErrors({ title: "Task title is required." });
@@ -985,9 +1020,13 @@ function NewTaskDialog({
 				priority: form.priority,
 				assigned_to: form.assignedTo || undefined,
 				due_date: form.dueDate || undefined,
+				sprint_id: form.sprintId || undefined,
+				estimated_time: estimatedTime > 0 ? estimatedTime : 0,
+				tags: form.tags,
 			});
 			onCreated(task);
 			setForm(TASK_EMPTY);
+			setEstimatedTime(0);
 			onClose();
 		} catch {
 			setErrors({ submit: "Failed to create task. Please try again." });
@@ -999,6 +1038,7 @@ function NewTaskDialog({
 	function handleOpenChange(isOpen: boolean) {
 		if (!isOpen) {
 			setForm(TASK_EMPTY);
+			setEstimatedTime(0);
 			setErrors({});
 		}
 		if (!isOpen) onClose();
@@ -1138,17 +1178,53 @@ function NewTaskDialog({
 					</div>
 
 					{/* Estimated Time */}
-					<div>
-						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+					<div className="flex flex-col items-center justify-center">
+						<label className="text-sm font-medium text-muted-foreground block w-full text-left mb-1.5">
 							Estimated time
 						</label>
-						<Input
-							type="time"
-							value={form.estimatedTime}
-							onChange={(e) =>
-								set("estimatedTime", e.target.value)
-							}
-						/>
+						<div className="bg-white border border-border rounded-xl px-4 py-1.5 mb-3 w-full text-center">
+							<b className="text-primary text-lg">
+								{formatTime(estimatedTime)}
+							</b>
+						</div>
+						<div className="flex items-center gap-2">
+							<span
+								className="text-xs text-secondary cursor-pointer shadow-xs border border-secondary/50 px-1.5 py-1 rounded-md hover:bg-primary hover:text-white transition-all duration-200"
+								onClick={() => addEstimatedTime(5)}
+							>
+								+5 mins
+							</span>
+							<span
+								className="text-xs text-secondary cursor-pointer shadow-xs border border-secondary/50 px-1.5 py-1 rounded-md hover:bg-primary hover:text-white transition-all duration-200"
+								onClick={() => addEstimatedTime(15)}
+							>
+								+15 mins
+							</span>
+							<span
+								className="text-xs text-secondary cursor-pointer shadow-xs border border-secondary/50 px-1.5 py-1 rounded-md hover:bg-primary hover:text-white transition-all duration-200"
+								onClick={() => addEstimatedTime(30)}
+							>
+								+30 mins
+							</span>
+							<span
+								className="text-xs text-secondary cursor-pointer shadow-xs border border-secondary/50 px-1.5 py-1 rounded-md hover:bg-primary hover:text-white transition-all duration-200"
+								onClick={() => addEstimatedTime(60)}
+							>
+								+1 hour
+							</span>
+							<span
+								className="text-xs text-secondary cursor-pointer shadow-xs border border-secondary/50 px-1.5 py-1 rounded-md hover:bg-primary hover:text-white transition-all duration-200"
+								onClick={() => addEstimatedTime(60 * 8)}
+							>
+								+8 hour
+							</span>
+							<span
+								className="text-xs text-accent cursor-pointer shadow-xs border border-reset px-1.5 py-1 rounded-md hover:bg-primary hover:text-white transition-all duration-200"
+								onClick={() => resetEstimatedTime()}
+							>
+								Reset
+							</span>
+						</div>
 					</div>
 
 					{/* Due Date */}
@@ -1163,30 +1239,104 @@ function NewTaskDialog({
 						/>
 					</div>
 
-					{/* Assigned To */}
+					{/* Assignee */}
+					<div>
+						<label className="text-sm font-medium text-muted-foreground mb-2 block">
+							Assignee
+						</label>
+						<div className="flex flex-wrap gap-2">
+							{members.map((m, idx) => (
+								<button
+									key={m.user_id}
+									type="button"
+									onClick={() =>
+										set(
+											"assignedTo",
+											form.assignedTo === m.user_id
+												? ""
+												: m.user_id,
+										)
+									}
+									className={cn(
+										"flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors",
+										form.assignedTo === m.user_id
+											? "border-primary bg-primary-subtle text-primary font-medium"
+											: "border-border hover:bg-muted-subtle text-foreground",
+									)}
+								>
+									<Avatar className="h-5 w-5 shrink-0">
+										<AvatarFallback
+											className={`text-[9px] text-white ${AVATAR_COLORS[idx % AVATAR_COLORS.length]}`}
+										>
+											{getInitials(
+												m.profiles?.full_name ?? null,
+											)}
+										</AvatarFallback>
+									</Avatar>
+									{m.profiles?.full_name ?? m.user_id}
+								</button>
+							))}
+						</div>
+						{form.assignedTo && (
+							<p className="text-xs text-muted mt-2">
+								Assigned to{" "}
+								<span className="font-medium text-foreground">
+									{members.find((m) => m.user_id === form.assignedTo)
+										?.profiles?.full_name ?? form.assignedTo}
+								</span>
+							</p>
+						)}
+					</div>
+
+					{/* Tags */}
 					<div>
 						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
-							Assigned To
+							Tags
 						</label>
-						<Select
-							value={form.assignedTo}
-							onValueChange={(v) => set("assignedTo", v)}
-						>
-							<SelectTrigger>
-								<SelectValue placeholder="Unassigned" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="">Unassigned</SelectItem>
-								{members.map((m) => (
-									<SelectItem
-										key={m.user_id}
-										value={m.user_id}
+						<div className="flex gap-2">
+							<Input
+								placeholder="Add tag..."
+								value={form.tagInput}
+								onChange={(e) =>
+									set("tagInput", e.target.value)
+								}
+								onKeyDown={(e) => {
+									if (e.key === "Enter") {
+										e.preventDefault();
+										addTag();
+									}
+								}}
+								className="flex-1"
+							/>
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={addTag}
+								className="shrink-0"
+							>
+								Add
+							</Button>
+						</div>
+						{form.tags.length > 0 && (
+							<div className="flex flex-wrap gap-1.5 mt-2">
+								{form.tags.map((tag) => (
+									<span
+										key={tag}
+										className="inline-flex items-center gap-1 text-[11px] bg-muted-subtle text-muted-foreground px-2 py-0.5 rounded-full font-medium"
 									>
-										{m.profiles?.full_name ?? m.user_id}
-									</SelectItem>
+										{tag}
+										<button
+											type="button"
+											onClick={() => removeTag(tag)}
+											className="text-muted hover:text-foreground transition-colors"
+										>
+											<X className="h-2.5 w-2.5" />
+										</button>
+									</span>
 								))}
-							</SelectContent>
-						</Select>
+							</div>
+						)}
 					</div>
 
 					{errors.submit && (

@@ -96,6 +96,7 @@ interface UiTask {
 	assigned_to: ApiTask["assigned_to"];
 	due_date: string | null;
 	tags: string[];
+	estimated_time: number;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -218,6 +219,7 @@ function toUiTask(t: ApiTask): UiTask | null {
 		assigned_to: t.assigned_to,
 		due_date: t.due_date,
 		tags: t.tags ?? [],
+		estimated_time: t.estimated_time ?? 0,
 	};
 }
 
@@ -270,7 +272,7 @@ function NewTaskDialog({
 	const [sprints, setSprints] = useState<Sprint[]>([]);
 	const [sprintsLoading, setSprintsLoading] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
-
+	const [estimatedTime, setEstimatedTime] = useState(0);
 	useEffect(() => {
 		if (!open || !form.projectId) {
 			setSprints([]);
@@ -296,6 +298,28 @@ function NewTaskDialog({
 		};
 	}, [form.projectId, open]);
 
+	const addEstimatedTime = useCallback((minutes: number) => {
+		setEstimatedTime((prev) => prev + minutes);
+	}, []);
+
+	const resetEstimatedTime = useCallback(() => {
+		setEstimatedTime(0);
+	}, []);
+
+	const formatTime = (minutes: number) => {
+		if (minutes < 60) {
+			return `${minutes} min`;
+		}
+
+		const hours = Math.floor(minutes / 60);
+		const remainingMinutes = minutes % 60;
+
+		if (remainingMinutes === 0) {
+			return `${hours} hr${hours > 1 ? "s" : ""}`;
+		}
+
+		return `${hours} hr${hours > 1 ? "s" : ""} ${remainingMinutes} min`;
+	};
 	function set<K extends keyof typeof EMPTY_TASK_FORM>(
 		key: K,
 		value: (typeof EMPTY_TASK_FORM)[K],
@@ -349,6 +373,9 @@ function NewTaskDialog({
 				assigned_to: form.assigneeId || undefined,
 				due_date: form.dueDate || undefined,
 				tags: form.tags,
+				project_id: form.projectId,
+				sprint_id: form.sprintId || undefined,
+				estimated_time: estimatedTime > 0 ? estimatedTime : 0,
 			});
 			setForm(EMPTY_TASK_FORM);
 			setErrors({});
@@ -387,7 +414,8 @@ function NewTaskDialog({
 					<div className="grid grid-cols-2 gap-4">
 						<div>
 							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
-								Select Project <span className="text-danger">*</span>
+								Select Project{" "}
+								<span className="text-danger">*</span>
 							</label>
 							<Select
 								value={form.projectId}
@@ -422,14 +450,19 @@ function NewTaskDialog({
 							<Select
 								value={form.sprintId || NO_SPRINT_VALUE}
 								onValueChange={(v) =>
-									set("sprintId", v === NO_SPRINT_VALUE ? "" : v)
+									set(
+										"sprintId",
+										v === NO_SPRINT_VALUE ? "" : v,
+									)
 								}
 								disabled={!form.projectId || sprintsLoading}
 							>
 								<SelectTrigger>
 									<SelectValue
 										placeholder={
-											sprintsLoading ? "Loading..." : "Select sprint"
+											sprintsLoading
+												? "Loading..."
+												: "Select sprint"
 										}
 									/>
 								</SelectTrigger>
@@ -438,7 +471,10 @@ function NewTaskDialog({
 										No sprint
 									</SelectItem>
 									{sprints.map((sprint) => (
-										<SelectItem key={sprint.id} value={sprint.id}>
+										<SelectItem
+											key={sprint.id}
+											value={sprint.id}
+										>
 											{sprint.name}
 										</SelectItem>
 									))}
@@ -534,17 +570,53 @@ function NewTaskDialog({
 					</div>
 
 					{/* Estimated Time */}
-					<div>
-						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+					<div className="flex flex-col items-center justify-center">
+						<label className="text-sm font-medium text-muted-foreground block w-full text-left mb-1.5">
 							Estimated time
 						</label>
-						<Input
-							type="time"
-							value={form.estimatedTime}
-							onChange={(e) =>
-								set("estimatedTime", e.target.value)
-							}
-						/>
+						<div className="bg-white border border-border rounded-xl px-4 py-1.5 mb-3 w-full text-center">
+							<b className="text-primary text-lg">
+								{formatTime(estimatedTime)}
+							</b>
+						</div>
+						<div className="flex items-center gap-2">
+							<span
+								className="text-xs text-secondary cursor-pointer shadow-xs border border-secondary/50 px-1.5 py-1 rounded-md hover:bg-primary hover:text-white transition-all duration-200"
+								onClick={() => addEstimatedTime(5)}
+							>
+								+5 mins
+							</span>
+							<span
+								className="text-xs text-secondary cursor-pointer shadow-xs border border-secondary/50 px-1.5 py-1 rounded-md hover:bg-primary hover:text-white transition-all duration-200"
+								onClick={() => addEstimatedTime(15)}
+							>
+								+15 mins
+							</span>
+							<span
+								className="text-xs text-secondary cursor-pointer shadow-xs border border-secondary/50 px-1.5 py-1 rounded-md hover:bg-primary hover:text-white transition-all duration-200"
+								onClick={() => addEstimatedTime(30)}
+							>
+								+30 mins
+							</span>
+							<span
+								className="text-xs text-secondary cursor-pointer shadow-xs border border-secondary/50 px-1.5 py-1 rounded-md hover:bg-primary hover:text-white transition-all duration-200"
+								onClick={() => addEstimatedTime(60)}
+							>
+								+1 hour
+							</span>
+							<span
+								className="text-xs text-secondary cursor-pointer shadow-xs border border-secondary/50 px-1.5 py-1 rounded-md hover:bg-primary hover:text-white transition-all duration-200"
+								onClick={() => addEstimatedTime(60 * 8)}
+							>
+								+8 hour
+							</span>
+							<span
+								className="text-xs text-accent cursor-pointer shadow-xs border border-reset px-1.5 py-1 rounded-md hover:bg-primary hover:text-white transition-all duration-200"
+								onClick={() => resetEstimatedTime()}
+							>
+								Reset
+							</span>
+						</div>
 					</div>
 
 					{/* Due Date */}
@@ -687,7 +759,6 @@ const EMPTY_EDIT_FORM = {
 	assigneeId: "",
 	status: "todo" as ColumnId,
 	priority: "medium" as ApiTaskPriority,
-	estimatedTime: "",
 	dueDate: "",
 	tagInput: "",
 	tags: [] as string[],
@@ -700,7 +771,6 @@ function taskToEditForm(task: UiTask): typeof EMPTY_EDIT_FORM {
 		assigneeId: task.assigned_to?.id ?? "",
 		status: task.columnId,
 		priority: task.priority,
-		estimatedTime: "",
 		dueDate: task.due_date ? task.due_date.slice(0, 10) : "",
 		tagInput: "",
 		tags: [...task.tags],
@@ -721,12 +791,34 @@ function EditTaskDialog({
 	const [form, setForm] = useState(EMPTY_EDIT_FORM);
 	const [errors, setErrors] = useState<{ title?: string }>({});
 	const [submitting, setSubmitting] = useState(false);
+	const [estimatedTime, setEstimatedTime] = useState(0);
 
 	useEffect(() => {
-		if (task) setForm(taskToEditForm(task));
-		else setForm(EMPTY_EDIT_FORM);
+		if (task) {
+			setForm(taskToEditForm(task));
+			setEstimatedTime(task.estimated_time ?? 0);
+		} else {
+			setForm(EMPTY_EDIT_FORM);
+			setEstimatedTime(0);
+		}
 		setErrors({});
 	}, [task]);
+
+	const addEstimatedTime = useCallback((minutes: number) => {
+		setEstimatedTime((prev) => prev + minutes);
+	}, []);
+
+	const resetEstimatedTime = useCallback(() => {
+		setEstimatedTime(0);
+	}, []);
+
+	const formatTime = (minutes: number) => {
+		if (minutes < 60) return `${minutes} min`;
+		const hours = Math.floor(minutes / 60);
+		const remainingMinutes = minutes % 60;
+		if (remainingMinutes === 0) return `${hours} hr${hours > 1 ? "s" : ""}`;
+		return `${hours} hr${hours > 1 ? "s" : ""} ${remainingMinutes} min`;
+	};
 
 	function set<K extends keyof typeof EMPTY_EDIT_FORM>(
 		key: K,
@@ -774,6 +866,7 @@ function EditTaskDialog({
 				assigned_to: form.assigneeId || undefined,
 				due_date: form.dueDate || undefined,
 				tags: form.tags,
+				estimated_time: estimatedTime,
 			});
 			onClose();
 		} catch {
@@ -891,17 +984,53 @@ function EditTaskDialog({
 					</div>
 
 					{/* Estimated Time */}
-					<div>
-						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+					<div className="flex flex-col items-center justify-center">
+						<label className="text-sm font-medium text-muted-foreground block w-full text-left mb-1.5">
 							Estimated time
 						</label>
-						<Input
-							type="time"
-							value={form.estimatedTime}
-							onChange={(e) =>
-								set("estimatedTime", e.target.value)
-							}
-						/>
+						<div className="bg-white border border-border rounded-xl px-4 py-1.5 mb-3 w-full text-center">
+							<b className="text-primary text-lg">
+								{formatTime(estimatedTime)}
+							</b>
+						</div>
+						<div className="flex items-center gap-2">
+							<span
+								className="text-xs text-secondary cursor-pointer shadow-xs border border-secondary/50 px-1.5 py-1 rounded-md hover:bg-primary hover:text-white transition-all duration-200"
+								onClick={() => addEstimatedTime(5)}
+							>
+								+5 mins
+							</span>
+							<span
+								className="text-xs text-secondary cursor-pointer shadow-xs border border-secondary/50 px-1.5 py-1 rounded-md hover:bg-primary hover:text-white transition-all duration-200"
+								onClick={() => addEstimatedTime(15)}
+							>
+								+15 mins
+							</span>
+							<span
+								className="text-xs text-secondary cursor-pointer shadow-xs border border-secondary/50 px-1.5 py-1 rounded-md hover:bg-primary hover:text-white transition-all duration-200"
+								onClick={() => addEstimatedTime(30)}
+							>
+								+30 mins
+							</span>
+							<span
+								className="text-xs text-secondary cursor-pointer shadow-xs border border-secondary/50 px-1.5 py-1 rounded-md hover:bg-primary hover:text-white transition-all duration-200"
+								onClick={() => addEstimatedTime(60)}
+							>
+								+1 hour
+							</span>
+							<span
+								className="text-xs text-secondary cursor-pointer shadow-xs border border-secondary/50 px-1.5 py-1 rounded-md hover:bg-primary hover:text-white transition-all duration-200"
+								onClick={() => addEstimatedTime(60 * 8)}
+							>
+								+8 hour
+							</span>
+							<span
+								className="text-xs text-accent cursor-pointer shadow-xs border border-reset px-1.5 py-1 rounded-md hover:bg-primary hover:text-white transition-all duration-200"
+								onClick={() => resetEstimatedTime()}
+							>
+								Reset
+							</span>
+						</div>
 					</div>
 
 					{/* Due Date */}

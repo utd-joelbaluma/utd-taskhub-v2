@@ -1,6 +1,12 @@
 import { api } from "@/lib/api";
 
-export type ApiTaskStatus = "backlog" | "todo" | "in_progress" | "review" | "done" | "cancelled";
+export type ApiTaskStatus =
+	| "backlog"
+	| "todo"
+	| "in_progress"
+	| "review"
+	| "done"
+	| "cancelled";
 export type ApiTaskPriority = "low" | "medium" | "high" | "urgent";
 
 export interface TaskProfile {
@@ -22,6 +28,8 @@ export interface Task {
 	due_date: string | null;
 	tags: string[];
 	position: number;
+	sprint_id?: string;
+	estimated_time?: number;
 	created_at: string;
 	updated_at: string;
 }
@@ -34,6 +42,9 @@ export interface CreateTaskPayload {
 	assigned_to?: string;
 	due_date?: string;
 	tags?: string[];
+	project_id?: string;
+	sprint_id?: string;
+	estimated_time?: number; // in minutes
 }
 
 export interface UpdateTaskPayload {
@@ -44,6 +55,9 @@ export interface UpdateTaskPayload {
 	assigned_to?: string;
 	due_date?: string;
 	tags?: string[];
+	project_id?: string;
+	sprint_id?: string;
+	estimated_time?: number; // in minutes
 }
 
 export interface ListAllTasksParams {
@@ -54,23 +68,25 @@ export interface ListAllTasksParams {
 	search?: string;
 }
 
-export async function listAllTasks(params?: ListAllTasksParams): Promise<Task[]> {
+export async function listAllTasks(
+	params?: ListAllTasksParams,
+): Promise<Task[]> {
 	const query = new URLSearchParams();
-	if (params?.project_id)  query.set("project_id",  params.project_id);
-	if (params?.status)      query.set("status",       params.status);
-	if (params?.priority)    query.set("priority",     params.priority);
-	if (params?.assigned_to) query.set("assigned_to",  params.assigned_to);
-	if (params?.search)      query.set("search",       params.search);
+	if (params?.project_id) query.set("project_id", params.project_id);
+	if (params?.status) query.set("status", params.status);
+	if (params?.priority) query.set("priority", params.priority);
+	if (params?.assigned_to) query.set("assigned_to", params.assigned_to);
+	if (params?.search) query.set("search", params.search);
 	const qs = query.toString();
 	const res = await api.get<{ success: boolean; data: Task[] }>(
-		`/tasks${qs ? `?${qs}` : ""}`
+		`/tasks${qs ? `?${qs}` : ""}`,
 	);
 	return res.data;
 }
 
 export async function listTasks(
 	projectId: string,
-	params?: { status?: string; priority?: string; assigned_to?: string }
+	params?: { status?: string; priority?: string; assigned_to?: string },
 ): Promise<Task[]> {
 	const query = new URLSearchParams();
 	if (params?.status) query.set("status", params.status);
@@ -78,15 +94,18 @@ export async function listTasks(
 	if (params?.assigned_to) query.set("assigned_to", params.assigned_to);
 	const qs = query.toString();
 	const res = await api.get<{ success: boolean; data: Task[] }>(
-		`/projects/${projectId}/tasks${qs ? `?${qs}` : ""}`
+		`/projects/${projectId}/tasks${qs ? `?${qs}` : ""}`,
 	);
 	return res.data;
 }
 
-export async function createTask(projectId: string, payload: CreateTaskPayload): Promise<Task> {
+export async function createTask(
+	projectId: string,
+	payload: CreateTaskPayload,
+): Promise<Task> {
 	const res = await api.post<{ success: boolean; data: Task }>(
 		`/projects/${projectId}/tasks`,
-		payload
+		payload,
 	);
 	return res.data;
 }
@@ -94,15 +113,18 @@ export async function createTask(projectId: string, payload: CreateTaskPayload):
 export async function updateTask(
 	projectId: string,
 	taskId: string,
-	payload: UpdateTaskPayload
+	payload: UpdateTaskPayload,
 ): Promise<Task> {
 	const res = await api.patch<{ success: boolean; data: Task }>(
 		`/projects/${projectId}/tasks/${taskId}`,
-		payload
+		payload,
 	);
 	return res.data;
 }
 
-export async function deleteTask(projectId: string, taskId: string): Promise<void> {
+export async function deleteTask(
+	projectId: string,
+	taskId: string,
+): Promise<void> {
 	await api.delete(`/projects/${projectId}/tasks/${taskId}`);
 }
