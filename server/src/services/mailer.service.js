@@ -1,10 +1,4 @@
-// TODO: Replace the placeholder below with a real email provider.
-// Recommended options: Resend (resend.com), Nodemailer + SMTP, SendGrid.
-//
-// Example with Resend:
-//   import { Resend } from 'resend';
-//   const resend = new Resend(process.env.RESEND_API_KEY);
-//   await resend.emails.send({ from, to, subject, html });
+import { supabaseAdmin } from "../config/supabase.js";
 
 export async function sendInvitationEmail({
 	to,
@@ -14,7 +8,7 @@ export async function sendInvitationEmail({
 	inviteUrl,
 }) {
 	if (process.env.NODE_ENV === "development") {
-		console.log("\n[Mailer] Invitation email (not sent in development)");
+		console.log("\n[Mailer] Sending invitation via Supabase Auth");
 		console.log(`  To:       ${to}`);
 		console.log(`  Invited:  ${invitedByName}`);
 		console.log(`  Project:  ${projectName}`);
@@ -22,13 +16,14 @@ export async function sendInvitationEmail({
 		console.log(`  Link:     ${inviteUrl}\n`);
 	}
 
-	// Replace with real send logic for production:
-	// await resend.emails.send({
-	//   from: 'noreply@yourdomain.com',
-	//   to,
-	//   subject: `You've been invited to join ${projectName} on TaskHub`,
-	//   html: `<p>${invitedByName} invited you to join <strong>${projectName}</strong> as a <strong>${role}</strong>.</p>
-	//          <p><a href="${inviteUrl}">Accept Invitation</a></p>
-	//          <p>This link expires in 7 days.</p>`,
-	// });
+	const { error } = await supabaseAdmin.auth.admin.inviteUserByEmail(to, {
+		redirectTo: inviteUrl,
+		data: { invited_by: invitedByName, project_name: projectName, role },
+	});
+
+	if (error) {
+		// Non-fatal: user may already exist in Supabase Auth.
+		// The invitation record is still created and can be accepted via the token link.
+		console.warn(`[Mailer] inviteUserByEmail failed for ${to}:`, error.message);
+	}
 }
