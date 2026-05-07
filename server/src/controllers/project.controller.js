@@ -7,19 +7,36 @@ import {
 export async function getProjects(req, res, next) {
 	try {
 		const { status, search } = req.query;
+		const isAdmin = req.profile.role === "admin";
+
+		let projectIds = null;
+
+		if (!isAdmin) {
+			const { data: memberships, error: memberError } = await supabase
+				.from("project_members")
+				.select("project_id")
+				.eq("user_id", req.profile.id);
+
+			if (memberError) throw memberError;
+
+			projectIds = memberships.map((m) => m.project_id);
+
+			if (projectIds.length === 0) {
+				return res.status(200).json({ success: true, count: 0, data: [] });
+			}
+		}
 
 		let query = supabase
 			.from("projects")
 			.select("*, project_members(user_id, role, profiles(id, full_name, avatar_url)), tasks(id, status)")
 			.order("created_at", { ascending: false });
 
-		if (status) {
-			query = query.eq("status", status);
+		if (projectIds !== null) {
+			query = query.in("id", projectIds);
 		}
 
-		if (search) {
-			query = query.ilike("name", `%${search}%`);
-		}
+		if (status) query = query.eq("status", status);
+		if (search) query = query.ilike("name", `%${search}%`);
 
 		const { data, error } = await query;
 
@@ -38,6 +55,23 @@ export async function getProjects(req, res, next) {
 export async function getProjectById(req, res, next) {
 	try {
 		const { id } = req.params;
+		const isAdmin = req.profile.role === "admin";
+
+		if (!isAdmin) {
+			const { data: membership } = await supabase
+				.from("project_members")
+				.select("id")
+				.eq("project_id", id)
+				.eq("user_id", req.profile.id)
+				.maybeSingle();
+
+			if (!membership) {
+				return res.status(403).json({
+					success: false,
+					message: "Access denied. You are not a member of this project.",
+				});
+			}
+		}
 
 		const { data, error } = await supabase
 			.from("projects")

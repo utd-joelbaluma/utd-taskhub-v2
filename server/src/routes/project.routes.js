@@ -20,8 +20,8 @@ import {
 const router = express.Router();
 
 // Project CRUD
-router.get("/", getProjects);
-router.get("/:id", getProjectById);
+router.get("/", requireAuth, getProjects);
+router.get("/:id", requireAuth, getProjectById);
 router.post("/", requireAuth, createProject);
 router.patch("/:id", requireAuth, updateProject);
 router.delete("/:id", requireAuth, deleteProject);

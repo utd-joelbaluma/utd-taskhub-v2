@@ -9,6 +9,7 @@ import ProjectsPage from '@/pages/ProjectsPage'
 import ProjectPage from '@/pages/ProjectPage'
 import TasksPage from '@/pages/TasksPage'
 import SettingsPage from '@/pages/SettingsPage'
+import UsersPage from '@/pages/UsersPage'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
 
@@ -28,6 +29,7 @@ function App() {
             <Route path="/tasks" element={<TasksPage />} />
             <Route path="/kanban" element={<div className="p-6 text-[#191b23]">Kanban Board (coming soon)</div>} />
             <Route path="/analytics" element={<div className="p-6 text-[#191b23]">Analytics (coming soon)</div>} />
+            <Route path="/users" element={<UsersPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/design-system" element={<DesignSystemPage />} />
           </Route>

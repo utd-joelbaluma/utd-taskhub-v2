@@ -48,3 +48,13 @@ export async function requireAuth(req, res, next) {
 
 	next();
 }
+
+export function requireAdmin(req, res, next) {
+	if (req.profile?.role !== "admin") {
+		return res.status(403).json({
+			success: false,
+			message: "Admin access required.",
+		});
+	}
+	next();
+}

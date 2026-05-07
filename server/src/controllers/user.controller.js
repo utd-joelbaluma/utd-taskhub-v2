@@ -1,0 +1,155 @@
+import { supabase } from "../config/supabase.js";
+
+export async function listUsers(req, res, next) {
+	try {
+		const { data, error } = await supabase
+			.from("profiles")
+			.select("id, full_name, email, avatar_url, role, status, created_at")
+			.order("created_at", { ascending: false });
+
+		if (error) throw error;
+
+		res.status(200).json({
+			success: true,
+			count: data.length,
+			data,
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function inviteUser(req, res, next) {
+	try {
+		const { email, role = "member" } = req.body;
+
+		if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+			return res.status(400).json({
+				success: false,
+				message: "A valid email is required.",
+			});
+		}
+
+		const normalizedEmail = email.trim().toLowerCase();
+
+		const { data: existing } = await supabase
+			.from("profiles")
+			.select("id, status")
+			.eq("email", normalizedEmail)
+			.maybeSingle();
+
+		if (existing?.status === "active") {
+			return res.status(409).json({
+				success: false,
+				message: "A user with this email already exists.",
+			});
+		}
+
+		const { error } = await supabase.auth.admin.inviteUserByEmail(
+			normalizedEmail,
+			{
+				data: {
+					role,
+					invited_by: req.profile.id,
+				},
+			}
+		);
+
+		if (error) throw error;
+
+		res.status(201).json({
+			success: true,
+			message: `Invitation sent to ${normalizedEmail}.`,
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function listUserInvitations(req, res, next) {
+	try {
+		const { status } = req.query;
+
+		const { data: authData, error } =
+			await supabase.auth.admin.listUsers({ perPage: 1000 });
+
+		if (error) throw error;
+
+		const invited = authData.users.filter(
+			(u) => u.invited_at && !u.email_confirmed_at
+		);
+
+		let filtered = invited;
+		if (status === "pending") {
+			filtered = invited.filter((u) => !u.app_metadata?.invite_cancelled_at);
+		} else if (status === "cancelled") {
+			filtered = invited.filter((u) => !!u.app_metadata?.invite_cancelled_at);
+		}
+
+		const data = filtered.map((u) => ({
+			id: u.id,
+			email: u.email,
+			invited_at: u.invited_at,
+			invite_cancelled_at: u.app_metadata?.invite_cancelled_at ?? null,
+		}));
+
+		res.status(200).json({
+			success: true,
+			count: data.length,
+			data,
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function cancelUserInvitation(req, res, next) {
+	try {
+		const { userId } = req.params;
+
+		const { data: authUser, error: fetchError } =
+			await supabase.auth.admin.getUserById(userId);
+
+		if (fetchError || !authUser?.user) {
+			return res.status(404).json({
+				success: false,
+				message: "Invitation not found.",
+			});
+		}
+
+		const user = authUser.user;
+
+		if (!user.invited_at || user.email_confirmed_at) {
+			return res.status(400).json({
+				success: false,
+				message: "This invitation cannot be cancelled.",
+			});
+		}
+
+		if (user.app_metadata?.invite_cancelled_at) {
+			return res.status(409).json({
+				success: false,
+				message: "This invitation is already cancelled.",
+			});
+		}
+
+		const { error: updateError } = await supabase.auth.admin.updateUserById(
+			userId,
+			{
+				app_metadata: {
+					...user.app_metadata,
+					invite_cancelled_at: new Date().toISOString(),
+				},
+			}
+		);
+
+		if (updateError) throw updateError;
+
+		res.status(200).json({
+			success: true,
+			message: "Invitation cancelled.",
+		});
+	} catch (error) {
+		next(error);
+	}
+}
