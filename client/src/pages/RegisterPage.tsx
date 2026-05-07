@@ -59,9 +59,9 @@ export default function RegisterPage() {
 	];
 
 	return (
-		<div className="min-h-screen bg-background flex">
+		<div className="flex min-h-svh bg-background lg:min-h-screen">
 			{/* Left panel */}
-			<div className="hidden lg:flex w-[480px] shrink-0 flex-col justify-between bg-foreground/95 p-10">
+			<div className="hidden w-[420px] shrink-0 flex-col justify-between bg-foreground/95 p-8 xl:flex xl:w-[480px] xl:p-10">
 				<div className="flex items-center">
 					<img
 						src="/favicon.svg"
@@ -166,18 +166,18 @@ export default function RegisterPage() {
 			</div>
 
 			{/* Right panel */}
-			<div className="flex-1 flex items-center justify-center px-6 py-12">
+			<div className="flex min-h-svh flex-1 items-start justify-center overflow-y-auto px-4 py-6 sm:items-center sm:px-6 sm:py-10 lg:min-h-screen lg:px-10 xl:px-6 xl:py-12">
 				<div className="w-full max-w-[420px]">
-					<div className="flex lg:hidden items-center mb-8">
+					<div className="mb-8 flex items-center justify-center xl:hidden">
 						<img
 							src="/logo.svg"
 							alt="TaskHub"
-							className="h-8 w-auto"
+							className="h-8 w-auto max-w-full"
 						/>
 					</div>
 
-					<div className="mb-8">
-						<h1 className="text-2xl font-semibold text-foreground tracking-tight mb-1">
+					<div className="mb-6 sm:mb-8">
+						<h1 className="mb-1 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
 							Create your account
 						</h1>
 						<p className="text-sm text-muted">
@@ -215,9 +215,9 @@ export default function RegisterPage() {
 						Continue with Google
 					</Button>
 
-					<div className="flex items-center gap-3 mb-5">
+					<div className="mb-5 flex items-center gap-3">
 						<Separator className="flex-1" />
-						<span className="text-xs text-muted">
+						<span className="shrink-0 text-xs text-muted">
 							or register with email
 						</span>
 						<Separator className="flex-1" />
@@ -333,13 +333,13 @@ export default function RegisterPage() {
 											/>
 										))}
 									</div>
-									<div className="flex items-center justify-between">
+									<div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
 										<div className="flex flex-wrap gap-x-3 gap-y-1">
 											{passwordRules.map((rule) => (
 												<span
 													key={rule.label}
 													className={cn(
-														"text-[10px] flex items-center gap-1 transition-colors",
+														"flex items-center gap-1 text-[10px] transition-colors",
 														rule.test(form.password)
 															? "text-secondary"
 															: "text-muted",
@@ -362,7 +362,7 @@ export default function RegisterPage() {
 										{strengthLabel && (
 											<span
 												className={cn(
-													"text-[10px] font-medium shrink-0",
+													"shrink-0 text-[10px] font-medium",
 													passwordStrength === 1 &&
 														"text-danger",
 													passwordStrength === 2 &&
@@ -431,7 +431,7 @@ export default function RegisterPage() {
 								id="terms"
 								checked={agreed}
 								onCheckedChange={(v) => setAgreed(!!v)}
-								className="mt-0.5"
+								className="mt-0.5 shrink-0"
 							/>
 							<span className="text-sm text-muted-foreground leading-snug">
 								I agree to the{" "}

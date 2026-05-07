@@ -39,9 +39,9 @@ export default function LoginPage() {
 	}
 
 	return (
-		<div className="min-h-screen bg-background flex">
+		<div className="flex min-h-svh bg-background lg:min-h-screen">
 			{/* Left panel */}
-			<div className="hidden lg:flex w-[480px] shrink-0 flex-col justify-between bg-primary/90 p-10">
+			<div className="hidden w-[420px] shrink-0 flex-col justify-between bg-primary/90 p-8 xl:flex xl:w-[480px] xl:p-10">
 				<div className="flex items-center">
 					<img
 						src="/favicon.svg"
@@ -89,18 +89,18 @@ export default function LoginPage() {
 			</div>
 
 			{/* Right panel */}
-			<div className="flex-1 flex items-center justify-center px-6 py-12">
+			<div className="flex min-h-svh flex-1 items-start justify-center overflow-y-auto px-4 py-6 sm:items-center sm:px-6 sm:py-10 lg:min-h-screen lg:px-10 xl:px-6 xl:py-12">
 				<div className="w-full max-w-[400px]">
-					<div className="flex lg:hidden items-center mb-8">
+					<div className="mb-8 flex items-center justify-center xl:hidden">
 						<img
 							src="/logo.svg"
 							alt="TaskHub"
-							className="h-8 w-auto"
+							className="h-8 w-auto max-w-full"
 						/>
 					</div>
 
-					<div className="mb-8">
-						<h1 className="text-2xl font-semibold text-foreground tracking-tight mb-1">
+					<div className="mb-6 sm:mb-8">
+						<h1 className="mb-1 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
 							Welcome back
 						</h1>
 						<p className="text-sm text-muted">
@@ -142,7 +142,7 @@ export default function LoginPage() {
 						</div>
 
 						<div>
-							<div className="flex items-center justify-between mb-1.5">
+							<div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
 								<label
 									htmlFor="password"
 									className="text-sm font-medium text-muted-foreground"
@@ -192,13 +192,14 @@ export default function LoginPage() {
 							</div>
 						</div>
 
-						<label className="flex items-center gap-2 cursor-pointer">
+						<label className="flex cursor-pointer items-start gap-2.5">
 							<Checkbox
 								id="remember"
 								checked={remember}
 								onCheckedChange={(v) => setRemember(!!v)}
+								className="mt-0.5 shrink-0"
 							/>
-							<span className="text-sm text-muted-foreground">
+							<span className="text-sm leading-snug text-muted-foreground">
 								Remember me for 30 days
 							</span>
 						</label>
@@ -221,9 +222,9 @@ export default function LoginPage() {
 						</Button>
 					</form>
 
-					<div className="flex items-center gap-3 my-4">
+					<div className="my-4 flex items-center gap-3">
 						<Separator className="flex-1" />
-						<span className="text-xs text-muted">
+						<span className="shrink-0 text-xs text-muted">
 							or sign in with email
 						</span>
 						<Separator className="flex-1" />
