@@ -21,6 +21,7 @@ export interface Task {
 	board_column_id: string | null;
 	title: string;
 	description: string | null;
+	developer_notes: string | null;
 	status: ApiTaskStatus;
 	priority: ApiTaskPriority;
 	assigned_to: TaskProfile | null;
@@ -50,6 +51,7 @@ export interface CreateTaskPayload {
 export interface UpdateTaskPayload {
 	title?: string;
 	description?: string;
+	developer_notes?: string;
 	status?: ApiTaskStatus;
 	priority?: ApiTaskPriority;
 	assigned_to?: string;

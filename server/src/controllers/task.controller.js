@@ -12,6 +12,7 @@ const TASK_SELECT = `
 	ticket_id,
 	title,
 	description,
+	developer_notes,
 	status,
 	priority,
 	position,
@@ -154,7 +155,7 @@ export async function updateTask(req, res, next) {
 			return res.status(400).json({ success: false, message: "Validation failed.", errors });
 		}
 
-		const ALLOWED = ["title", "description", "status", "priority", "assigned_to", "board_column_id", "due_date", "tags"];
+		const ALLOWED = ["title", "description", "developer_notes", "status", "priority", "assigned_to", "board_column_id", "due_date", "tags"];
 		const updateData = {};
 
 		for (const field of ALLOWED) {
@@ -165,6 +166,9 @@ export async function updateTask(req, res, next) {
 
 		if (updateData.title) updateData.title = updateData.title.trim();
 		if (updateData.description) updateData.description = updateData.description.trim();
+		if (updateData.developer_notes !== undefined && updateData.developer_notes !== null) {
+			updateData.developer_notes = updateData.developer_notes.trim() || null;
+		}
 		if (updateData.tags !== undefined) {
 			updateData.tags = Array.isArray(updateData.tags)
 				? updateData.tags.map(t => t.trim()).filter(Boolean)

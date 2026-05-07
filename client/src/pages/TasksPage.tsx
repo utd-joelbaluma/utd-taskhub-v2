@@ -71,7 +71,10 @@ import {
 import { listProjects, type Project } from "@/services/project.service";
 import { listSprints, type Sprint } from "@/services/sprint.service";
 import { listProfiles, type Profile } from "@/services/profile.service";
-import { ProjectDescriptionEditor } from "@/components/projects/project-description";
+import {
+	ProjectDescriptionEditor,
+	ProjectDescriptionPreview,
+} from "@/components/projects/project-description";
 import { projectDescriptionText } from "@/components/projects/project-description-utils";
 import { cn } from "@/lib/utils";
 import {
@@ -90,6 +93,7 @@ interface UiTask {
 	project_id: string;
 	title: string;
 	description: string | null;
+	developer_notes: string | null;
 	apiStatus: ApiTaskStatus;
 	columnId: ColumnId;
 	priority: ApiTaskPriority;
@@ -213,6 +217,7 @@ function toUiTask(t: ApiTask): UiTask | null {
 		project_id: t.project_id,
 		title: t.title,
 		description: t.description,
+		developer_notes: t.developer_notes,
 		apiStatus: t.status,
 		columnId,
 		priority: t.priority,
@@ -1165,6 +1170,204 @@ function EditTaskDialog({
 	);
 }
 
+// ── Task Detail Dialog ────────────────────────────────────────────────────────
+
+function TaskDetailDialog({
+	task,
+	projects,
+	onClose,
+	onSaveNotes,
+}: {
+	task: UiTask | null;
+	projects: Project[];
+	onClose: () => void;
+	onSaveNotes: (task: UiTask, notes: string) => Promise<void>;
+}) {
+	const [notes, setNotes] = useState("");
+	const [saving, setSaving] = useState(false);
+
+	useEffect(() => {
+		if (task) setNotes(task.developer_notes ?? "");
+	}, [task]);
+
+	const project = projects.find((p) => p.id === task?.project_id);
+	const assignee = task?.assigned_to;
+
+	function formatTime(minutes: number) {
+		if (!minutes) return "—";
+		if (minutes < 60) return `${minutes} min`;
+		const hours = Math.floor(minutes / 60);
+		const rem = minutes % 60;
+		if (rem === 0) return `${hours} hr${hours > 1 ? "s" : ""}`;
+		return `${hours} hr${hours > 1 ? "s" : ""} ${rem} min`;
+	}
+
+	async function handleSave() {
+		if (!task) return;
+		setSaving(true);
+		try {
+			await onSaveNotes(task, notes);
+		} finally {
+			setSaving(false);
+		}
+	}
+
+	return (
+		<Dialog
+			open={!!task}
+			onOpenChange={(open) => {
+				if (!open) onClose();
+			}}
+		>
+			<DialogContent className="max-w-2xl">
+				<DialogHeader>
+					<DialogTitle className="text-lg font-semibold leading-snug pr-6">
+						{task?.title}
+					</DialogTitle>
+				</DialogHeader>
+
+				<div className="space-y-5">
+					{/* Status + Priority */}
+					<div className="flex items-center gap-2">
+						<Badge
+							variant={
+								STATUS_BADGE[task?.apiStatus ?? "todo"].variant
+							}
+						>
+							{STATUS_BADGE[task?.apiStatus ?? "todo"].label}
+						</Badge>
+						<Badge
+							variant={
+								PRIORITY_BADGE_VARIANT[
+									task?.priority ?? "medium"
+								]
+							}
+						>
+							{task?.priority &&
+								task.priority.charAt(0).toUpperCase() +
+									task.priority.slice(1)}
+						</Badge>
+					</div>
+
+					{/* Meta grid */}
+					<div className="grid grid-cols-2 gap-x-8 gap-y-4">
+						<div>
+							<p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
+								Project
+							</p>
+							<p className="text-sm text-foreground">
+								{project?.name ?? "—"}
+							</p>
+						</div>
+						<div>
+							<p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
+								Assignee
+							</p>
+							{assignee ? (
+								<div className="flex items-center gap-1.5">
+									<Avatar className="h-5 w-5">
+										<AvatarFallback
+											className={`text-[9px] text-white ${profileColorClass(assignee.id)}`}
+										>
+											{getInitials(
+												assignee.full_name ??
+													assignee.email,
+											)}
+										</AvatarFallback>
+									</Avatar>
+									<span className="text-sm text-foreground">
+										{assignee.full_name ?? assignee.email}
+									</span>
+								</div>
+							) : (
+								<p className="text-sm text-muted">Unassigned</p>
+							)}
+						</div>
+						<div>
+							<p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
+								Due Date
+							</p>
+							<p className="text-sm text-foreground">
+								{task?.due_date
+									? task.due_date.slice(0, 10)
+									: "—"}
+							</p>
+						</div>
+						<div>
+							<p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
+								Estimated Time
+							</p>
+							<p className="text-sm text-foreground">
+								{formatTime(task?.estimated_time ?? 0)}
+							</p>
+						</div>
+					</div>
+
+					{/* Tags */}
+					{task && task.tags.length > 0 && (
+						<div>
+							<p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
+								Tags
+							</p>
+							<div className="flex flex-wrap gap-1.5">
+								{task.tags.map((tag) => (
+									<span
+										key={tag}
+										className="text-[11px] bg-muted-subtle text-muted-foreground px-2 py-0.5 rounded-full font-medium"
+									>
+										{tag}
+									</span>
+								))}
+							</div>
+						</div>
+					)}
+
+					{/* Description */}
+					{task?.description &&
+						projectDescriptionText(task.description) && (
+							<div>
+								<p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
+									Description
+								</p>
+								<div className="text-sm text-foreground">
+									<ProjectDescriptionPreview
+										value={task.description}
+									/>
+								</div>
+							</div>
+						)}
+
+					{/* Developer's Notes */}
+					<div>
+						<label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide block mb-1.5">
+							Developer's Notes
+						</label>
+						<ProjectDescriptionEditor
+							value={notes}
+							onChange={setNotes}
+							placeholder="Add implementation details, technical context, or notes for the dev team..."
+						/>
+					</div>
+				</div>
+
+				<DialogFooter>
+					<DialogClose asChild>
+						<Button variant="outline" disabled={saving}>
+							Close
+						</Button>
+					</DialogClose>
+					<Button onClick={handleSave} disabled={saving}>
+						{saving && (
+							<Loader2 className="h-4 w-4 animate-spin mr-2" />
+						)}
+						Save Notes
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+}
+
 // ── Task card ─────────────────────────────────────────────────────────────────
 
 function TaskCardContent({
@@ -1239,11 +1442,13 @@ function SortableTaskCard({
 	projects,
 	onEdit,
 	onDelete,
+	onView,
 }: {
 	task: UiTask;
 	projects: Project[];
 	onEdit: (task: UiTask) => void;
 	onDelete: (task: UiTask) => void;
+	onView: (task: UiTask) => void;
 }) {
 	const [confirming, setConfirming] = useState(false);
 	const {
@@ -1265,13 +1470,15 @@ function SortableTaskCard({
 		<div
 			ref={setNodeRef}
 			style={style}
-			className="relative group"
+			className="relative group cursor-pointer"
 			onMouseLeave={() => setConfirming(false)}
+			onClick={() => onView(task)}
 		>
 			<div
 				{...attributes}
 				{...listeners}
 				className="absolute top-3 right-2 z-10 p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing text-muted hover:text-primary"
+				onClick={(e) => e.stopPropagation()}
 			>
 				<Tooltip>
 					<TooltipTrigger asChild>
@@ -1282,7 +1489,10 @@ function SortableTaskCard({
 					</TooltipContent>
 				</Tooltip>
 			</div>
-			<div className="absolute top-10 right-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white pl-4">
+			<div
+				className="absolute top-10 right-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white pl-4"
+				onClick={(e) => e.stopPropagation()}
+			>
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<button
@@ -1298,7 +1508,10 @@ function SortableTaskCard({
 					</TooltipContent>
 				</Tooltip>
 			</div>
-			<div className="absolute bottom-3 right-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white pl-4">
+			<div
+				className="absolute bottom-3 right-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white pl-4"
+				onClick={(e) => e.stopPropagation()}
+			>
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<button
@@ -1353,12 +1566,14 @@ function BoardColumn({
 	projects,
 	onEdit,
 	onDelete,
+	onView,
 }: {
 	colId: ColumnId;
 	tasks: UiTask[];
 	projects: Project[];
 	onEdit: (task: UiTask) => void;
 	onDelete: (task: UiTask) => void;
+	onView: (task: UiTask) => void;
 }) {
 	const { setNodeRef, isOver } = useDroppable({ id: colId });
 	const { dot } = COLUMN_BADGE[colId];
@@ -1395,6 +1610,7 @@ function BoardColumn({
 							projects={projects}
 							onEdit={onEdit}
 							onDelete={onDelete}
+							onView={onView}
 						/>
 					))}
 				</SortableContext>
@@ -1411,14 +1627,25 @@ function BoardColumn({
 
 // ── List view row ─────────────────────────────────────────────────────────────
 
-function ListRow({ task, projects }: { task: UiTask; projects: Project[] }) {
+function ListRow({
+	task,
+	projects,
+	onView,
+}: {
+	task: UiTask;
+	projects: Project[];
+	onView: (task: UiTask) => void;
+}) {
 	const projectName =
 		projects.find((p) => p.id === task.project_id)?.name ?? "—";
 	const assignee = task.assigned_to;
 	const statusInfo = STATUS_BADGE[task.apiStatus];
 
 	return (
-		<tr className="border-b border-border last:border-0 hover:bg-muted-subtle transition-colors">
+		<tr
+			className="border-b border-border last:border-0 hover:bg-muted-subtle transition-colors cursor-pointer"
+			onClick={() => onView(task)}
+		>
 			<td className="px-5 py-3.5">
 				<p className="text-sm font-medium text-foreground">
 					{task.title}
@@ -1483,6 +1710,7 @@ export default function TasksPage() {
 	const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [editTask, setEditTask] = useState<UiTask | null>(null);
+	const [viewTask, setViewTask] = useState<UiTask | null>(null);
 	const [view, setView] = useState<"board" | "list">("board");
 
 	const [filterProject, setFilterProject] = useState("all");
@@ -1732,6 +1960,22 @@ export default function TasksPage() {
 		}
 	}
 
+	async function handleSaveNotes(task: UiTask, notes: string) {
+		const apiTask = await updateTask(task.project_id, task.id, {
+			developer_notes: notes,
+		});
+		const updated = toUiTask(apiTask);
+		if (!updated) return;
+		setColumns((prev) => ({
+			...prev,
+			[updated.columnId]: prev[updated.columnId].map((t) =>
+				t.id === updated.id ? updated : t,
+			),
+		}));
+		setViewTask(updated);
+		toast.success("Notes saved");
+	}
+
 	async function handleEditTask(task: UiTask, payload: UpdateTaskPayload) {
 		const apiTask = await updateTask(task.project_id, task.id, payload);
 		const updated = toUiTask(apiTask);
@@ -1928,6 +2172,7 @@ export default function TasksPage() {
 								projects={projects}
 								onEdit={setEditTask}
 								onDelete={handleDeleteTask}
+								onView={setViewTask}
 							/>
 						))}
 					</div>
@@ -1993,6 +2238,7 @@ export default function TasksPage() {
 										key={task.id}
 										task={task}
 										projects={projects}
+										onView={setViewTask}
 									/>
 								))}
 							</tbody>
@@ -2013,6 +2259,13 @@ export default function TasksPage() {
 				onClose={() => setEditTask(null)}
 				onSave={handleEditTask}
 				profiles={profiles}
+			/>
+
+			<TaskDetailDialog
+				task={viewTask}
+				projects={projects}
+				onClose={() => setViewTask(null)}
+				onSaveNotes={handleSaveNotes}
 			/>
 		</div>
 	);
