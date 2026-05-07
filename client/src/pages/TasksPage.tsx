@@ -101,7 +101,7 @@ const COLUMN_IDS: ColumnId[] = ["todo", "in-progress", "review", "done"];
 const COLUMN_LABELS: Record<ColumnId, string> = {
 	todo: "To Do",
 	"in-progress": "In Progress",
-	review: "Review",
+	review: "QA",
 	done: "Done",
 };
 
@@ -115,11 +115,11 @@ const COLUMN_BADGE: Record<
 	done: { variant: "done", dot: "bg-secondary" },
 };
 
-const PRIORITY_LEFT: Record<ApiTaskPriority, string> = {
-	urgent: "border-l-4 border-l-danger",
-	high: "border-l-4 border-l-warning",
-	medium: "border-l-4 border-l-primary",
-	low: "border-l-4 border-l-border",
+const PRIORITY_BORDER: Record<ApiTaskPriority, string> = {
+	urgent: "border border-danger/20 hover:border-danger/50 hover:shadow-danger/20",
+	high: "border border-warning/20 hover:border-warning/50 hover:shadow-warning/20",
+	medium: "border border-primary/20 hover:border-primary/50 hover:shadow-primary/20",
+	low: "border border-border/20 hover:border-border/50 hover:shadow-border/20",
 };
 
 const PRIORITY_BADGE_VARIANT: Record<
@@ -139,7 +139,7 @@ const STATUS_BADGE: Record<
 	backlog: { variant: "todo", label: "Backlog" },
 	todo: { variant: "todo", label: "To Do" },
 	in_progress: { variant: "in-progress", label: "In Progress" },
-	review: { variant: "review", label: "Review" },
+	review: { variant: "review", label: "QA" },
 	done: { variant: "done", label: "Done" },
 	cancelled: { variant: "done", label: "Cancelled" },
 };
@@ -338,6 +338,36 @@ function NewTaskDialog({
 				</DialogHeader>
 
 				<div className="space-y-5">
+					{/* Project */}
+					<div>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+							Project <span className="text-danger">*</span>
+						</label>
+						<Select
+							value={form.projectId}
+							onValueChange={(v) => set("projectId", v)}
+						>
+							<SelectTrigger
+								className={
+									errors.projectId ? "border-danger" : ""
+								}
+							>
+								<SelectValue placeholder="Select project" />
+							</SelectTrigger>
+							<SelectContent>
+								{projects.map((p) => (
+									<SelectItem key={p.id} value={p.id}>
+										{p.name}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						{errors.projectId && (
+							<p className="text-xs text-danger mt-1">
+								{errors.projectId}
+							</p>
+						)}
+					</div>
 					{/* Title */}
 					<div>
 						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
@@ -360,38 +390,8 @@ function NewTaskDialog({
 						)}
 					</div>
 
-					{/* Project + Status */}
+					{/* Status */}
 					<div className="grid grid-cols-2 gap-4">
-						<div>
-							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
-								Project <span className="text-danger">*</span>
-							</label>
-							<Select
-								value={form.projectId}
-								onValueChange={(v) => set("projectId", v)}
-							>
-								<SelectTrigger
-									className={
-										errors.projectId ? "border-danger" : ""
-									}
-								>
-									<SelectValue placeholder="Select project" />
-								</SelectTrigger>
-								<SelectContent>
-									{projects.map((p) => (
-										<SelectItem key={p.id} value={p.id}>
-											{p.name}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-							{errors.projectId && (
-								<p className="text-xs text-danger mt-1">
-									{errors.projectId}
-								</p>
-							)}
-						</div>
-
 						<div>
 							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
 								Status
@@ -410,9 +410,7 @@ function NewTaskDialog({
 									<SelectItem value="in-progress">
 										In Progress
 									</SelectItem>
-									<SelectItem value="review">
-										Review
-									</SelectItem>
+									<SelectItem value="review">QA</SelectItem>
 									<SelectItem value="done">Done</SelectItem>
 								</SelectContent>
 							</Select>
@@ -738,9 +736,7 @@ function EditTaskDialog({
 									<SelectItem value="in-progress">
 										In Progress
 									</SelectItem>
-									<SelectItem value="review">
-										Review
-									</SelectItem>
+									<SelectItem value="review">QA</SelectItem>
 									<SelectItem value="done">Done</SelectItem>
 								</SelectContent>
 							</Select>
@@ -923,11 +919,11 @@ function TaskCardContent({
 	return (
 		<div
 			className={cn(
-				"bg-surface rounded-lg border border-border p-3.5 flex flex-col gap-2.5 select-none",
-				PRIORITY_LEFT[task.priority],
+				"bg-surface rounded-lg border border-border p-3.5  transition-all flex flex-col gap-2.5 select-none",
+				PRIORITY_BORDER[task.priority],
 				isDragging
 					? "shadow-xl opacity-90 rotate-1"
-					: "shadow-sm hover:shadow-md hover:border-border-strong transition-all",
+					: "shadow-xs hover:shadow-md",
 			)}
 		>
 			<div className="flex items-start justify-between gap-2">
@@ -1601,7 +1597,7 @@ export default function TasksPage() {
 							<SelectItem value="in_progress">
 								In Progress
 							</SelectItem>
-							<SelectItem value="review">Review</SelectItem>
+							<SelectItem value="review">QA</SelectItem>
 							<SelectItem value="done">Done</SelectItem>
 							<SelectItem value="cancelled">Cancelled</SelectItem>
 						</SelectContent>

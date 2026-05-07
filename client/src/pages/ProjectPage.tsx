@@ -1,22 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-	ArrowLeft,
-	Plus,
-	Pencil,
-	CheckCircle2,
-	MessageSquare,
-	Users,
-	Edit3,
-	TrendingUp,
-	Loader2,
-	X,
-} from "lucide-react";
+import { ArrowLeft, Plus, Pencil, TrendingUp, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -52,6 +40,19 @@ import {
 	type ApiTaskPriority,
 } from "@/services/task.service";
 import { cn } from "@/lib/utils";
+import {
+	ProjectDescriptionEditor,
+	ProjectDescriptionPreview,
+} from "@/components/projects/project-description";
+import { projectDescriptionText } from "@/components/projects/project-description-utils";
+import {
+	DEFAULT_PROJECT_ICON,
+	type ProjectIconType,
+} from "@/components/projects/project-icon-options";
+import {
+	ProjectIcon,
+	ProjectIconPicker,
+} from "@/components/projects/project-icon-picker";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -129,36 +130,6 @@ function formatDate(iso: string | null): string {
 	});
 }
 
-// ── Activity Icon ─────────────────────────────────────────────────────────────
-
-function ActivityIcon({ type }: { type: string }) {
-	const base =
-		"h-8 w-8 rounded-full flex items-center justify-center shrink-0";
-	if (type === "check")
-		return (
-			<div className={`${base} bg-primary-subtle`}>
-				<CheckCircle2 className="h-4 w-4 text-primary" />
-			</div>
-		);
-	if (type === "comment")
-		return (
-			<div className={`${base} bg-accent-subtle`}>
-				<MessageSquare className="h-4 w-4 text-accent" />
-			</div>
-		);
-	if (type === "users")
-		return (
-			<div className={`${base} bg-muted-subtle`}>
-				<Users className="h-4 w-4 text-muted" />
-			</div>
-		);
-	return (
-		<div className={`${base} bg-secondary-subtle`}>
-			<Edit3 className="h-4 w-4 text-secondary" />
-		</div>
-	);
-}
-
 // ── Team Avatars ──────────────────────────────────────────────────────────────
 
 function TeamAvatars({ members }: { members: Project["project_members"] }) {
@@ -192,6 +163,8 @@ function TeamAvatars({ members }: { members: Project["project_members"] }) {
 const EDIT_EMPTY = {
 	name: "",
 	status: "planning" as ProjectStatus,
+	iconType: "icon" as ProjectIconType,
+	iconValue: DEFAULT_PROJECT_ICON,
 	sprint: "",
 	sprintEnds: "",
 	description: "",
@@ -227,6 +200,8 @@ function EditProjectDialog({
 		setForm({
 			name: project.name,
 			status: project.status,
+			iconType: project.icon_type ?? "icon",
+			iconValue: project.icon_value ?? DEFAULT_PROJECT_ICON,
 			sprint: project.sprint_name ?? "",
 			sprintEnds: project.sprint_end_date
 				? project.sprint_end_date.slice(0, 10)
@@ -279,13 +254,23 @@ function EditProjectDialog({
 			setErrors({ name: "Project name is required." });
 			return;
 		}
+		if (form.iconType === "image" && form.iconValue.length > 1_000_000) {
+			setErrors({
+				submit: "Icon image is too large. Please upload a smaller image.",
+			});
+			return;
+		}
 		setSubmitting(true);
 		setErrors({});
 		try {
 			const updated = await updateProject(project.id, {
 				name: form.name.trim(),
-				description: form.description.trim() || undefined,
+				description: projectDescriptionText(form.description)
+					? form.description
+					: "",
 				status: form.status,
+				icon_type: form.iconType,
+				icon_value: form.iconValue,
 				sprint_name: form.sprint.trim() || undefined,
 				sprint_end_date: form.sprintEnds || undefined,
 				tags: form.tags,
@@ -348,6 +333,19 @@ function EditProjectDialog({
 							</p>
 						)}
 					</div>
+
+					<ProjectIconPicker
+						iconType={form.iconType}
+						iconValue={form.iconValue}
+						onChange={({ iconType, iconValue }) => {
+							set("iconType", iconType);
+							set("iconValue", iconValue);
+							setErrors((prev) => ({
+								...prev,
+								submit: undefined,
+							}));
+						}}
+					/>
 
 					{/* Status + Sprint Name */}
 					<div className="grid grid-cols-2 gap-4">
@@ -462,12 +460,9 @@ function EditProjectDialog({
 						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
 							Description
 						</label>
-						<textarea
-							placeholder="Describe the project goals and scope..."
+						<ProjectDescriptionEditor
 							value={form.description}
-							onChange={(e) => set("description", e.target.value)}
-							rows={3}
-							className="w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted resize-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+							onChange={(value) => set("description", value)}
 						/>
 					</div>
 
@@ -870,9 +865,10 @@ export default function ProjectPage() {
 						</h1>
 						<Badge variant={statusVariant}>{statusLabel}</Badge>
 					</div>
-					<p className="text-sm text-muted leading-relaxed max-w-2xl">
-						{project.description || "No description."}
-					</p>
+					<ProjectDescriptionPreview
+						value={project.description}
+						className="text-sm text-muted leading-relaxed max-w-2xl"
+					/>
 				</div>
 				<div className="flex items-center gap-2 shrink-0">
 					<Button

@@ -70,7 +70,7 @@ export async function createProject(req, res, next) {
 			});
 		}
 
-		const { name, description, status, sprint_name, sprint_end_date, tags } = req.body;
+		const { name, description, status, icon_type, icon_value, sprint_name, sprint_end_date, tags } = req.body;
 
 		const { data, error } = await supabase
 			.from("projects")
@@ -78,6 +78,8 @@ export async function createProject(req, res, next) {
 				name: name.trim(),
 				description: description?.trim() || null,
 				status: status || "planning",
+				icon_type: icon_type || "icon",
+				icon_value: icon_value?.trim() || "check",
 				sprint_name: sprint_name?.trim() || null,
 				sprint_end_date: sprint_end_date || null,
 				tags: Array.isArray(tags) ? tags : [],
@@ -130,6 +132,14 @@ export async function updateProject(req, res, next) {
 
 		if (req.body.status !== undefined) {
 			updateData.status = req.body.status;
+		}
+
+		if (req.body.icon_type !== undefined) {
+			updateData.icon_type = req.body.icon_type || null;
+		}
+
+		if (req.body.icon_value !== undefined) {
+			updateData.icon_value = req.body.icon_value?.trim() || null;
 		}
 
 		if (req.body.sprint_name !== undefined) {

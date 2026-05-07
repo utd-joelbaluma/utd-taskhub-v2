@@ -1,4 +1,6 @@
 const allowedStatuses = ["planning", "in-progress", "on-hold", "completed"];
+const allowedIconTypes = ["icon", "image"];
+const maxIconValueLength = 1_000_000;
 
 function validateSprintFields(payload, errors) {
 	if (
@@ -29,6 +31,31 @@ function validateSprintFields(payload, errors) {
 	}
 }
 
+function validateIconFields(payload, errors) {
+	if (
+		payload.icon_type !== undefined &&
+		payload.icon_type !== null &&
+		!allowedIconTypes.includes(payload.icon_type)
+	) {
+		errors.push(`Icon type must be one of: ${allowedIconTypes.join(", ")}.`);
+	}
+
+	if (
+		payload.icon_value !== undefined &&
+		payload.icon_value !== null &&
+		typeof payload.icon_value !== "string"
+	) {
+		errors.push("Icon value must be a string.");
+	}
+
+	if (
+		typeof payload.icon_value === "string" &&
+		payload.icon_value.length > maxIconValueLength
+	) {
+		errors.push("Icon image is too large.");
+	}
+}
+
 export function validateCreateProject(payload) {
 	const errors = [];
 
@@ -45,6 +72,7 @@ export function validateCreateProject(payload) {
 	}
 
 	validateSprintFields(payload, errors);
+	validateIconFields(payload, errors);
 
 	return errors;
 }
@@ -69,6 +97,7 @@ export function validateUpdateProject(payload) {
 	}
 
 	validateSprintFields(payload, errors);
+	validateIconFields(payload, errors);
 
 	return errors;
 }

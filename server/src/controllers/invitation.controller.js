@@ -291,7 +291,10 @@ export async function acceptInvitation(req, res, next) {
 			if (existingMember) {
 				await supabase
 					.from("invitations")
-					.update({ status: "accepted", accepted_at: new Date().toISOString() })
+					.update({
+						status: "accepted",
+						accepted_at: new Date().toISOString(),
+					})
 					.eq("id", invitation.id);
 
 				return res.status(409).json({
@@ -304,18 +307,23 @@ export async function acceptInvitation(req, res, next) {
 		// Mark invitation accepted
 		const { error: acceptError } = await supabase
 			.from("invitations")
-			.update({ status: "accepted", accepted_at: new Date().toISOString() })
+			.update({
+				status: "accepted",
+				accepted_at: new Date().toISOString(),
+			})
 			.eq("id", invitation.id);
 
 		if (acceptError) throw acceptError;
 
 		// Add to project only for project-scoped invitations
 		if (invitation.project_id) {
-			const { error: memberError } = await supabase.from("project_members").insert({
-				project_id: invitation.project_id,
-				user_id: profile.id,
-				role: invitation.role,
-			});
+			const { error: memberError } = await supabase
+				.from("project_members")
+				.insert({
+					project_id: invitation.project_id,
+					user_id: profile.id,
+					role: invitation.role,
+				});
 			if (memberError) throw memberError;
 		}
 

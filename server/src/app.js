@@ -16,6 +16,7 @@ import ticketRoutes from "./routes/ticket.routes.js";
 import projectMemberRoutes from "./routes/project-member.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import roleRoutes from "./routes/role.routes.js";
+import sprintRoutes from "./routes/sprint.routes.js";
 import {
 	notFoundHandler,
 	errorHandler,
@@ -69,6 +70,7 @@ app.use(`/api/${env.apiVersion}/projects/:projectId/boards/:boardId/columns`, bo
 app.use(`/api/${env.apiVersion}/projects/:projectId/tasks`, taskRoutes);
 app.use(`/api/${env.apiVersion}/projects/:projectId/tickets`, ticketRoutes);
 app.use(`/api/${env.apiVersion}/projects/:projectId/members`, projectMemberRoutes);
+app.use(`/api/${env.apiVersion}/projects/:projectId/sprints`, sprintRoutes);
 app.use(`/api/${env.apiVersion}/users`, userRoutes);
 app.use(`/api/${env.apiVersion}/roles`, roleRoutes);
 

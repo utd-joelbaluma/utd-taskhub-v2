@@ -8,6 +8,8 @@ export interface Project {
 	name: string;
 	description: string | null;
 	status: ProjectStatus;
+	icon_type: "icon" | "image" | null;
+	icon_value: string | null;
 	sprint_name: string | null;
 	sprint_end_date: string | null;
 	tags: string[];
@@ -22,6 +24,8 @@ export interface CreateProjectPayload {
 	name: string;
 	description?: string;
 	status?: ProjectStatus;
+	icon_type?: "icon" | "image";
+	icon_value?: string;
 	sprint_name?: string;
 	sprint_end_date?: string;
 	tags?: string[];
@@ -31,6 +35,8 @@ export interface UpdateProjectPayload {
 	name?: string;
 	description?: string;
 	status?: ProjectStatus;
+	icon_type?: "icon" | "image";
+	icon_value?: string;
 	sprint_name?: string;
 	sprint_end_date?: string;
 	tags?: string[];
