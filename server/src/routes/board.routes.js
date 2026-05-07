@@ -9,8 +9,8 @@ import {
 import { requireAuth } from "../middlewares/auth.middleware.js";
 import {
 	requireProjectMember,
-	requireProjectRole,
 } from "../middlewares/project.middleware.js";
+import { requireProjectPermission } from "../middlewares/permission.middleware.js";
 
 // mergeParams allows access to :projectId from the parent route
 const router = express.Router({ mergeParams: true });
@@ -19,6 +19,7 @@ router.get(
 	"/",
 	requireAuth,
 	requireProjectMember,
+	requireProjectPermission("boards.read"),
 	getBoards
 );
 
@@ -26,6 +27,7 @@ router.get(
 	"/:boardId",
 	requireAuth,
 	requireProjectMember,
+	requireProjectPermission("boards.read"),
 	getBoardById
 );
 
@@ -33,7 +35,7 @@ router.post(
 	"/",
 	requireAuth,
 	requireProjectMember,
-	requireProjectRole("owner", "manager"),
+	requireProjectPermission("boards.manage"),
 	createBoard
 );
 
@@ -41,7 +43,7 @@ router.patch(
 	"/:boardId",
 	requireAuth,
 	requireProjectMember,
-	requireProjectRole("owner", "manager"),
+	requireProjectPermission("boards.manage"),
 	updateBoard
 );
 
@@ -49,7 +51,7 @@ router.delete(
 	"/:boardId",
 	requireAuth,
 	requireProjectMember,
-	requireProjectRole("owner", "manager"),
+	requireProjectPermission("boards.manage"),
 	deleteBoard
 );
 

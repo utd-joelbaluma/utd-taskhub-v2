@@ -8,10 +8,10 @@ export async function listMembers(req, res, next) {
 	try {
 		const { projectId } = req.params;
 
-		const { data, error } = await supabase
-			.from("project_members")
-			.select("*, profiles(id, full_name, email, avatar_url, role)")
-			.eq("project_id", projectId)
+			const { data, error } = await supabase
+				.from("project_members")
+				.select("*, profiles(id, full_name, email, avatar_url, role), project_role:roles!project_members_role_id_fkey(id, key, name, scope)")
+				.eq("project_id", projectId)
 			.order("joined_at", { ascending: true });
 
 		if (error) throw error;
@@ -40,13 +40,18 @@ export async function addMember(req, res, next) {
 			});
 		}
 
-		const { user_id, role = "member" } = req.body;
+			const { user_id, role = "member", role_id } = req.body;
 
-		const { data, error } = await supabase
-			.from("project_members")
-			.insert({ project_id: projectId, user_id, role })
-			.select("*, profiles(id, full_name, email, avatar_url, role)")
-			.single();
+			const memberData = { project_id: projectId, user_id, role };
+			if (role_id) {
+				memberData.role_id = role_id;
+			}
+
+			const { data, error } = await supabase
+				.from("project_members")
+				.insert(memberData)
+				.select("*, profiles(id, full_name, email, avatar_url, role), project_role:roles!project_members_role_id_fkey(id, key, name, scope)")
+				.single();
 
 		if (error) {
 			if (error.code === "23505") {
@@ -82,13 +87,17 @@ export async function updateMemberRole(req, res, next) {
 			});
 		}
 
-		const { data, error } = await supabase
-			.from("project_members")
-			.update({ role: req.body.role })
-			.eq("project_id", projectId)
-			.eq("user_id", userId)
-			.select("*, profiles(id, full_name, email, avatar_url, role)")
-			.maybeSingle();
+			const updateData = {};
+			if (req.body.role !== undefined) updateData.role = req.body.role;
+			if (req.body.role_id !== undefined) updateData.role_id = req.body.role_id;
+
+			const { data, error } = await supabase
+				.from("project_members")
+				.update(updateData)
+				.eq("project_id", projectId)
+				.eq("user_id", userId)
+				.select("*, profiles(id, full_name, email, avatar_url, role), project_role:roles!project_members_role_id_fkey(id, key, name, scope)")
+				.maybeSingle();
 
 		if (error) throw error;
 

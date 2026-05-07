@@ -1,4 +1,5 @@
 import { supabase } from "../config/supabase.js";
+import { userHasProjectPermission } from "../middlewares/permission.middleware.js";
 import { validateCreateComment, validateUpdateComment } from "../utils/comment.validator.js";
 
 const COMMENT_SELECT = `
@@ -140,8 +141,15 @@ export function makeDeleteComment(parentIdParam) {
 				return res.status(404).json({ success: false, message: "Comment not found." });
 			}
 
-			const isAuthor = existing.created_by === req.profile.id;
-			const isPrivileged = ["owner", "manager"].includes(req.membership?.role);
+			const projectId = req.params.projectId || req.params.id;
+			const isAuthor =
+				existing.created_by === req.profile.id &&
+				await userHasProjectPermission(req, projectId, "comments.delete_own");
+			const isPrivileged = await userHasProjectPermission(
+				req,
+				projectId,
+				"comments.moderate"
+			);
 
 			if (!isAuthor && !isPrivileged) {
 				return res.status(403).json({ success: false, message: "You do not have permission to delete this comment." });

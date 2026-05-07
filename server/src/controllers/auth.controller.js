@@ -1,4 +1,4 @@
-import { supabase } from "../config/supabase.js";
+import { supabase, supabaseAdmin } from "../config/supabase.js";
 import { validateRegister, validateLogin } from "../utils/auth.validator.js";
 
 export async function register(req, res, next) {
@@ -16,7 +16,7 @@ export async function register(req, res, next) {
 		const { email, password, full_name } = req.body;
 
 		const { data: authData, error: authError } =
-			await supabase.auth.admin.createUser({
+			await supabaseAdmin.auth.admin.createUser({
 				email: email.trim().toLowerCase(),
 				password,
 				email_confirm: true,
@@ -42,7 +42,7 @@ export async function register(req, res, next) {
 			.single();
 
 		if (profileError) {
-			await supabase.auth.admin.deleteUser(authData.user.id);
+			await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
 			throw profileError;
 		}
 
@@ -123,7 +123,7 @@ export async function login(req, res, next) {
 
 export async function logout(req, res, next) {
 	try {
-		const { error } = await supabase.auth.admin.signOut(req.token);
+		const { error } = await supabaseAdmin.auth.admin.signOut(req.token);
 
 		if (error) throw error;
 

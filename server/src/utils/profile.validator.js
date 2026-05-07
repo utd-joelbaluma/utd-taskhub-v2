@@ -1,5 +1,6 @@
 const ALLOWED_ROLES = ["admin", "manager", "developer", "user"];
 const ALLOWED_STATUSES = ["active", "invited", "disabled"];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function validateUpdateProfile(payload, isAdmin = false) {
 	const errors = [];
@@ -33,12 +34,18 @@ export function validateUpdateProfile(payload, isAdmin = false) {
 		if (payload.role !== undefined) {
 			errors.push("You are not allowed to change your role.");
 		}
+		if (payload.role_id !== undefined) {
+			errors.push("You are not allowed to change your role.");
+		}
 		if (payload.status !== undefined) {
 			errors.push("You are not allowed to change your status.");
 		}
 	} else {
 		if (payload.role !== undefined && !ALLOWED_ROLES.includes(payload.role)) {
 			errors.push(`Role must be one of: ${ALLOWED_ROLES.join(", ")}.`);
+		}
+		if (payload.role_id !== undefined && !UUID_RE.test(payload.role_id)) {
+			errors.push("role_id must be a valid UUID.");
 		}
 		if (
 			payload.status !== undefined &&

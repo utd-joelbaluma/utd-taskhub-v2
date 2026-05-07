@@ -1,10 +1,10 @@
-import { supabase } from "../config/supabase.js";
+import { supabase, supabaseAdmin } from "../config/supabase.js";
 
 export async function listUsers(req, res, next) {
 	try {
-		const { data, error } = await supabase
-			.from("profiles")
-			.select("id, full_name, email, avatar_url, role, status, created_at")
+			const { data, error } = await supabase
+				.from("profiles")
+				.select("id, full_name, email, avatar_url, role, role_id, status, created_at, global_role:roles!profiles_role_id_fkey(id, key, name, scope)")
 			.order("created_at", { ascending: false });
 
 		if (error) throw error;
@@ -21,7 +21,7 @@ export async function listUsers(req, res, next) {
 
 export async function inviteUser(req, res, next) {
 	try {
-		const { email, role = "member" } = req.body;
+		const { email, role = "user" } = req.body;
 
 		if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
 			return res.status(400).json({
@@ -45,7 +45,7 @@ export async function inviteUser(req, res, next) {
 			});
 		}
 
-		const { error } = await supabase.auth.admin.inviteUserByEmail(
+		const { error } = await supabaseAdmin.auth.admin.inviteUserByEmail(
 			normalizedEmail,
 			{
 				data: {
@@ -70,8 +70,8 @@ export async function listUserInvitations(req, res, next) {
 	try {
 		const { status } = req.query;
 
-		const { data: authData, error } =
-			await supabase.auth.admin.listUsers({ perPage: 1000 });
+			const { data: authData, error } =
+				await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
 
 		if (error) throw error;
 
@@ -107,8 +107,8 @@ export async function cancelUserInvitation(req, res, next) {
 	try {
 		const { userId } = req.params;
 
-		const { data: authUser, error: fetchError } =
-			await supabase.auth.admin.getUserById(userId);
+			const { data: authUser, error: fetchError } =
+				await supabaseAdmin.auth.admin.getUserById(userId);
 
 		if (fetchError || !authUser?.user) {
 			return res.status(404).json({
@@ -133,7 +133,7 @@ export async function cancelUserInvitation(req, res, next) {
 			});
 		}
 
-		const { error: updateError } = await supabase.auth.admin.updateUserById(
+			const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
 			userId,
 			{
 				app_metadata: {

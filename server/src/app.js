@@ -15,12 +15,14 @@ import taskRoutes from "./routes/task.routes.js";
 import ticketRoutes from "./routes/ticket.routes.js";
 import projectMemberRoutes from "./routes/project-member.routes.js";
 import userRoutes from "./routes/user.routes.js";
+import roleRoutes from "./routes/role.routes.js";
 import {
 	notFoundHandler,
 	errorHandler,
 } from "./middlewares/error.middleware.js";
 import { getAllTasks } from "./controllers/task.controller.js";
 import { requireAuth } from "./middlewares/auth.middleware.js";
+import { bindSupabaseContext } from "./config/supabase.js";
 
 const app = express();
 
@@ -43,6 +45,7 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(bindSupabaseContext);
 
 if (env.nodeEnv === "development") {
 	app.use(morgan("dev"));
@@ -67,6 +70,7 @@ app.use(`/api/${env.apiVersion}/projects/:projectId/tasks`, taskRoutes);
 app.use(`/api/${env.apiVersion}/projects/:projectId/tickets`, ticketRoutes);
 app.use(`/api/${env.apiVersion}/projects/:projectId/members`, projectMemberRoutes);
 app.use(`/api/${env.apiVersion}/users`, userRoutes);
+app.use(`/api/${env.apiVersion}/roles`, roleRoutes);
 
 app.get(`/api/${env.apiVersion}/tasks`, requireAuth, getAllTasks);
 

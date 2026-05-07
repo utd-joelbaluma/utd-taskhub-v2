@@ -14,38 +14,54 @@ import {
 import { requireAuth } from "../middlewares/auth.middleware.js";
 import {
 	requireProjectMember,
-	requireProjectRole,
 } from "../middlewares/project.middleware.js";
+import {
+	requirePermission,
+	requireProjectPermission,
+} from "../middlewares/permission.middleware.js";
 
 const router = express.Router();
 
 // Project CRUD
 router.get("/", requireAuth, getProjects);
 router.get("/:id", requireAuth, getProjectById);
-router.post("/", requireAuth, createProject);
-router.patch("/:id", requireAuth, updateProject);
-router.delete("/:id", requireAuth, deleteProject);
+router.post("/", requireAuth, requirePermission("projects.create"), createProject);
+router.patch(
+	"/:id",
+		requireAuth,
+		requireProjectMember,
+		requireProjectPermission("project.update"),
+		updateProject
+	);
+router.delete(
+	"/:id",
+		requireAuth,
+		requireProjectMember,
+		requireProjectPermission("project.delete"),
+		deleteProject
+	);
 
 // Project invitations
 router.get(
 	"/:id/invitations",
-	requireAuth,
-	requireProjectMember,
-	listInvitations
-);
+		requireAuth,
+		requireProjectMember,
+		requireProjectPermission("invitations.read"),
+		listInvitations
+	);
 router.post(
 	"/:id/invitations",
-	requireAuth,
-	requireProjectMember,
-	requireProjectRole("owner", "manager"),
-	sendInvitation
-);
+		requireAuth,
+		requireProjectMember,
+		requireProjectPermission("invitations.manage"),
+		sendInvitation
+	);
 router.delete(
 	"/:id/invitations/:invitationId",
-	requireAuth,
-	requireProjectMember,
-	requireProjectRole("owner", "manager"),
-	cancelInvitation
-);
+		requireAuth,
+		requireProjectMember,
+		requireProjectPermission("invitations.manage"),
+		cancelInvitation
+	);
 
 export default router;

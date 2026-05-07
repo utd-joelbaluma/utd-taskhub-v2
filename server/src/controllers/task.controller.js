@@ -310,25 +310,11 @@ export async function moveTask(req, res, next) {
 
 export async function getAllTasks(req, res, next) {
 	try {
-		const { data: memberships, error: memberError } = await supabase
-			.from("project_members")
-			.select("project_id")
-			.eq("user_id", req.profile.id);
-
-		if (memberError) throw memberError;
-
-		const projectIds = memberships.map(m => m.project_id);
-
-		if (projectIds.length === 0) {
-			return res.status(200).json({ success: true, count: 0, data: [] });
-		}
-
 		const { project_id, status, priority, assigned_to, search } = req.query;
 
 		let query = supabase
 			.from("tasks")
 			.select(TASK_SELECT)
-			.in("project_id", projectIds)
 			.order("created_at", { ascending: false });
 
 		if (project_id)  query = query.eq("project_id", project_id);

@@ -12,14 +12,26 @@ export function validateAddMember(payload) {
 		errors.push(`role must be one of: ${ALLOWED_ROLES.join(", ")}.`);
 	}
 
+	if (payload.role_id !== undefined && !UUID_RE.test(payload.role_id)) {
+		errors.push("role_id must be a valid UUID.");
+	}
+
 	return errors;
 }
 
 export function validateUpdateMemberRole(payload) {
 	const errors = [];
 
-	if (!payload.role || !ALLOWED_ROLES.includes(payload.role)) {
+	if (!payload.role && !payload.role_id) {
+		errors.push("role or role_id is required.");
+	}
+
+	if (payload.role !== undefined && !ALLOWED_ROLES.includes(payload.role)) {
 		errors.push(`role must be one of: ${ALLOWED_ROLES.join(", ")}.`);
+	}
+
+	if (payload.role_id !== undefined && !UUID_RE.test(payload.role_id)) {
+		errors.push("role_id must be a valid UUID.");
 	}
 
 	return errors;

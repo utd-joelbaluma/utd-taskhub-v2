@@ -5,13 +5,14 @@ import {
 	listUserInvitations,
 	cancelUserInvitation,
 } from "../controllers/user.controller.js";
-import { requireAuth, requireAdmin } from "../middlewares/auth.middleware.js";
+import { requireAuth } from "../middlewares/auth.middleware.js";
+import { requirePermission } from "../middlewares/permission.middleware.js";
 
 const router = express.Router();
 
-router.get("/", requireAuth, requireAdmin, listUsers);
-router.post("/invite", requireAuth, requireAdmin, inviteUser);
-router.get("/invitations", requireAuth, requireAdmin, listUserInvitations);
-router.delete("/invitations/:userId", requireAuth, requireAdmin, cancelUserInvitation);
+router.get("/", requireAuth, requirePermission("users.read"), listUsers);
+router.post("/invite", requireAuth, requirePermission("users.invite"), inviteUser);
+router.get("/invitations", requireAuth, requirePermission("users.invite"), listUserInvitations);
+router.delete("/invitations/:userId", requireAuth, requirePermission("users.manage"), cancelUserInvitation);
 
 export default router;

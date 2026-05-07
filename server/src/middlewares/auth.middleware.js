@@ -1,4 +1,9 @@
-import { supabase } from "../config/supabase.js";
+import {
+	createSupabaseForToken,
+	setRequestSupabase,
+	supabaseAdmin,
+} from "../config/supabase.js";
+import { userHasGlobalPermission } from "./permission.middleware.js";
 
 export async function requireAuth(req, res, next) {
 	const authHeader = req.headers.authorization;
@@ -13,7 +18,7 @@ export async function requireAuth(req, res, next) {
 	const token = authHeader.split(" ")[1];
 
 	const { data: authData, error: authError } =
-		await supabase.auth.getUser(token);
+		await supabaseAdmin.auth.getUser(token);
 
 	if (authError || !authData?.user) {
 		return res.status(401).json({
@@ -22,9 +27,11 @@ export async function requireAuth(req, res, next) {
 		});
 	}
 
-	const { data: profile, error: profileError } = await supabase
+	const userSupabase = createSupabaseForToken(token);
+
+	const { data: profile, error: profileError } = await supabaseAdmin
 		.from("profiles")
-		.select("*")
+		.select("*, global_role:roles!profiles_role_id_fkey(id, key, name, scope)")
 		.eq("id", authData.user.id)
 		.maybeSingle();
 
@@ -45,16 +52,23 @@ export async function requireAuth(req, res, next) {
 	req.user = authData.user;
 	req.profile = profile;
 	req.token = token;
+	req.supabase = userSupabase;
+	req.supabaseAdmin = supabaseAdmin;
+	setRequestSupabase(userSupabase);
 
 	next();
 }
 
 export function requireAdmin(req, res, next) {
-	if (req.profile?.role !== "admin") {
-		return res.status(403).json({
-			success: false,
-			message: "Admin access required.",
-		});
-	}
-	next();
+	return userHasGlobalPermission(req, "roles.manage")
+		.then((allowed) => {
+			if (!allowed) {
+				return res.status(403).json({
+					success: false,
+					message: "Admin access required.",
+				});
+			}
+			next();
+		})
+		.catch(next);
 }

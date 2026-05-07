@@ -16,24 +16,24 @@ import {
 import { requireAuth } from "../middlewares/auth.middleware.js";
 import {
 	requireProjectMember,
-	requireProjectRole,
 } from "../middlewares/project.middleware.js";
+import { requireProjectPermission } from "../middlewares/permission.middleware.js";
 
 const router = express.Router({ mergeParams: true });
 
-router.get("/", requireAuth, requireProjectMember, getTasks);
+router.get("/", requireAuth, requireProjectMember, requireProjectPermission("tasks.read"), getTasks);
 
-router.get("/:taskId", requireAuth, requireProjectMember, getTaskById);
+router.get("/:taskId", requireAuth, requireProjectMember, requireProjectPermission("tasks.read"), getTaskById);
 
-router.post("/", requireAuth, requireProjectMember, createTask);
+router.post("/", requireAuth, requireProjectMember, requireProjectPermission("tasks.create"), createTask);
 
-router.patch("/:taskId", requireAuth, requireProjectMember, updateTask);
+router.patch("/:taskId", requireAuth, requireProjectMember, requireProjectPermission("tasks.update"), updateTask);
 
 router.delete(
 	"/:taskId",
 	requireAuth,
 	requireProjectMember,
-	requireProjectRole("owner", "manager"),
+	requireProjectPermission("tasks.delete"),
 	deleteTask
 );
 
@@ -41,12 +41,13 @@ router.patch(
 	"/:taskId/move",
 	requireAuth,
 	requireProjectMember,
+	requireProjectPermission("tasks.move"),
 	moveTask
 );
 
-router.get("/:taskId/comments", requireAuth, requireProjectMember, makeGetComments("taskId"));
-router.post("/:taskId/comments", requireAuth, requireProjectMember, makeCreateComment("taskId"));
-router.patch("/:taskId/comments/:commentId", requireAuth, requireProjectMember, makeUpdateComment("taskId"));
+router.get("/:taskId/comments", requireAuth, requireProjectMember, requireProjectPermission("comments.read"), makeGetComments("taskId"));
+router.post("/:taskId/comments", requireAuth, requireProjectMember, requireProjectPermission("comments.create"), makeCreateComment("taskId"));
+router.patch("/:taskId/comments/:commentId", requireAuth, requireProjectMember, requireProjectPermission("comments.update_own"), makeUpdateComment("taskId"));
 router.delete("/:taskId/comments/:commentId", requireAuth, requireProjectMember, makeDeleteComment("taskId"));
 
 export default router;
