@@ -8,6 +8,10 @@ export interface LoginResponse {
 	user: User;
 }
 
+export interface RegisterResponse {
+	user: User;
+}
+
 export async function loginWithEmail(
 	email: string,
 	password: string,
@@ -22,6 +26,19 @@ export async function loginWithEmail(
 export async function getMe(): Promise<User> {
 	const res = await api.get<{ data: { user: User } }>("/auth/me");
 	return res.data.user;
+}
+
+export async function registerUser(
+	email: string,
+	password: string,
+	full_name: string,
+): Promise<RegisterResponse> {
+	const res = await api.post<{ data: RegisterResponse }>("/auth/register", {
+		email,
+		password,
+		full_name,
+	});
+	return res.data;
 }
 
 export async function logout(): Promise<void> {

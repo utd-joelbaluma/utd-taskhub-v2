@@ -16,6 +16,7 @@ const navLinks = [
 	{ to: "/", label: "Dashboard", end: true },
 	{ to: "/projects", label: "Projects" },
 	{ to: "/tasks", label: "Tasks" },
+	{ to: "/tickets", label: "Tickets" },
 	{ to: "/users", label: "Users" },
 	{ to: "/settings", label: "Settings" },
 ];

@@ -495,7 +495,7 @@ export default function ProjectsPage() {
           <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Projects</h1>
           <p className="text-sm text-muted mt-1">{projects.length} projects total</p>
         </div>
-        <Button className="flex w-full items-center gap-2 sm:w-auto" onClick={() => setDialogOpen(true)}>
+        <Button className="hidden items-center gap-2 sm:flex" onClick={() => setDialogOpen(true)}>
           <Plus className="h-4 w-4" />
           New Project
         </Button>
@@ -551,6 +551,15 @@ export default function ProjectsPage() {
               <List className="h-4 w-4" />
             </button>
           </div>
+
+          <Button
+            size="icon"
+            className="shrink-0 sm:hidden"
+            onClick={() => setDialogOpen(true)}
+            aria-label="New Project"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 

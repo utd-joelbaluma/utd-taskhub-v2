@@ -1,0 +1,906 @@
+import { useState, useEffect, useCallback } from "react";
+import { Plus, Loader2, Ticket as TicketIcon, MoreHorizontal, ArrowRightCircle, Pencil, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogDescription,
+	DialogFooter,
+	DialogClose,
+} from "@/components/ui/dialog";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import { listProjects, type Project } from "@/services/project.service";
+import {
+	listTickets,
+	createTicket,
+	updateTicket,
+	deleteTicket,
+	convertTicketToTask,
+	type Ticket,
+	type TicketType,
+	type TicketStatus,
+	type TicketPriority,
+	type CreateTicketPayload,
+	type UpdateTicketPayload,
+	type ConvertTicketPayload,
+} from "@/services/ticket.service";
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function formatDate(iso: string) {
+	return new Date(iso).toLocaleDateString("en-US", {
+		month: "short",
+		day: "numeric",
+		year: "numeric",
+	});
+}
+
+function getInitials(name: string | null): string {
+	if (!name) return "?";
+	return name
+		.split(" ")
+		.map((w) => w[0])
+		.slice(0, 2)
+		.join("")
+		.toUpperCase();
+}
+
+type BadgeVariant =
+	| "urgent"
+	| "high"
+	| "medium"
+	| "low"
+	| "open"
+	| "review"
+	| "done"
+	| "cancelled"
+	| "accent"
+	| "default";
+
+function priorityVariant(p: TicketPriority): BadgeVariant {
+	return p as BadgeVariant;
+}
+
+function statusVariant(s: TicketStatus): BadgeVariant {
+	const map: Record<TicketStatus, BadgeVariant> = {
+		open: "open",
+		in_review: "review",
+		resolved: "done",
+		closed: "cancelled",
+		cancelled: "cancelled",
+	};
+	return map[s];
+}
+
+function typeVariant(t: TicketType): BadgeVariant {
+	const map: Record<TicketType, BadgeVariant> = {
+		bug: "urgent",
+		feature_request: "medium",
+		issue: "high",
+		support: "accent",
+		other: "default",
+	};
+	return map[t];
+}
+
+function typeLabel(t: TicketType): string {
+	const map: Record<TicketType, string> = {
+		bug: "Bug",
+		feature_request: "Feature Request",
+		issue: "Issue",
+		support: "Support",
+		other: "Other",
+	};
+	return map[t];
+}
+
+function statusLabel(s: TicketStatus): string {
+	const map: Record<TicketStatus, string> = {
+		open: "Open",
+		in_review: "In Review",
+		resolved: "Resolved",
+		closed: "Closed",
+		cancelled: "Cancelled",
+	};
+	return map[s];
+}
+
+const TICKET_TYPES: TicketType[] = ["bug", "feature_request", "issue", "support", "other"];
+const TICKET_STATUSES: TicketStatus[] = ["open", "in_review", "resolved", "closed", "cancelled"];
+const TICKET_PRIORITIES: TicketPriority[] = ["low", "medium", "high", "urgent"];
+const TASK_STATUSES = ["backlog", "todo", "in_progress", "review", "done", "cancelled"] as const;
+
+// ── TicketDialog (create / edit) ──────────────────────────────────────────────
+
+interface TicketDialogProps {
+	open: boolean;
+	mode: "create" | "edit";
+	ticket?: Ticket;
+	projectId: string;
+	onClose: () => void;
+	onSaved: () => void;
+}
+
+function TicketDialog({ open, mode, ticket, projectId, onClose, onSaved }: TicketDialogProps) {
+	const [title, setTitle] = useState("");
+	const [description, setDescription] = useState("");
+	const [type, setType] = useState<TicketType>("bug");
+	const [priority, setPriority] = useState<TicketPriority>("medium");
+	const [status, setStatus] = useState<TicketStatus>("open");
+	const [assignedTo, setAssignedTo] = useState("");
+	const [dueDate, setDueDate] = useState("");
+	const [submitting, setSubmitting] = useState(false);
+	const [titleError, setTitleError] = useState("");
+
+	useEffect(() => {
+		if (open) {
+			if (mode === "edit" && ticket) {
+				setTitle(ticket.title);
+				setDescription(ticket.description ?? "");
+				setType(ticket.type);
+				setPriority(ticket.priority);
+				setStatus(ticket.status);
+				setAssignedTo(ticket.assigned_to?.id ?? "");
+				setDueDate(ticket.due_date ?? "");
+			} else {
+				setTitle("");
+				setDescription("");
+				setType("bug");
+				setPriority("medium");
+				setStatus("open");
+				setAssignedTo("");
+				setDueDate("");
+			}
+			setTitleError("");
+		}
+	}, [open, mode, ticket]);
+
+	async function handleSubmit() {
+		if (!title.trim()) {
+			setTitleError("Title is required.");
+			return;
+		}
+		setSubmitting(true);
+		setTitleError("");
+		try {
+			if (mode === "create") {
+				const payload: CreateTicketPayload = {
+					title: title.trim(),
+					description: description.trim() || undefined,
+					type,
+					priority,
+					status,
+					assigned_to: assignedTo.trim() || undefined,
+					due_date: dueDate || undefined,
+				};
+				await createTicket(projectId, payload);
+				toast.success("Ticket created.");
+			} else if (ticket) {
+				const payload: UpdateTicketPayload = {
+					title: title.trim(),
+					description: description.trim() || undefined,
+					type,
+					priority,
+					status,
+					assigned_to: assignedTo.trim() || undefined,
+					due_date: dueDate || undefined,
+				};
+				await updateTicket(projectId, ticket.id, payload);
+				toast.success("Ticket updated.");
+			}
+			onSaved();
+			onClose();
+		} catch (err: unknown) {
+			const msg = err instanceof Error ? err.message : "Something went wrong.";
+			toast.error(msg);
+		} finally {
+			setSubmitting(false);
+		}
+	}
+
+	return (
+		<Dialog open={open} onOpenChange={(val) => { if (!val) onClose(); }}>
+			<DialogContent className="max-w-[520px]">
+				<DialogHeader>
+					<DialogTitle>{mode === "create" ? "New Ticket" : "Edit Ticket"}</DialogTitle>
+					<DialogDescription>
+						{mode === "create" ? "Create a new ticket for this project." : "Update ticket details."}
+					</DialogDescription>
+				</DialogHeader>
+
+				<div className="space-y-4">
+					<div>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+							Title <span className="text-danger">*</span>
+						</label>
+						<Input
+							placeholder="Describe the issue..."
+							value={title}
+							onChange={(e) => { setTitle(e.target.value); setTitleError(""); }}
+							className={titleError ? "border-danger focus:ring-danger" : ""}
+						/>
+						{titleError && <p className="text-xs text-danger mt-1">{titleError}</p>}
+					</div>
+
+					<div>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+							Description
+						</label>
+						<textarea
+							placeholder="Additional details..."
+							value={description}
+							onChange={(e) => setDescription(e.target.value)}
+							rows={3}
+							className="flex w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+						/>
+					</div>
+
+					<div className="grid grid-cols-2 gap-3">
+						<div>
+							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Type</label>
+							<Select value={type} onValueChange={(v) => setType(v as TicketType)}>
+								<SelectTrigger><SelectValue /></SelectTrigger>
+								<SelectContent>
+									{TICKET_TYPES.map((t) => (
+										<SelectItem key={t} value={t}>{typeLabel(t)}</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+
+						<div>
+							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Priority</label>
+							<Select value={priority} onValueChange={(v) => setPriority(v as TicketPriority)}>
+								<SelectTrigger><SelectValue /></SelectTrigger>
+								<SelectContent>
+									{TICKET_PRIORITIES.map((p) => (
+										<SelectItem key={p} value={p} className="capitalize">{p}</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+					</div>
+
+					<div className="grid grid-cols-2 gap-3">
+						<div>
+							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Status</label>
+							<Select value={status} onValueChange={(v) => setStatus(v as TicketStatus)}>
+								<SelectTrigger><SelectValue /></SelectTrigger>
+								<SelectContent>
+									{TICKET_STATUSES.map((s) => (
+										<SelectItem key={s} value={s}>{statusLabel(s)}</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+
+						<div>
+							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Due Date</label>
+							<Input
+								type="date"
+								value={dueDate}
+								onChange={(e) => setDueDate(e.target.value)}
+							/>
+						</div>
+					</div>
+
+					<div>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+							Assigned To (UUID)
+						</label>
+						<Input
+							placeholder="User UUID (optional)"
+							value={assignedTo}
+							onChange={(e) => setAssignedTo(e.target.value)}
+						/>
+					</div>
+				</div>
+
+				<DialogFooter>
+					<DialogClose asChild>
+						<Button variant="outline" disabled={submitting}>Cancel</Button>
+					</DialogClose>
+					<Button onClick={handleSubmit} disabled={submitting}>
+						{submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+						{mode === "create" ? "Create Ticket" : "Save Changes"}
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+}
+
+// ── ConvertDialog ─────────────────────────────────────────────────────────────
+
+interface ConvertDialogProps {
+	open: boolean;
+	ticket: Ticket | null;
+	projectId: string;
+	onClose: () => void;
+	onConverted: () => void;
+}
+
+function ConvertDialog({ open, ticket, projectId, onClose, onConverted }: ConvertDialogProps) {
+	const [title, setTitle] = useState("");
+	const [description, setDescription] = useState("");
+	const [priority, setPriority] = useState("medium");
+	const [taskStatus, setTaskStatus] = useState("backlog");
+	const [assignedTo, setAssignedTo] = useState("");
+	const [dueDate, setDueDate] = useState("");
+	const [tags, setTags] = useState("");
+	const [boardColumnId, setBoardColumnId] = useState("");
+	const [submitting, setSubmitting] = useState(false);
+	const [titleError, setTitleError] = useState("");
+
+	useEffect(() => {
+		if (open && ticket) {
+			setTitle(ticket.title);
+			setDescription(ticket.description ?? "");
+			setPriority(ticket.priority);
+			setTaskStatus("backlog");
+			setAssignedTo(ticket.assigned_to?.id ?? "");
+			setDueDate(ticket.due_date ?? "");
+			setTags("");
+			setBoardColumnId("");
+			setTitleError("");
+		}
+	}, [open, ticket]);
+
+	async function handleSubmit() {
+		if (!title.trim()) {
+			setTitleError("Title is required.");
+			return;
+		}
+		if (!ticket) return;
+		setSubmitting(true);
+		setTitleError("");
+		try {
+			const payload: ConvertTicketPayload = {
+				title: title.trim(),
+				description: description.trim() || undefined,
+				priority: priority || undefined,
+				status: taskStatus || undefined,
+				assigned_to: assignedTo.trim() || undefined,
+				due_date: dueDate || undefined,
+				tags: tags.trim() ? tags.split(",").map((t) => t.trim()).filter(Boolean) : undefined,
+				board_column_id: boardColumnId.trim() || undefined,
+			};
+			await convertTicketToTask(projectId, ticket.id, payload);
+			toast.success("Ticket converted to task.");
+			onConverted();
+			onClose();
+		} catch (err: unknown) {
+			const msg = err instanceof Error ? err.message : "Conversion failed.";
+			toast.error(msg);
+		} finally {
+			setSubmitting(false);
+		}
+	}
+
+	return (
+		<Dialog open={open} onOpenChange={(val) => { if (!val) onClose(); }}>
+			<DialogContent className="max-w-[520px]">
+				<DialogHeader>
+					<DialogTitle>Convert to Task</DialogTitle>
+					<DialogDescription>Review and adjust the task details before converting.</DialogDescription>
+				</DialogHeader>
+
+				<div className="space-y-4">
+					<div>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+							Title <span className="text-danger">*</span>
+						</label>
+						<Input
+							value={title}
+							onChange={(e) => { setTitle(e.target.value); setTitleError(""); }}
+							className={titleError ? "border-danger focus:ring-danger" : ""}
+						/>
+						{titleError && <p className="text-xs text-danger mt-1">{titleError}</p>}
+					</div>
+
+					<div>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Description</label>
+						<textarea
+							value={description}
+							onChange={(e) => setDescription(e.target.value)}
+							rows={3}
+							className="flex w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+						/>
+					</div>
+
+					<div className="grid grid-cols-2 gap-3">
+						<div>
+							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Priority</label>
+							<Select value={priority} onValueChange={setPriority}>
+								<SelectTrigger><SelectValue /></SelectTrigger>
+								<SelectContent>
+									{TICKET_PRIORITIES.map((p) => (
+										<SelectItem key={p} value={p} className="capitalize">{p}</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+
+						<div>
+							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Status</label>
+							<Select value={taskStatus} onValueChange={setTaskStatus}>
+								<SelectTrigger><SelectValue /></SelectTrigger>
+								<SelectContent>
+									{TASK_STATUSES.map((s) => (
+										<SelectItem key={s} value={s} className="capitalize">{s.replace("_", " ")}</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+					</div>
+
+					<div className="grid grid-cols-2 gap-3">
+						<div>
+							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Assigned To (UUID)</label>
+							<Input
+								placeholder="User UUID (optional)"
+								value={assignedTo}
+								onChange={(e) => setAssignedTo(e.target.value)}
+							/>
+						</div>
+
+						<div>
+							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Due Date</label>
+							<Input
+								type="date"
+								value={dueDate}
+								onChange={(e) => setDueDate(e.target.value)}
+							/>
+						</div>
+					</div>
+
+					<div>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Tags (comma-separated)</label>
+						<Input
+							placeholder="e.g. auth, ui, critical"
+							value={tags}
+							onChange={(e) => setTags(e.target.value)}
+						/>
+					</div>
+
+					<div>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Board Column ID (UUID)</label>
+						<Input
+							placeholder="Column UUID (optional)"
+							value={boardColumnId}
+							onChange={(e) => setBoardColumnId(e.target.value)}
+						/>
+					</div>
+				</div>
+
+				<DialogFooter>
+					<DialogClose asChild>
+						<Button variant="outline" disabled={submitting}>Cancel</Button>
+					</DialogClose>
+					<Button onClick={handleSubmit} disabled={submitting}>
+						{submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+						Convert to Task
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+}
+
+// ── TicketRow ─────────────────────────────────────────────────────────────────
+
+interface TicketRowProps {
+	ticket: Ticket;
+	deleting: boolean;
+	onEdit: (t: Ticket) => void;
+	onConvert: (t: Ticket) => void;
+	onDelete: (t: Ticket) => void;
+}
+
+function TicketRow({ ticket, deleting, onEdit, onConvert, onDelete }: TicketRowProps) {
+	return (
+		<tr className="border-b border-border last:border-0 hover:bg-muted-subtle transition-colors">
+			{/* Title */}
+			<td className="px-5 py-3.5 max-w-[240px]">
+				<p className="text-sm font-semibold text-foreground truncate">{ticket.title}</p>
+				{ticket.description && (
+					<p className="text-xs text-muted truncate mt-0.5">{ticket.description}</p>
+				)}
+			</td>
+
+			{/* Type */}
+			<td className="px-4 py-3.5">
+				<Badge variant={typeVariant(ticket.type)}>{typeLabel(ticket.type)}</Badge>
+			</td>
+
+			{/* Priority */}
+			<td className="px-4 py-3.5">
+				<Badge variant={priorityVariant(ticket.priority)} className="capitalize">{ticket.priority}</Badge>
+			</td>
+
+			{/* Status */}
+			<td className="px-4 py-3.5">
+				<Badge variant={statusVariant(ticket.status)}>{statusLabel(ticket.status)}</Badge>
+			</td>
+
+			{/* Assigned To */}
+			<td className="px-4 py-3.5">
+				{ticket.assigned_to ? (
+					<div className="flex items-center gap-2">
+						<Avatar className="h-6 w-6">
+							<AvatarFallback className="text-[9px]">
+								{getInitials(ticket.assigned_to.full_name)}
+							</AvatarFallback>
+						</Avatar>
+						<span className="text-xs text-foreground">
+							{ticket.assigned_to.full_name ?? ticket.assigned_to.email}
+						</span>
+					</div>
+				) : (
+					<span className="text-xs text-muted">Unassigned</span>
+				)}
+			</td>
+
+			{/* Created */}
+			<td className="px-4 py-3.5 text-xs text-muted whitespace-nowrap">
+				{formatDate(ticket.created_at)}
+			</td>
+
+			{/* Actions */}
+			<td className="px-4 py-3.5">
+				<div className="flex items-center gap-2 justify-end">
+					{ticket.converted_task_id !== null ? (
+						<Badge variant="done" className="text-[10px]">Converted</Badge>
+					) : null}
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<button
+								className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted-subtle hover:text-foreground transition-colors focus:outline-none"
+								disabled={deleting}
+							>
+								{deleting ? (
+									<Loader2 className="h-4 w-4 animate-spin" />
+								) : (
+									<MoreHorizontal className="h-4 w-4" />
+								)}
+							</button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="end" className="w-44">
+							{ticket.converted_task_id === null && (
+								<DropdownMenuItem
+									className="gap-2 text-sm"
+									onSelect={() => onConvert(ticket)}
+								>
+									<ArrowRightCircle className="h-4 w-4 text-muted-foreground" />
+									Make Task
+								</DropdownMenuItem>
+							)}
+							<DropdownMenuItem
+								className="gap-2 text-sm"
+								onSelect={() => onEdit(ticket)}
+							>
+								<Pencil className="h-4 w-4 text-muted-foreground" />
+								Edit
+							</DropdownMenuItem>
+							{ticket.converted_task_id === null && <DropdownMenuSeparator />}
+							<DropdownMenuItem
+								className="gap-2 text-sm text-danger focus:text-danger focus:bg-danger/10"
+								onSelect={() => onDelete(ticket)}
+							>
+								<Trash2 className="h-4 w-4" />
+								Delete
+							</DropdownMenuItem>
+						</DropdownMenuContent>
+					</DropdownMenu>
+				</div>
+			</td>
+		</tr>
+	);
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+
+interface Filters {
+	status: TicketStatus | "";
+	type: TicketType | "";
+	priority: TicketPriority | "";
+}
+
+export default function TicketsPage() {
+	const [projects, setProjects] = useState<Project[]>([]);
+	const [projectsLoading, setProjectsLoading] = useState(true);
+	const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+
+	const [tickets, setTickets] = useState<Ticket[]>([]);
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+
+	const [filters, setFilters] = useState<Filters>({ status: "", type: "", priority: "" });
+
+	const [createOpen, setCreateOpen] = useState(false);
+	const [editTicket, setEditTicket] = useState<Ticket | null>(null);
+	const [convertTicket, setConvertTicket] = useState<Ticket | null>(null);
+	const [deletingId, setDeletingId] = useState<string | null>(null);
+
+	// Load projects on mount
+	useEffect(() => {
+		setProjectsLoading(true);
+		listProjects()
+			.then((data) => {
+				setProjects(data);
+				if (data.length > 0) setSelectedProjectId(data[0].id);
+			})
+			.catch(() => toast.error("Failed to load projects."))
+			.finally(() => setProjectsLoading(false));
+	}, []);
+
+	const fetchTickets = useCallback(async () => {
+		if (!selectedProjectId) return;
+		setLoading(true);
+		setError(null);
+		try {
+			const params = {
+				status: filters.status || undefined,
+				type: filters.type || undefined,
+				priority: filters.priority || undefined,
+			};
+			const data = await listTickets(selectedProjectId, params as Parameters<typeof listTickets>[1]);
+			setTickets(data);
+		} catch (err: unknown) {
+			const msg = err instanceof Error ? err.message : "Failed to load tickets.";
+			setError(msg);
+		} finally {
+			setLoading(false);
+		}
+	}, [selectedProjectId, filters]);
+
+	useEffect(() => {
+		if (selectedProjectId) fetchTickets();
+		else setTickets([]);
+	}, [selectedProjectId, fetchTickets]);
+
+	async function handleDelete(ticket: Ticket) {
+		if (!window.confirm(`Delete "${ticket.title}"? This cannot be undone.`)) return;
+		setDeletingId(ticket.id);
+		try {
+			await deleteTicket(selectedProjectId, ticket.id);
+			toast.success("Ticket deleted.");
+			fetchTickets();
+		} catch (err: unknown) {
+			const msg = err instanceof Error ? err.message : "Failed to delete ticket.";
+			toast.error(msg);
+		} finally {
+			setDeletingId(null);
+		}
+	}
+
+	function setFilter<K extends keyof Filters>(key: K, value: Filters[K]) {
+		setFilters((prev) => ({ ...prev, [key]: value }));
+	}
+
+	const hasFilters = filters.status || filters.type || filters.priority;
+
+	return (
+		<div className="mx-auto max-w-[1280px] px-6 py-8">
+			{/* Header */}
+			<div className="flex items-center justify-between mb-8">
+				<div>
+					<h1 className="text-3xl font-semibold text-foreground tracking-tight">Tickets</h1>
+					<p className="text-sm text-muted mt-1">
+						{selectedProjectId
+							? `${tickets.length} ticket${tickets.length !== 1 ? "s" : ""}`
+							: "Select a project to view tickets"}
+					</p>
+				</div>
+				<Button
+					className="flex items-center gap-2"
+					disabled={!selectedProjectId}
+					onClick={() => setCreateOpen(true)}
+				>
+					<Plus className="h-4 w-4" />
+					New Ticket
+				</Button>
+			</div>
+
+			{/* Project selector + Filters */}
+			<div className="flex flex-wrap items-center gap-3 mb-6">
+				{/* Project */}
+				<div className="min-w-[200px]">
+					{projectsLoading ? (
+						<div className="h-9 rounded-md border border-border bg-muted-subtle animate-pulse" />
+					) : (
+						<Select
+							value={selectedProjectId}
+							onValueChange={setSelectedProjectId}
+						>
+							<SelectTrigger className="h-9">
+								<SelectValue placeholder="Select project..." />
+							</SelectTrigger>
+							<SelectContent>
+								{projects.map((p) => (
+									<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					)}
+				</div>
+
+				<div className="h-5 w-px bg-border hidden sm:block" />
+
+				{/* Status filter */}
+				<Select
+					value={filters.status || "all"}
+					onValueChange={(v) => setFilter("status", v === "all" ? "" : v as TicketStatus)}
+				>
+					<SelectTrigger className="h-9 w-[140px]">
+						<SelectValue placeholder="Status" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="all">All statuses</SelectItem>
+						{TICKET_STATUSES.map((s) => (
+							<SelectItem key={s} value={s}>{statusLabel(s)}</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+
+				{/* Type filter */}
+				<Select
+					value={filters.type || "all"}
+					onValueChange={(v) => setFilter("type", v === "all" ? "" : v as TicketType)}
+				>
+					<SelectTrigger className="h-9 w-[160px]">
+						<SelectValue placeholder="Type" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="all">All types</SelectItem>
+						{TICKET_TYPES.map((t) => (
+							<SelectItem key={t} value={t}>{typeLabel(t)}</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+
+				{/* Priority filter */}
+				<Select
+					value={filters.priority || "all"}
+					onValueChange={(v) => setFilter("priority", v === "all" ? "" : v as TicketPriority)}
+				>
+					<SelectTrigger className="h-9 w-[140px]">
+						<SelectValue placeholder="Priority" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="all">All priorities</SelectItem>
+						{TICKET_PRIORITIES.map((p) => (
+							<SelectItem key={p} value={p} className="capitalize">{p}</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+
+				{hasFilters && (
+					<button
+						onClick={() => setFilters({ status: "", type: "", priority: "" })}
+						className="text-xs text-muted hover:text-foreground transition-colors underline underline-offset-2"
+					>
+						Clear filters
+					</button>
+				)}
+			</div>
+
+			{/* Loading */}
+			{loading && (
+				<div className="flex items-center justify-center py-24 gap-2 text-muted">
+					<Loader2 className="h-5 w-5 animate-spin" />
+					<span className="text-sm">Loading tickets...</span>
+				</div>
+			)}
+
+			{/* Error */}
+			{!loading && error && (
+				<div className="flex flex-col items-center justify-center py-24 text-center">
+					<p className="text-base font-medium text-foreground mb-1">Something went wrong</p>
+					<p className="text-sm text-muted mb-4">{error}</p>
+					<Button variant="outline" onClick={fetchTickets}>Retry</Button>
+				</div>
+			)}
+
+			{/* No project selected */}
+			{!loading && !error && !selectedProjectId && (
+				<div className="flex flex-col items-center justify-center py-24 text-center">
+					<TicketIcon className="h-10 w-10 text-border-strong mb-4" />
+					<p className="text-base font-medium text-foreground mb-1">No project selected</p>
+					<p className="text-sm text-muted">Choose a project above to view its tickets.</p>
+				</div>
+			)}
+
+			{/* Empty */}
+			{!loading && !error && selectedProjectId && tickets.length === 0 && (
+				<div className="flex flex-col items-center justify-center py-24 text-center">
+					<TicketIcon className="h-10 w-10 text-border-strong mb-4" />
+					<p className="text-base font-medium text-foreground mb-1">No tickets found</p>
+					<p className="text-sm text-muted">
+						{hasFilters ? "Try adjusting your filters." : "Create the first ticket for this project."}
+					</p>
+				</div>
+			)}
+
+			{/* Table */}
+			{!loading && !error && selectedProjectId && tickets.length > 0 && (
+				<Card className="p-0 overflow-hidden">
+					<div className="overflow-x-auto">
+						<table className="w-full text-sm">
+							<thead>
+								<tr className="border-b border-border bg-muted-subtle">
+									{["Title", "Type", "Priority", "Status", "Assigned To", "Created", ""].map((h, i) => (
+										<th
+											key={i}
+											className={`px-4 py-3 text-[10px] font-medium uppercase tracking-wider text-muted text-left ${i === 0 ? "pl-5" : ""}`}
+										>
+											{h}
+										</th>
+									))}
+								</tr>
+							</thead>
+							<tbody>
+								{tickets.map((t) => (
+									<TicketRow
+										key={t.id}
+										ticket={t}
+										deleting={deletingId === t.id}
+										onEdit={setEditTicket}
+										onConvert={setConvertTicket}
+										onDelete={handleDelete}
+									/>
+								))}
+							</tbody>
+						</table>
+					</div>
+				</Card>
+			)}
+
+			{/* Dialogs */}
+			<TicketDialog
+				open={createOpen}
+				mode="create"
+				projectId={selectedProjectId}
+				onClose={() => setCreateOpen(false)}
+				onSaved={fetchTickets}
+			/>
+
+			<TicketDialog
+				open={editTicket !== null}
+				mode="edit"
+				ticket={editTicket ?? undefined}
+				projectId={selectedProjectId}
+				onClose={() => setEditTicket(null)}
+				onSaved={fetchTickets}
+			/>
+
+			<ConvertDialog
+				open={convertTicket !== null}
+				ticket={convertTicket}
+				projectId={selectedProjectId}
+				onClose={() => setConvertTicket(null)}
+				onConverted={fetchTickets}
+			/>
+		</div>
+	);
+}
