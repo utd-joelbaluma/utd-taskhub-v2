@@ -44,13 +44,8 @@ export async function registerUser(
 export async function completeInvite(
 	fullName: string,
 	password: string,
-	accessToken: string,
 ): Promise<void> {
-	await api.post(
-		"/auth/complete-invite",
-		{ full_name: fullName, password },
-		{ headers: { Authorization: `Bearer ${accessToken}` } },
-	);
+	await api.post("/auth/complete-invite", { full_name: fullName, password });
 }
 
 export async function logout(): Promise<void> {

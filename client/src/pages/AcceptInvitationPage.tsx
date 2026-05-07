@@ -169,9 +169,9 @@ export default function AcceptInvitationPage() {
 
 		setCompleteLoading(true);
 		try {
-			await completeInvite(completeForm.name.trim(), completeForm.password, inviteSession.access_token);
 			localStorage.setItem("access_token", inviteSession.access_token);
 			localStorage.setItem("refresh_token", inviteSession.refresh_token);
+			await completeInvite(completeForm.name.trim(), completeForm.password);
 			navigate("/");
 		} catch (err) {
 			setCompleteError(
