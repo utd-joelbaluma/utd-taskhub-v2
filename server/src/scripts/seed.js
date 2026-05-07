@@ -1,0 +1,319 @@
+import '../config/env.js';
+import { supabase } from '../config/supabase.js';
+
+// ---------------------------------------------------------------------------
+// Seed data
+// ---------------------------------------------------------------------------
+
+const USERS = [
+  { initials: 'AR', full_name: 'Alex Rivera',     email: 'alex.rivera@taskhub.dev',     password: 'Taskhub2024!', role: 'admin' },
+  { initials: 'AM', full_name: 'Alex Martinez',   email: 'alex.martinez@taskhub.dev',   password: 'Taskhub2024!', role: 'developer' },
+  { initials: 'PR', full_name: 'Paula Rodriguez', email: 'paula.rodriguez@taskhub.dev', password: 'Taskhub2024!', role: 'developer' },
+  { initials: 'TS', full_name: 'Tyler Smith',     email: 'tyler.smith@taskhub.dev',     password: 'Taskhub2024!', role: 'developer' },
+  { initials: 'KL', full_name: 'Kate Liu',        email: 'kate.liu@taskhub.dev',        password: 'Taskhub2024!', role: 'manager' },
+  { initials: 'JD', full_name: 'Jordan Davis',    email: 'jordan.davis@taskhub.dev',    password: 'Taskhub2024!', role: 'developer' },
+  { initials: 'DM', full_name: 'Diego Morales',   email: 'diego.morales@taskhub.dev',   password: 'Taskhub2024!', role: 'developer' },
+  { initials: 'MN', full_name: 'Maria Nguyen',    email: 'maria.nguyen@taskhub.dev',    password: 'Taskhub2024!', role: 'developer' },
+];
+
+const PROJECTS = [
+  {
+    name: 'Internal System',
+    description: 'Core architectural redesign and backend optimization for the centralized management system.',
+    status: 'in-progress',
+    sprint_name: 'Sprint 24 Delta',
+    tags: ['Backend', 'Infrastructure'],
+    created_by: 'AR',
+  },
+  {
+    name: 'Customer Portal',
+    description: 'Self-service portal for customers to manage subscriptions, view invoices, and submit support requests.',
+    status: 'in-progress',
+    sprint_name: 'Sprint 11 Beta',
+    tags: ['Frontend', 'UX'],
+    created_by: 'AR',
+  },
+  {
+    name: 'Data Pipeline v2',
+    description: 'Next-generation ETL pipeline replacing legacy batch jobs with real-time streaming using Kafka.',
+    status: 'planning',
+    sprint_name: 'Sprint 1 Alpha',
+    tags: ['Data', 'Backend'],
+    created_by: 'AR',
+  },
+  {
+    name: 'Mobile App',
+    description: 'React Native companion app for iOS and Android. Covers task management, notifications, and offline sync.',
+    status: 'completed',
+    sprint_name: 'Sprint 18 Final',
+    tags: ['Mobile', 'iOS', 'Android'],
+    created_by: 'AR',
+  },
+  {
+    name: 'Design System',
+    description: 'Centralised component library and Figma token system. On hold while the brand refresh is finalised.',
+    status: 'on-hold',
+    sprint_name: 'Sprint 7 Gamma',
+    tags: ['Design', 'Frontend'],
+    created_by: 'AR',
+  },
+  {
+    name: 'Auth Service Rewrite',
+    description: 'Full rewrite of the authentication and authorisation layer. Migrating from legacy sessions to OAuth 2.0.',
+    status: 'in-progress',
+    sprint_name: 'Sprint 3 Epsilon',
+    tags: ['Security', 'Backend'],
+    created_by: 'AR',
+  },
+];
+
+// Non-owner project members. AR is inserted as owner for all projects separately.
+const PROJECT_MEMBERS = [
+  { project: 'Internal System',      user: 'AM', role: 'member' },
+  { project: 'Internal System',      user: 'JD', role: 'member' },
+  { project: 'Internal System',      user: 'KL', role: 'manager' },
+  { project: 'Customer Portal',      user: 'KL', role: 'manager' },
+  { project: 'Customer Portal',      user: 'PR', role: 'member' },
+  { project: 'Data Pipeline v2',     user: 'TS', role: 'member' },
+  { project: 'Mobile App',           user: 'MN', role: 'member' },
+  { project: 'Mobile App',           user: 'KL', role: 'member' },
+  { project: 'Design System',        user: 'TS', role: 'member' },
+  { project: 'Auth Service Rewrite', user: 'DM', role: 'member' },
+  { project: 'Auth Service Rewrite', user: 'AM', role: 'member' },
+];
+
+// tasks.status uses underscores; projects.status uses hyphens (schema constraint)
+const TASKS = [
+  // To Do
+  { title: 'Set up CI/CD pipeline',          status: 'todo',        priority: 'high',   tags: ['DevOps'],     project: 'Internal System',      due_date: '2026-05-12', assigned_to: 'AM', position: 0 },
+  { title: 'Update API documentation',        status: 'todo',        priority: 'medium', tags: ['Docs'],       project: 'Customer Portal',      due_date: '2026-05-15', assigned_to: 'KL', position: 1 },
+  { title: 'User permission audit',           status: 'todo',        priority: 'low',    tags: ['Security'],   project: 'Internal System',      due_date: '2026-05-20', assigned_to: 'JD', position: 2 },
+  { title: 'Subscription upgrade flow',       status: 'todo',        priority: 'medium', tags: ['UX'],         project: 'Customer Portal',      due_date: '2026-05-18', assigned_to: 'PR', position: 3 },
+  { title: 'Kafka consumer group refactor',   status: 'todo',        priority: 'high',   tags: ['Backend'],    project: 'Data Pipeline v2',     due_date: '2026-05-22', assigned_to: 'TS', position: 4 },
+  // In Progress
+  { title: 'Refactor authentication middleware', status: 'in_progress', priority: 'urgent', tags: ['Security'], project: 'Internal System',    due_date: '2026-05-07', assigned_to: 'AM', position: 0 },
+  { title: 'Invoice PDF export',              status: 'in_progress', priority: 'high',   tags: ['Feature'],    project: 'Customer Portal',      due_date: '2026-05-10', assigned_to: 'PR', position: 1 },
+  { title: 'PKCE flow implementation',        status: 'in_progress', priority: 'high',   tags: ['Security'],   project: 'Auth Service Rewrite', due_date: '2026-05-11', assigned_to: 'DM', position: 2 },
+  { title: 'Database migration scripts',      status: 'in_progress', priority: 'medium', tags: ['Backend'],    project: 'Internal System',      due_date: '2026-05-24', assigned_to: 'JD', position: 3 },
+  { title: 'Mobile offline sync',             status: 'in_progress', priority: 'high',   tags: ['Mobile'],     project: 'Mobile App',           due_date: '2026-05-13', assigned_to: 'MN', position: 4 },
+  // Review
+  { title: 'API authentication layer',        status: 'review',      priority: 'high',   tags: ['Security'],   project: 'Internal System',      due_date: '2026-05-09', assigned_to: 'AM', position: 0 },
+  { title: 'Session revocation endpoint',     status: 'review',      priority: 'high',   tags: ['Backend'],    project: 'Auth Service Rewrite', due_date: '2026-05-10', assigned_to: 'DM', position: 1 },
+  { title: 'Accessibility audit fixes',       status: 'review',      priority: 'medium', tags: ['UX'],         project: 'Customer Portal',      due_date: '2026-05-14', assigned_to: 'PR', position: 2 },
+  { title: 'Component token documentation',   status: 'review',      priority: 'low',    tags: ['Design'],     project: 'Design System',        due_date: '2026-05-16', assigned_to: 'TS', position: 3 },
+  // Done
+  { title: 'Login page redesign',             status: 'done',        priority: 'high',   tags: ['UX'],         project: 'Customer Portal',      due_date: '2026-05-02', assigned_to: 'PR', position: 0 },
+  { title: 'Push notification service',       status: 'done',        priority: 'medium', tags: ['Mobile'],     project: 'Mobile App',           due_date: '2026-04-30', assigned_to: 'KL', position: 1 },
+  { title: 'Rate limiter middleware',          status: 'done',        priority: 'high',   tags: ['Backend'],    project: 'Internal System',      due_date: '2026-05-01', assigned_to: 'AM', position: 2 },
+  { title: 'Figma token export script',       status: 'done',        priority: 'low',    tags: ['Design'],     project: 'Design System',        due_date: '2026-04-28', assigned_to: 'TS', position: 3 },
+];
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function log(phase, msg) {
+  console.log(`[${phase}] ${msg}`);
+}
+
+function getArg(flag) {
+  return process.argv.includes(flag);
+}
+
+function fail(phase, error) {
+  const err = error instanceof Error ? error : new Error(String(error?.message ?? error));
+  err.seedPhase = phase;
+  throw err;
+}
+
+// ---------------------------------------------------------------------------
+// Phases
+// ---------------------------------------------------------------------------
+
+async function checkAlreadySeeded() {
+  const { data } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('email', 'alex.rivera@taskhub.dev')
+    .maybeSingle();
+  return data !== null;
+}
+
+async function seedUsers() {
+  log('USERS', `Creating ${USERS.length} users...`);
+  const userMap = new Map();
+
+  for (const user of USERS) {
+    const { data, error } = await supabase.auth.admin.createUser({
+      email: user.email,
+      password: user.password,
+      email_confirm: true,
+      user_metadata: { full_name: user.full_name },
+    });
+    if (error) fail('seedUsers', error);
+
+    const userId = data.user.id;
+
+    const { error: profileErr } = await supabase
+      .from('profiles')
+      .update({ role: user.role, full_name: user.full_name })
+      .eq('id', userId);
+    if (profileErr) fail('seedUsers:profileUpdate', profileErr);
+
+    userMap.set(user.initials, userId);
+    log('USERS', `  Created ${user.full_name} (${user.email})`);
+  }
+
+  return userMap;
+}
+
+async function seedProjects(userMap) {
+  log('PROJECTS', `Inserting ${PROJECTS.length} projects...`);
+
+  const rows = PROJECTS.map(p => ({
+    name: p.name,
+    description: p.description,
+    status: p.status,
+    sprint_name: p.sprint_name,
+    sprint_end_date: null,
+    tags: p.tags,
+    created_by: userMap.get(p.created_by),
+  }));
+
+  const { data, error } = await supabase.from('projects').insert(rows).select();
+  if (error) fail('seedProjects', error);
+
+  const projectMap = new Map(data.map(p => [p.name, p.id]));
+
+  // Insert AR as owner for all projects
+  const arId = userMap.get('AR');
+  const ownerRows = data.map(p => ({
+    project_id: p.id,
+    user_id: arId,
+    role: 'owner',
+  }));
+  const { error: ownerErr } = await supabase.from('project_members').insert(ownerRows);
+  if (ownerErr) fail('seedProjects:ownerMembers', ownerErr);
+
+  log('PROJECTS', `  Inserted ${data.length} projects + owner memberships`);
+  return projectMap;
+}
+
+async function seedProjectMembers(userMap, projectMap) {
+  log('MEMBERS', `Inserting ${PROJECT_MEMBERS.length} project members...`);
+
+  const rows = PROJECT_MEMBERS.map(m => ({
+    project_id: projectMap.get(m.project),
+    user_id: userMap.get(m.user),
+    role: m.role,
+  }));
+
+  const { error } = await supabase.from('project_members').insert(rows);
+  if (error) fail('seedProjectMembers', error);
+
+  log('MEMBERS', `  Done`);
+}
+
+async function seedTasks(userMap, projectMap) {
+  log('TASKS', `Inserting ${TASKS.length} tasks...`);
+
+  const arId = userMap.get('AR');
+  const rows = TASKS.map(t => ({
+    project_id: projectMap.get(t.project),
+    title: t.title,
+    status: t.status,
+    priority: t.priority,
+    tags: t.tags,
+    due_date: t.due_date,
+    assigned_to: userMap.get(t.assigned_to),
+    created_by: arId,
+    position: t.position,
+    board_column_id: null,
+  }));
+
+  const { error } = await supabase.from('tasks').insert(rows);
+  if (error) fail('seedTasks', error);
+
+  log('TASKS', `  Done`);
+}
+
+// ---------------------------------------------------------------------------
+// Reset
+// ---------------------------------------------------------------------------
+
+async function resetAll() {
+  log('RESET', 'Starting reset...');
+
+  const emails = USERS.map(u => u.email);
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, email')
+    .in('email', emails);
+
+  if (!profiles || profiles.length === 0) {
+    log('RESET', 'No seeded data found. Nothing to reset.');
+    return;
+  }
+
+  const arProfile = profiles.find(p => p.email === 'alex.rivera@taskhub.dev');
+  if (!arProfile) {
+    log('RESET', 'Admin user not found. Skipping project/task cleanup.');
+  } else {
+    const { data: projects } = await supabase
+      .from('projects')
+      .select('id')
+      .eq('created_by', arProfile.id);
+
+    const projectIds = (projects ?? []).map(p => p.id);
+
+    if (projectIds.length > 0) {
+      await supabase.from('tasks').delete().in('project_id', projectIds);
+      log('RESET', `  Deleted tasks`);
+
+      await supabase.from('project_members').delete().in('project_id', projectIds);
+      log('RESET', `  Deleted project members`);
+
+      await supabase.from('projects').delete().in('id', projectIds);
+      log('RESET', `  Deleted ${projectIds.length} projects`);
+    }
+  }
+
+  for (const profile of profiles) {
+    const { error } = await supabase.auth.admin.deleteUser(profile.id);
+    if (error) log('RESET WARN', `  Could not delete user ${profile.email}: ${error.message}`);
+  }
+  log('RESET', `  Deleted ${profiles.length} auth users`);
+  log('RESET', 'Reset complete.');
+}
+
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
+
+async function main() {
+  if (getArg('--reset')) {
+    await resetAll();
+    process.exit(0);
+  }
+
+  const alreadySeeded = await checkAlreadySeeded();
+  if (alreadySeeded) {
+    log('SKIP', 'Database already seeded. Run with --reset to clear first.');
+    process.exit(0);
+  }
+
+  const userMap = await seedUsers();
+  const projectMap = await seedProjects(userMap);
+  await seedProjectMembers(userMap, projectMap);
+  await seedTasks(userMap, projectMap);
+
+  log('DONE', 'Seed completed successfully.');
+  log('DONE', 'Login: alex.rivera@taskhub.dev / Taskhub2024!');
+}
+
+main().catch(err => {
+  console.error(`\n[SEED ERROR] Phase: ${err.seedPhase ?? 'unknown'}`);
+  console.error(err.message);
+  console.error('Run with --reset to clear partial data, then retry.');
+  process.exit(1);
+});

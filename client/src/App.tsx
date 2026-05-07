@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from 'sonner'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import AppLayout from '@/layouts/AppLayout'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import DesignSystemPage from '@/pages/DesignSystemPage'
@@ -13,6 +14,7 @@ import RegisterPage from '@/pages/RegisterPage'
 
 function App() {
   return (
+    <TooltipProvider delayDuration={300}>
     <BrowserRouter>
       <Toaster position="bottom-right" richColors />
       <Routes>
@@ -32,6 +34,7 @@ function App() {
         </Route>
       </Routes>
     </BrowserRouter>
+    </TooltipProvider>
   )
 }
 

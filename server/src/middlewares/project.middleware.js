@@ -2,9 +2,15 @@ import { supabase } from "../config/supabase.js";
 
 // Verifies the authenticated user is a member of the project.
 // Attaches req.membership. Must run after requireAuth.
+// Admin users bypass the membership check with a synthetic owner membership.
 export async function requireProjectMember(req, res, next) {
 	const projectId = req.params.projectId || req.params.id;
 	const userId = req.profile.id;
+
+	if (req.profile.role === "admin") {
+		req.membership = { project_id: projectId, user_id: userId, role: "owner" };
+		return next();
+	}
 
 	const { data: membership, error } = await supabase
 		.from("project_members")

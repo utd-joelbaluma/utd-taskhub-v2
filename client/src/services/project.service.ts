@@ -15,6 +15,7 @@ export interface Project {
 	created_at: string;
 	updated_at: string;
 	project_members: ProjectMember[];
+	tasks: { id: string; status: string }[];
 }
 
 export interface CreateProjectPayload {

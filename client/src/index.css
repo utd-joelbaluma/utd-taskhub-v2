@@ -69,4 +69,6 @@
   }
 
   #root { min-height: 100svh; }
+
+  button, a, [role="button"] { cursor: pointer; }
 }

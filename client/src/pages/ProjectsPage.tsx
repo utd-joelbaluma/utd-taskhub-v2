@@ -109,7 +109,9 @@ function TeamAvatars({ team, max = 4 }: { team: TeamMember[]; max?: number }) {
 }
 
 function ProjectCard({ project, onClick }: { project: Project; onClick: () => void }) {
-  const pct = safePct(0, 0)
+  const tasks = project.tasks ?? []
+  const done  = tasks.filter(t => t.status === 'done').length
+  const pct   = safePct(done, tasks.length)
   const { variant, label } = STATUS_BADGE[project.status]
   const team = membersToTeam(project.project_members ?? [])
   return (
@@ -148,6 +150,9 @@ function ProjectCard({ project, onClick }: { project: Project; onClick: () => vo
 }
 
 function ProjectRow({ project, onClick }: { project: Project; onClick: () => void }) {
+  const tasks = project.tasks ?? []
+  const done  = tasks.filter(t => t.status === 'done').length
+  const pct   = safePct(done, tasks.length)
   const { variant, label } = STATUS_BADGE[project.status]
   const team = membersToTeam(project.project_members ?? [])
   return (
@@ -171,11 +176,11 @@ function ProjectRow({ project, onClick }: { project: Project; onClick: () => voi
       <td className="px-4 py-4"><Badge variant={variant}>{label}</Badge></td>
       <td className="px-4 py-4">
         <div className="flex items-center gap-2 min-w-[120px]">
-          <ProgressBar pct={0} />
-          <span className="text-xs text-muted whitespace-nowrap">0%</span>
+          <ProgressBar pct={pct} />
+          <span className="text-xs text-muted whitespace-nowrap">{pct}%</span>
         </div>
       </td>
-      <td className="px-4 py-4 text-xs text-muted-foreground whitespace-nowrap">0 / 0</td>
+      <td className="px-4 py-4 text-xs text-muted-foreground whitespace-nowrap">{done} / {tasks.length}</td>
       <td className="px-4 py-4"><TeamAvatars team={team} max={3} /></td>
       <td className="px-4 py-4 text-xs text-muted whitespace-nowrap">{project.sprint_name || '—'}</td>
       <td className="px-4 py-4 text-right">

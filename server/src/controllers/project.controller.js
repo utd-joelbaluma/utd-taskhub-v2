@@ -10,7 +10,7 @@ export async function getProjects(req, res, next) {
 
 		let query = supabase
 			.from("projects")
-			.select("*, project_members(user_id, role, profiles(id, full_name, avatar_url))")
+			.select("*, project_members(user_id, role, profiles(id, full_name, avatar_url)), tasks(id, status)")
 			.order("created_at", { ascending: false });
 
 		if (status) {
