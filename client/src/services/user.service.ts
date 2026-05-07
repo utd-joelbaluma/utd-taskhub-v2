@@ -8,6 +8,7 @@ export interface UserProfile {
 	role: string;
 	status: string;
 	created_at: string;
+	global_role: { id: string; key: string; name: string; scope: string } | null;
 }
 
 export interface UserInvitation {
@@ -38,4 +39,8 @@ export async function listUserInvitations(
 
 export async function cancelUserInvitation(userId: string): Promise<void> {
 	await api.delete(`/users/invitations/${userId}`);
+}
+
+export async function updateUserRole(userId: string, roleKey: string): Promise<void> {
+	await api.patch(`/users/${userId}/role`, { role_key: roleKey });
 }

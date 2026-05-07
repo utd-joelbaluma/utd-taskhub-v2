@@ -52,6 +52,12 @@ export function validateCreateTask(payload) {
 		}
 	}
 
+	if (payload.ticket_id !== undefined && payload.ticket_id !== null) {
+		if (typeof payload.ticket_id !== "string" || !UUID_REGEX.test(payload.ticket_id)) {
+			errors.push("ticket_id must be a valid UUID.");
+		}
+	}
+
 	return errors;
 }
 

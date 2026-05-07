@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Bell, User, Settings, LogOut } from "lucide-react";
+import { Bell, User, Settings, LogOut, Menu } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
 	DropdownMenu,
@@ -84,16 +84,58 @@ export default function AppLayout() {
 	return (
 		<div className="min-h-screen bg-background">
 			<header className="sticky top-0 z-40 border-b border-border bg-surface/80 backdrop-blur-sm">
-				<div className="mx-auto flex max-w-[1280px] items-center gap-6 px-6 h-14">
-					<div className="flex items-center gap-2 mr-4">
+				<div className="mx-auto flex h-14 max-w-[1280px] items-center gap-2 px-4 sm:px-5 md:gap-6 md:px-6">
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<button
+								className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted-subtle hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary md:hidden"
+								aria-label="Open navigation menu"
+							>
+								<Menu className="h-5 w-5" />
+							</button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent
+							align="start"
+							className="w-56 md:hidden"
+						>
+							<DropdownMenuLabel className="px-3 py-2">
+								Menu
+							</DropdownMenuLabel>
+							<DropdownMenuSeparator />
+							{navLinks.map((link) => (
+								<DropdownMenuItem
+									key={link.to}
+									asChild
+									className="p-0"
+								>
+									<NavLink
+										to={link.to}
+										end={link.end}
+										className={({ isActive }) =>
+											cn(
+												"flex w-full items-center rounded-sm px-3 py-2 text-sm transition-colors",
+												isActive
+													? "bg-primary-subtle font-medium text-primary"
+													: "text-muted-foreground hover:bg-muted-subtle hover:text-foreground",
+											)
+										}
+									>
+										{link.label}
+									</NavLink>
+								</DropdownMenuItem>
+							))}
+						</DropdownMenuContent>
+					</DropdownMenu>
+
+					<div className="mr-2 flex min-w-0 shrink-0 items-center gap-2 md:mr-4">
 						<img
 							src="/logo.svg"
 							alt="TaskHub"
-							className="h-8 w-auto"
+							className="h-8 w-auto max-w-[132px]"
 						/>
 					</div>
 
-					<nav className="flex items-center gap-1">
+					<nav className="hidden items-center gap-1 md:flex">
 						{navLinks.map((link) => (
 							<NavLink
 								key={link.to}
@@ -113,11 +155,14 @@ export default function AppLayout() {
 						))}
 					</nav>
 
-					<div className="ml-auto flex items-center gap-3">
+					<div className="ml-auto flex items-center gap-1.5 sm:gap-3">
 						{/* Notifications */}
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
-								<button className="relative p-2 rounded-md text-muted-foreground hover:bg-muted-subtle transition-colors cursor-pointer outline-none">
+								<button
+									className="relative flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted-subtle hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+									aria-label="Open notifications"
+								>
 									<Bell className="h-4 w-4" />
 									{unreadCount > 0 && (
 										<>
@@ -129,7 +174,10 @@ export default function AppLayout() {
 									)}
 								</button>
 							</DropdownMenuTrigger>
-							<DropdownMenuContent align="end" className="w-80">
+							<DropdownMenuContent
+								align="end"
+								className="w-[calc(100vw-2rem)] max-w-80 sm:w-80"
+							>
 								<DropdownMenuLabel className="flex items-center justify-between px-3 py-2">
 									<span className="text-sm font-semibold text-foreground">
 										Notifications
@@ -182,13 +230,16 @@ export default function AppLayout() {
 						{/* Account */}
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
-								<button className="flex items-center gap-2 rounded-md px-1 py-1 hover:bg-muted-subtle transition-colors cursor-pointer outline-none">
+								<button
+									className="flex items-center gap-2 rounded-md p-1 transition-colors hover:bg-muted-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-primary md:px-1"
+									aria-label="Open account menu"
+								>
 									<Avatar className="h-7 w-7">
 										<AvatarFallback className="text-[10px]">
 											{initials}
 										</AvatarFallback>
 									</Avatar>
-									<div className="leading-none text-left">
+									<div className="hidden leading-none text-left md:block">
 										<div className="text-xs font-medium text-foreground">
 											{displayName}
 										</div>

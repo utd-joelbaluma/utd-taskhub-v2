@@ -9,6 +9,7 @@ const TASK_SELECT = `
 	id,
 	project_id,
 	board_column_id,
+	ticket_id,
 	title,
 	description,
 	status,
@@ -94,7 +95,7 @@ export async function createTask(req, res, next) {
 			return res.status(400).json({ success: false, message: "Validation failed.", errors });
 		}
 
-		const { title, description, status, priority, assigned_to, board_column_id, due_date, tags } = req.body;
+		const { title, description, status, priority, assigned_to, board_column_id, due_date, tags, ticket_id } = req.body;
 
 		// Derive position: place at end of the target column (or project-level if no column)
 		let positionQuery = supabase
@@ -118,6 +119,7 @@ export async function createTask(req, res, next) {
 			.insert({
 				project_id: projectId,
 				board_column_id: board_column_id || null,
+				ticket_id: ticket_id || null,
 				title: title.trim(),
 				description: description?.trim() || null,
 				status: status || "backlog",

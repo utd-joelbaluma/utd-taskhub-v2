@@ -1,5 +1,6 @@
 import { supabase } from "../config/supabase.js";
 import { validateCreateTicket, validateUpdateTicket } from "../utils/ticket.validator.js";
+import { validateCreateTask } from "../utils/task.validator.js";
 
 const TICKET_SELECT = `
 	id,
@@ -247,20 +248,77 @@ export async function convertTicketToTask(req, res, next) {
 			});
 		}
 
+		// Merge ticket defaults with any manager overrides from the request body
+		const payload = {
+			title: req.body.title ?? ticket.title,
+			description: req.body.description ?? ticket.description ?? null,
+			priority: req.body.priority ?? ticket.priority,
+			assigned_to: req.body.assigned_to ?? ticket.assigned_to ?? null,
+			due_date: req.body.due_date ?? ticket.due_date ?? null,
+			status: req.body.status ?? "backlog",
+			board_column_id: req.body.board_column_id ?? null,
+			tags: req.body.tags ?? [],
+		};
+
+		const errors = validateCreateTask(payload);
+		if (errors.length > 0) {
+			return res.status(400).json({
+				success: false,
+				message: "Validation failed.",
+				errors,
+			});
+		}
+
+		// Derive position at end of target column (or project root if no column)
+		let positionQuery = supabase
+			.from("tasks")
+			.select("position")
+			.eq("project_id", projectId)
+			.order("position", { ascending: false })
+			.limit(1);
+
+		if (payload.board_column_id) {
+			positionQuery = positionQuery.eq("board_column_id", payload.board_column_id);
+		} else {
+			positionQuery = positionQuery.is("board_column_id", null);
+		}
+
+		const { data: lastTask } = await positionQuery.maybeSingle();
+		const position = lastTask ? lastTask.position + 1 : 0;
+
 		const { data: task, error: taskError } = await supabase
 			.from("tasks")
 			.insert({
 				project_id: projectId,
-				title: ticket.title,
-				description: ticket.description || null,
-				priority: ticket.priority,
-				assigned_to: ticket.assigned_to || null,
-				due_date: ticket.due_date || null,
-				status: "backlog",
+				ticket_id: ticket.id,
+				board_column_id: payload.board_column_id,
+				title: payload.title.trim(),
+				description: payload.description?.trim() || null,
+				priority: payload.priority,
+				assigned_to: payload.assigned_to,
+				due_date: payload.due_date,
+				status: payload.status,
+				tags: payload.tags.map(t => t.trim()).filter(Boolean),
 				created_by: req.profile.id,
-				position: 0,
+				position,
 			})
-			.select()
+			.select(`
+				id,
+				project_id,
+				board_column_id,
+				ticket_id,
+				title,
+				description,
+				status,
+				priority,
+				position,
+				due_date,
+				tags,
+				created_at,
+				updated_at,
+				assigned_to:profiles!tasks_assigned_to_fkey (id, full_name, email),
+				created_by:profiles!tasks_created_by_fkey (id, full_name, email)
+			`)
 			.single();
 
 		if (taskError) throw taskError;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
 	Settings,
 	Users,
@@ -24,6 +24,8 @@ import {
 	Globe,
 	AtSign,
 	CheckCircle2,
+	Loader2,
+	ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +40,25 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogDescription,
+	DialogFooter,
+	DialogClose,
+} from "@/components/ui/dialog";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { listUsers, updateUserRole, type UserProfile } from "@/services/user.service";
+import { listRoles, type Role } from "@/services/role.service";
+import { toast } from "sonner";
 
 const navItems = [
 	{ id: "general", label: "General", icon: Settings },
@@ -51,22 +71,6 @@ const navItems = [
 	{ id: "danger", label: "Danger Zone", icon: AlertOctagon, danger: true },
 ];
 
-const members = [
-	{
-		initials: "JD",
-		name: "John Doe (You)",
-		email: "john@taskhub.io",
-		role: "Admin",
-		status: "Active",
-	},
-	{
-		initials: "SM",
-		name: "Sarah Miller",
-		email: "sarah@agency.com",
-		role: "Member",
-		status: "Active",
-	},
-];
 
 const defaultStatuses = ["Backlog", "In Progress", "Done"];
 
@@ -93,6 +97,152 @@ const integrations = [
 		linked: false,
 	},
 ];
+
+function getInitials(name: string | null): string {
+	if (!name) return "?";
+	return name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+}
+
+function ManageRoleDialog({
+	user,
+	open,
+	onClose,
+	onUpdated,
+}: {
+	user: UserProfile | null;
+	open: boolean;
+	onClose: () => void;
+	onUpdated: () => void;
+}) {
+	const [roles, setRoles] = useState<Role[]>([]);
+	const [loadingRoles, setLoadingRoles] = useState(false);
+	const [selectedRoleKey, setSelectedRoleKey] = useState("");
+	const [saving, setSaving] = useState(false);
+
+	useEffect(() => {
+		if (!open) return;
+		setSelectedRoleKey(user?.global_role?.key ?? user?.role ?? "");
+		setLoadingRoles(true);
+		listRoles("global")
+			.then(setRoles)
+			.catch(() => toast.error("Failed to load roles."))
+			.finally(() => setLoadingRoles(false));
+	}, [open, user]);
+
+	const selectedRole = roles.find((r) => r.key === selectedRoleKey);
+
+	async function handleSave() {
+		if (!user || !selectedRoleKey) return;
+		setSaving(true);
+		try {
+			await updateUserRole(user.id, selectedRoleKey);
+			toast.success("Role updated", { description: `${user.full_name ?? user.email} is now ${selectedRole?.name ?? selectedRoleKey}` });
+			onUpdated();
+			onClose();
+		} catch (err: unknown) {
+			const msg = err instanceof Error ? err.message : "Failed to update role.";
+			toast.error(msg);
+		} finally {
+			setSaving(false);
+		}
+	}
+
+	return (
+		<Dialog open={open} onOpenChange={(val) => { if (!val) onClose(); }}>
+			<DialogContent className="max-w-[480px]">
+				<DialogHeader>
+					<DialogTitle>Manage Role</DialogTitle>
+					<DialogDescription>
+						Assign a global role to this user. Permissions are inherited from the role.
+					</DialogDescription>
+				</DialogHeader>
+
+				{user && (
+					<div className="flex items-center gap-3 py-1">
+						<Avatar className="h-9 w-9">
+							<AvatarFallback className="text-xs bg-primary text-primary-foreground">
+								{getInitials(user.full_name)}
+							</AvatarFallback>
+						</Avatar>
+						<div>
+							<p className="text-sm font-medium text-foreground leading-none">{user.full_name ?? "Unknown"}</p>
+							<p className="text-xs text-muted mt-0.5">{user.email}</p>
+						</div>
+					</div>
+				)}
+
+				<div className="space-y-4">
+					<div>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Role</label>
+						{loadingRoles ? (
+							<div className="flex items-center gap-2 text-muted py-2">
+								<Loader2 className="h-4 w-4 animate-spin" />
+								<span className="text-sm">Loading roles...</span>
+							</div>
+						) : (
+							<Select value={selectedRoleKey} onValueChange={setSelectedRoleKey}>
+								<SelectTrigger>
+									<SelectValue placeholder="Select a role" />
+								</SelectTrigger>
+								<SelectContent>
+									{roles.map((r) => (
+										<SelectItem key={r.key} value={r.key}>
+											<span className="font-medium">{r.name}</span>
+											{r.description && (
+												<span className="ml-2 text-xs text-muted-foreground">{r.description}</span>
+											)}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						)}
+					</div>
+
+					{selectedRole && (
+						<div>
+							<div className="flex items-center gap-1.5 mb-2">
+								<ShieldCheck className="h-3.5 w-3.5 text-muted" />
+								<label className="text-sm font-medium text-muted-foreground">
+									Permissions ({selectedRole.permissions.length})
+								</label>
+							</div>
+							{selectedRole.permissions.length === 0 ? (
+								<p className="text-xs text-muted">No permissions assigned to this role.</p>
+							) : (
+								<div className="border border-border rounded-md max-h-[180px] overflow-y-auto divide-y divide-border">
+									{selectedRole.permissions.map((p) => (
+										<div key={p.key} className="flex items-center gap-2.5 px-3 py-2">
+											<input
+												type="checkbox"
+												checked
+												readOnly
+												className="h-3.5 w-3.5 accent-primary cursor-default"
+											/>
+											<span className="text-xs font-mono text-foreground">{p.key}</span>
+											{p.description && (
+												<span className="text-xs text-muted ml-auto truncate max-w-[180px]">{p.description}</span>
+											)}
+										</div>
+									))}
+								</div>
+							)}
+						</div>
+					)}
+				</div>
+
+				<DialogFooter>
+					<DialogClose asChild>
+						<Button variant="outline" disabled={saving}>Cancel</Button>
+					</DialogClose>
+					<Button onClick={handleSave} disabled={saving || !selectedRoleKey}>
+						{saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+						Save
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+}
 
 function SectionBlock({
 	title,
@@ -152,6 +302,27 @@ export default function SettingsPage() {
 	const [newStatus, setNewStatus] = useState("");
 	const [addingStatus, setAddingStatus] = useState(false);
 	const [twoFactor, setTwoFactor] = useState(true);
+
+	// Members state
+	const [members, setMembers] = useState<UserProfile[]>([]);
+	const [loadingMembers, setLoadingMembers] = useState(false);
+	const [roleDialogUser, setRoleDialogUser] = useState<UserProfile | null>(null);
+
+	const fetchMembers = useCallback(async () => {
+		setLoadingMembers(true);
+		try {
+			const data = await listUsers();
+			setMembers(data);
+		} catch {
+			toast.error("Failed to load members.");
+		} finally {
+			setLoadingMembers(false);
+		}
+	}, []);
+
+	useEffect(() => {
+		fetchMembers();
+	}, [fetchMembers]);
 
 	// Tickets state
 	const [ticketPrefix, setTicketPrefix] = useState("TKT");
@@ -397,21 +568,38 @@ export default function SettingsPage() {
 										</tr>
 									</thead>
 									<tbody>
-										{members.map((m, i) => (
+										{loadingMembers && (
+											<tr>
+												<td colSpan={4} className="px-4 py-6 text-center">
+													<div className="flex items-center justify-center gap-2 text-muted">
+														<Loader2 className="h-4 w-4 animate-spin" />
+														<span className="text-sm">Loading members...</span>
+													</div>
+												</td>
+											</tr>
+										)}
+										{!loadingMembers && members.length === 0 && (
+											<tr>
+												<td colSpan={4} className="px-4 py-6 text-center text-sm text-muted">
+													No members found.
+												</td>
+											</tr>
+										)}
+										{!loadingMembers && members.map((m) => (
 											<tr
-												key={i}
+												key={m.id}
 												className="border-b border-border last:border-0 hover:bg-muted-subtle transition-colors"
 											>
 												<td className="px-4 py-3">
 													<div className="flex items-center gap-2.5">
 														<Avatar className="h-7 w-7">
 															<AvatarFallback className="text-[10px]">
-																{m.initials}
+																{getInitials(m.full_name)}
 															</AvatarFallback>
 														</Avatar>
 														<div>
 															<p className="text-sm font-medium text-foreground leading-none">
-																{m.name}
+																{m.full_name ?? "Unknown"}
 															</p>
 															<p className="text-xs text-muted mt-0.5">
 																{m.email}
@@ -422,27 +610,43 @@ export default function SettingsPage() {
 												<td className="px-4 py-3">
 													<Badge
 														variant={
-															m.role === "Admin"
+															(m.global_role?.key ?? m.role) === "admin"
 																? "in-progress"
 																: "backlog"
 														}
-														className="text-xs"
+														className="text-xs capitalize"
 													>
-														{m.role}
+														{m.global_role?.name ?? m.role}
 													</Badge>
 												</td>
 												<td className="px-4 py-3">
 													<div className="flex items-center gap-1.5">
-														<span className="h-1.5 w-1.5 rounded-full bg-secondary shrink-0" />
-														<span className="text-sm text-muted-foreground">
+														<span className={cn(
+															"h-1.5 w-1.5 rounded-full shrink-0",
+															m.status === "active" ? "bg-secondary" : "bg-muted"
+														)} />
+														<span className="text-sm text-muted-foreground capitalize">
 															{m.status}
 														</span>
 													</div>
 												</td>
 												<td className="px-4 py-3 text-right">
-													<button className="text-muted hover:text-foreground transition-colors p-1 rounded">
-														<MoreHorizontal className="h-4 w-4" />
-													</button>
+													<DropdownMenu>
+														<DropdownMenuTrigger asChild>
+															<button className="text-muted hover:text-foreground transition-colors p-1 rounded">
+																<MoreHorizontal className="h-4 w-4" />
+															</button>
+														</DropdownMenuTrigger>
+														<DropdownMenuContent align="end">
+															<DropdownMenuItem
+																className="flex items-center gap-2"
+																onSelect={() => setRoleDialogUser(m)}
+															>
+																<ShieldCheck className="h-3.5 w-3.5" />
+																Manage Roles
+															</DropdownMenuItem>
+														</DropdownMenuContent>
+													</DropdownMenu>
 												</td>
 											</tr>
 										))}
@@ -451,6 +655,13 @@ export default function SettingsPage() {
 							</div>
 						</SectionBlock>
 					</div>
+
+					<ManageRoleDialog
+						user={roleDialogUser}
+						open={roleDialogUser !== null}
+						onClose={() => setRoleDialogUser(null)}
+						onUpdated={fetchMembers}
+					/>
 
 					{/* Boards & Workflow */}
 					<div id="boards">

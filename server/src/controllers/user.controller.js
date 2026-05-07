@@ -103,6 +103,60 @@ export async function listUserInvitations(req, res, next) {
 	}
 }
 
+export async function updateUserRole(req, res, next) {
+	try {
+		const { userId } = req.params;
+		const { role_key } = req.body;
+
+		if (!role_key || typeof role_key !== "string") {
+			return res.status(400).json({
+				success: false,
+				message: "role_key is required.",
+			});
+		}
+
+		const { data: role, error: roleError } = await supabase
+			.from("roles")
+			.select("id, key")
+			.eq("scope", "global")
+			.eq("key", role_key)
+			.maybeSingle();
+
+		if (roleError) throw roleError;
+
+		if (!role) {
+			return res.status(400).json({
+				success: false,
+				message: `Unknown global role: ${role_key}.`,
+			});
+		}
+
+		const { data: updated, error: updateError } = await supabase
+			.from("profiles")
+			.update({ role: role.key, role_id: role.id })
+			.eq("id", userId)
+			.select("id, full_name, email, avatar_url, role, role_id, status, created_at, global_role:roles!profiles_role_id_fkey(id, key, name, scope)")
+			.maybeSingle();
+
+		if (updateError) throw updateError;
+
+		if (!updated) {
+			return res.status(404).json({
+				success: false,
+				message: "User not found.",
+			});
+		}
+
+		res.status(200).json({
+			success: true,
+			message: "User role updated.",
+			data: updated,
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+
 export async function cancelUserInvitation(req, res, next) {
 	try {
 		const { userId } = req.params;

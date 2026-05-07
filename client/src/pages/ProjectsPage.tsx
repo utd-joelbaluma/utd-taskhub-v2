@@ -119,12 +119,12 @@ function ProjectCard({ project, onClick }: { project: Project; onClick: () => vo
       className="p-5 flex flex-col gap-4 hover:shadow-md hover:border-border-strong transition-all cursor-pointer"
       onClick={onClick}
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-semibold text-foreground truncate">{project.name}</h3>
           <p className="text-xs text-muted mt-1 line-clamp-2 leading-relaxed">{project.description || 'No description.'}</p>
         </div>
-        <Badge variant={variant} className="shrink-0">{label}</Badge>
+        <Badge variant={variant} className="w-fit shrink-0">{label}</Badge>
       </div>
 
       <div className="flex gap-1.5 flex-wrap min-h-[20px]">
@@ -141,9 +141,9 @@ function ProjectCard({ project, onClick }: { project: Project; onClick: () => vo
         <ProgressBar pct={pct} />
       </div>
 
-      <div className="flex items-center justify-between pt-1 border-t border-border">
+      <div className="flex items-center justify-between gap-3 pt-1 border-t border-border">
         <TeamAvatars team={team} />
-        <span className="text-[10px] text-muted">{project.sprint_name || 'No sprint'}</span>
+        <span className="truncate text-right text-[10px] text-muted">{project.sprint_name || 'No sprint'}</span>
       </div>
     </Card>
   )
@@ -275,7 +275,7 @@ function NewProjectDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-[560px]">
+      <DialogContent className="max-h-[calc(100svh-2rem)] w-[calc(100vw-2rem)] max-w-[560px] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>New Project</DialogTitle>
           <DialogDescription>Fill in the details to create a new project.</DialogDescription>
@@ -297,7 +297,7 @@ function NewProjectDialog({
           </div>
 
           {/* Status + Sprint Name */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Status</label>
               <Select value={form.status} onValueChange={v => set('status', v as ProjectStatus)}>
@@ -321,7 +321,7 @@ function NewProjectDialog({
           </div>
 
           {/* Sprint End Date + Tags */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Sprint End Date</label>
               <Input
@@ -332,7 +332,7 @@ function NewProjectDialog({
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Tags</label>
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <Input
                   placeholder="Add tag..."
                   value={form.tagInput}
@@ -387,12 +387,12 @@ function NewProjectDialog({
                 Loading members...
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid gap-2 sm:grid-cols-2">
                 {profiles.map((profile, i) => (
                   <label
                     key={profile.id}
                     className={cn(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors',
+                      'flex min-w-0 items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors',
                       form.teamIds.includes(profile.id)
                         ? 'border-primary bg-primary-subtle'
                         : 'border-border hover:bg-muted-subtle'
@@ -407,7 +407,7 @@ function NewProjectDialog({
                         {getInitials(profile.full_name)}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-sm text-foreground">{profile.full_name ?? profile.email}</span>
+                    <span className="min-w-0 truncate text-sm text-foreground">{profile.full_name ?? profile.email}</span>
                   </label>
                 ))}
               </div>
@@ -419,11 +419,11 @@ function NewProjectDialog({
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end">
           <DialogClose asChild>
-            <Button variant="outline" disabled={submitting}>Cancel</Button>
+            <Button variant="outline" disabled={submitting} className="w-full sm:w-auto">Cancel</Button>
           </DialogClose>
-          <Button onClick={handleSubmit} disabled={submitting}>
+          <Button onClick={handleSubmit} disabled={submitting} className="w-full sm:w-auto">
             {submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
             Create Project
           </Button>
@@ -488,22 +488,22 @@ export default function ProjectsPage() {
   })
 
   return (
-    <div className="mx-auto max-w-[1280px] px-6 py-8">
+    <div className="mx-auto max-w-[1280px] px-4 py-6 sm:px-6 sm:py-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-semibold text-foreground tracking-tight">Projects</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Projects</h1>
           <p className="text-sm text-muted mt-1">{projects.length} projects total</p>
         </div>
-        <Button className="flex items-center gap-2" onClick={() => setDialogOpen(true)}>
+        <Button className="flex w-full items-center gap-2 sm:w-auto" onClick={() => setDialogOpen(true)}>
           <Plus className="h-4 w-4" />
           New Project
         </Button>
       </div>
 
       {/* Filters + Search + View toggle */}
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-1 border border-border rounded-lg p-1 bg-surface">
+      <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+        <div className="flex max-w-full items-center gap-1 overflow-x-auto rounded-lg border border-border bg-surface p-1">
           {STATUS_FILTERS.map((f) => (
             <button
               key={f.value}
@@ -521,17 +521,17 @@ export default function ProjectsPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="relative">
+          <div className="relative min-w-0 flex-1 sm:flex-none">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted pointer-events-none" />
             <Input
               placeholder="Search projects..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 w-56 h-9 text-sm"
+              className="h-9 w-full pl-8 text-sm sm:w-56"
             />
           </div>
 
-          <div className="flex items-center border border-border rounded-lg overflow-hidden bg-surface">
+          <div className="flex shrink-0 items-center overflow-hidden rounded-lg border border-border bg-surface">
             <button
               onClick={() => setView('grid')}
               className={cn(
@@ -582,7 +582,7 @@ export default function ProjectsPage() {
 
       {/* Grid view */}
       {!loading && !error && view === 'grid' && filtered.length > 0 && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((p) => (
             <ProjectCard key={p.id} project={p} onClick={() => navigate(`/projects/${p.id}`)} />
           ))}
@@ -591,29 +591,31 @@ export default function ProjectsPage() {
 
       {/* List view */}
       {!loading && !error && view === 'list' && filtered.length > 0 && (
-        <Card className="p-0 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                {['Project', 'Status', 'Progress', 'Tasks', 'Team', 'Sprint', ''].map((h, i) => (
-                  <th
-                    key={h + i}
-                    className={cn(
-                      'px-4 py-3 text-[10px] font-medium uppercase tracking-wider text-muted',
-                      i === 0 ? 'pl-5 text-left' : i === 6 ? 'text-right' : 'text-left'
-                    )}
-                  >
-                    {h}
-                  </th>
+        <Card className="overflow-hidden p-0">
+          <div className="overflow-x-auto">
+            <table className="min-w-[760px] w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  {['Project', 'Status', 'Progress', 'Tasks', 'Team', 'Sprint', ''].map((h, i) => (
+                    <th
+                      key={h + i}
+                      className={cn(
+                        'px-4 py-3 text-[10px] font-medium uppercase tracking-wider text-muted',
+                        i === 0 ? 'pl-5 text-left' : i === 6 ? 'text-right' : 'text-left'
+                      )}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((p) => (
+                  <ProjectRow key={p.id} project={p} onClick={() => navigate(`/projects/${p.id}`)} />
                 ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((p) => (
-                <ProjectRow key={p.id} project={p} onClick={() => navigate(`/projects/${p.id}`)} />
-              ))}
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          </div>
         </Card>
       )}
 
