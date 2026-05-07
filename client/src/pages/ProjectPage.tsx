@@ -335,7 +335,7 @@ function EditProjectDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
-			<DialogContent className="max-w-[560px] max-h-[90vh] overflow-y-auto">
+			<DialogContent className="max-w-[560px]">
 				<DialogHeader>
 					<DialogTitle>Edit Project</DialogTitle>
 					<DialogDescription>

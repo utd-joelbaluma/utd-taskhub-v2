@@ -44,6 +44,8 @@ import {
 	type UpdateTicketPayload,
 	type ConvertTicketPayload,
 } from "@/services/ticket.service";
+import { ProjectDescriptionEditor } from "@/components/projects/project-description";
+import { projectDescriptionText } from "@/components/projects/project-description-utils";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -186,7 +188,7 @@ function TicketDialog({ open, mode, ticket, projectId, onClose, onSaved }: Ticke
 			if (mode === "create") {
 				const payload: CreateTicketPayload = {
 					title: title.trim(),
-					description: description.trim() || undefined,
+					description: projectDescriptionText(description) || undefined,
 					type,
 					priority,
 					status,
@@ -198,7 +200,7 @@ function TicketDialog({ open, mode, ticket, projectId, onClose, onSaved }: Ticke
 			} else if (ticket) {
 				const payload: UpdateTicketPayload = {
 					title: title.trim(),
-					description: description.trim() || undefined,
+					description: projectDescriptionText(description) || undefined,
 					type,
 					priority,
 					status,
@@ -246,12 +248,10 @@ function TicketDialog({ open, mode, ticket, projectId, onClose, onSaved }: Ticke
 						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
 							Description
 						</label>
-						<textarea
+						<ProjectDescriptionEditor
 							placeholder="Additional details..."
 							value={description}
-							onChange={(e) => setDescription(e.target.value)}
-							rows={3}
-							className="flex w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+							onChange={setDescription}
 						/>
 					</div>
 
@@ -377,7 +377,7 @@ function ConvertDialog({ open, ticket, projectId, onClose, onConverted }: Conver
 		try {
 			const payload: ConvertTicketPayload = {
 				title: title.trim(),
-				description: description.trim() || undefined,
+				description: projectDescriptionText(description) || undefined,
 				priority: priority || undefined,
 				status: taskStatus || undefined,
 				assigned_to: assignedTo.trim() || undefined,
@@ -420,11 +420,10 @@ function ConvertDialog({ open, ticket, projectId, onClose, onConverted }: Conver
 
 					<div>
 						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Description</label>
-						<textarea
+						<ProjectDescriptionEditor
+							placeholder="Additional details..."
 							value={description}
-							onChange={(e) => setDescription(e.target.value)}
-							rows={3}
-							className="flex w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+							onChange={setDescription}
 						/>
 					</div>
 
