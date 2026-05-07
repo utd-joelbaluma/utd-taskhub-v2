@@ -62,7 +62,11 @@ export default function RegisterPage() {
 		<div className="flex min-h-svh bg-background lg:min-h-screen">
 			{/* Left panel */}
 			<div className="hidden w-[420px] shrink-0 flex-col justify-between bg-foreground/95 p-8 xl:flex xl:w-[480px] xl:p-10">
-				<div className="flex items-center">
+				<Link
+					to="/"
+					aria-label="TaskHub home"
+					className="flex items-center"
+				>
 					<img
 						src="/favicon.svg"
 						alt="TaskHub"
@@ -71,7 +75,7 @@ export default function RegisterPage() {
 					<span className="ml-2 text-surface text-lg font-bold tracking-tight">
 						TaskHub
 					</span>
-				</div>
+				</Link>
 
 				<div>
 					<div className="mb-8 space-y-5">
@@ -168,13 +172,17 @@ export default function RegisterPage() {
 			{/* Right panel */}
 			<div className="flex min-h-svh flex-1 items-start justify-center overflow-y-auto px-4 py-6 sm:items-center sm:px-6 sm:py-10 lg:min-h-screen lg:px-10 xl:px-6 xl:py-12">
 				<div className="w-full max-w-[420px]">
-					<div className="mb-8 flex items-center justify-center xl:hidden">
+					<Link
+						to="/"
+						aria-label="TaskHub home"
+						className="mb-8 flex items-center justify-center xl:hidden"
+					>
 						<img
 							src="/logo.svg"
 							alt="TaskHub"
 							className="h-8 w-auto max-w-full"
 						/>
-					</div>
+					</Link>
 
 					<div className="mb-6 sm:mb-8">
 						<h1 className="mb-1 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">

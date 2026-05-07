@@ -1,4 +1,6 @@
 import { supabase, supabaseAdmin } from "../config/supabase.js";
+import { env } from "../config/env.js";
+import { sendInvitationEmail } from "../services/mailer.service.js";
 
 export async function listUsers(req, res, next) {
 	try {
@@ -45,21 +47,49 @@ export async function inviteUser(req, res, next) {
 			});
 		}
 
-		const { error } = await supabaseAdmin.auth.admin.inviteUserByEmail(
-			normalizedEmail,
-			{
-				data: {
-					role,
-					invited_by: req.profile.id,
-				},
-			}
-		);
+		const { data: existingInvite } = await supabase
+			.from("invitations")
+			.select("id")
+			.is("project_id", null)
+			.eq("email", normalizedEmail)
+			.eq("status", "pending")
+			.gt("expires_at", new Date().toISOString())
+			.maybeSingle();
 
-		if (error) throw error;
+		if (existingInvite) {
+			return res.status(409).json({
+				success: false,
+				message: "A pending invitation for this email already exists.",
+			});
+		}
+
+		const { data: invitation, error: inviteError } = await supabase
+			.from("invitations")
+			.insert({
+				project_id: null,
+				invited_by: req.profile.id,
+				email: normalizedEmail,
+				role,
+			})
+			.select()
+			.single();
+
+		if (inviteError) throw inviteError;
+
+		const inviteUrl = `${env.appUrl}/invitations/accept?token=${invitation.token}`;
+
+		await sendInvitationEmail({
+			to: normalizedEmail,
+			invitedByName: req.profile.full_name || req.profile.email,
+			projectName: env.appName,
+			role,
+			inviteUrl,
+		});
 
 		res.status(201).json({
 			success: true,
 			message: `Invitation sent to ${normalizedEmail}.`,
+			data: { invitation },
 		});
 	} catch (error) {
 		next(error);
@@ -70,33 +100,30 @@ export async function listUserInvitations(req, res, next) {
 	try {
 		const { status } = req.query;
 
-			const { data: authData, error } =
-				await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+		let query = supabase
+			.from("invitations")
+			.select("id, email, role, status, created_at, cancelled_at, expires_at")
+			.is("project_id", null)
+			.order("created_at", { ascending: false });
 
+		if (status) query = query.eq("status", status);
+
+		const { data, error } = await query;
 		if (error) throw error;
 
-		const invited = authData.users.filter(
-			(u) => u.invited_at && !u.email_confirmed_at
-		);
-
-		let filtered = invited;
-		if (status === "pending") {
-			filtered = invited.filter((u) => !u.app_metadata?.invite_cancelled_at);
-		} else if (status === "cancelled") {
-			filtered = invited.filter((u) => !!u.app_metadata?.invite_cancelled_at);
-		}
-
-		const data = filtered.map((u) => ({
-			id: u.id,
-			email: u.email,
-			invited_at: u.invited_at,
-			invite_cancelled_at: u.app_metadata?.invite_cancelled_at ?? null,
+		const mapped = data.map((inv) => ({
+			id: inv.id,
+			email: inv.email,
+			role: inv.role,
+			status: inv.status,
+			invited_at: inv.created_at,
+			invite_cancelled_at: inv.cancelled_at,
 		}));
 
 		res.status(200).json({
 			success: true,
-			count: data.length,
-			data,
+			count: mapped.length,
+			data: mapped,
 		});
 	} catch (error) {
 		next(error);
@@ -195,41 +222,33 @@ export async function cancelUserInvitation(req, res, next) {
 	try {
 		const { userId } = req.params;
 
-			const { data: authUser, error: fetchError } =
-				await supabaseAdmin.auth.admin.getUserById(userId);
+		const { data: invitation, error: findError } = await supabase
+			.from("invitations")
+			.select("id, status")
+			.eq("id", userId)
+			.is("project_id", null)
+			.maybeSingle();
 
-		if (fetchError || !authUser?.user) {
+		if (findError) throw findError;
+
+		if (!invitation) {
 			return res.status(404).json({
 				success: false,
 				message: "Invitation not found.",
 			});
 		}
 
-		const user = authUser.user;
-
-		if (!user.invited_at || user.email_confirmed_at) {
+		if (invitation.status !== "pending") {
 			return res.status(400).json({
 				success: false,
-				message: "This invitation cannot be cancelled.",
+				message: "Invitation cannot be cancelled.",
 			});
 		}
 
-		if (user.app_metadata?.invite_cancelled_at) {
-			return res.status(409).json({
-				success: false,
-				message: "This invitation is already cancelled.",
-			});
-		}
-
-			const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-			userId,
-			{
-				app_metadata: {
-					...user.app_metadata,
-					invite_cancelled_at: new Date().toISOString(),
-				},
-			}
-		);
+		const { error: updateError } = await supabase
+			.from("invitations")
+			.update({ status: "cancelled", cancelled_at: new Date().toISOString() })
+			.eq("id", userId);
 
 		if (updateError) throw updateError;
 

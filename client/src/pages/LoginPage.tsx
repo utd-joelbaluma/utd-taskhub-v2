@@ -42,7 +42,11 @@ export default function LoginPage() {
 		<div className="flex min-h-svh bg-background lg:min-h-screen">
 			{/* Left panel */}
 			<div className="hidden w-[420px] shrink-0 flex-col justify-between bg-primary/90 p-8 xl:flex xl:w-[480px] xl:p-10">
-				<div className="flex items-center">
+				<Link
+					to="/"
+					aria-label="TaskHub home"
+					className="flex items-center"
+				>
 					<img
 						src="/favicon.svg"
 						alt="TaskHub"
@@ -51,7 +55,7 @@ export default function LoginPage() {
 					<span className="ml-2 text-primary-foreground text-lg font-bold tracking-tight">
 						TaskHub
 					</span>
-				</div>
+				</Link>
 
 				<div>
 					<blockquote className="text-primary-foreground/90 text-2xl font-semibold leading-snug tracking-tight mb-4">
@@ -91,13 +95,17 @@ export default function LoginPage() {
 			{/* Right panel */}
 			<div className="flex min-h-svh flex-1 items-start justify-center overflow-y-auto px-4 py-6 sm:items-center sm:px-6 sm:py-10 lg:min-h-screen lg:px-10 xl:px-6 xl:py-12">
 				<div className="w-full max-w-[400px]">
-					<div className="mb-8 flex items-center justify-center xl:hidden">
+					<Link
+						to="/"
+						aria-label="TaskHub home"
+						className="mb-8 flex items-center justify-center xl:hidden"
+					>
 						<img
 							src="/logo.svg"
 							alt="TaskHub"
 							className="h-8 w-auto max-w-full"
 						/>
-					</div>
+					</Link>
 
 					<div className="mb-6 sm:mb-8">
 						<h1 className="mb-1 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">

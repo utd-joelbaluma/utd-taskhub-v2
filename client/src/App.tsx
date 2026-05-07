@@ -14,6 +14,7 @@ import UsersPage from '@/pages/UsersPage'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
 import AcceptInvitationPage from '@/pages/AcceptInvitationPage'
+import NotFoundPage from '@/pages/NotFoundPage'
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
             <Route path="/users" element={<UsersPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/design-system" element={<DesignSystemPage />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Route>
       </Routes>

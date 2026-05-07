@@ -110,12 +110,16 @@ export default function AcceptInvitationPage() {
 		<div className="flex min-h-svh items-center justify-center bg-background px-4 py-10">
 			<div className="w-full max-w-[420px]">
 				{/* Logo */}
-				<div className="flex items-center justify-center mb-8">
+				<Link
+					to="/"
+					aria-label="TaskHub home"
+					className="flex items-center justify-center mb-8"
+				>
 					<img src="/favicon.svg" alt="TaskHub" className="h-9 w-9" />
 					<span className="ml-2 text-lg font-bold tracking-tight text-foreground">
 						TaskHub
 					</span>
-				</div>
+				</Link>
 
 				{/* Loading */}
 				{pageState === "loading" && (

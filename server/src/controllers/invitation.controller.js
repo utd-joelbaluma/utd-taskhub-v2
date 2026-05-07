@@ -134,7 +134,7 @@ export async function listInvitations(req, res, next) {
           full_name,
           email
         )
-      `
+      `,
 			)
 			.eq("project_id", projectId)
 			.order("created_at", { ascending: false });
@@ -279,46 +279,51 @@ export async function acceptInvitation(req, res, next) {
 			});
 		}
 
-		// Check if the user is already a project member
-		const { data: existingMember } = await supabase
-			.from("project_members")
-			.select("id")
-			.eq("project_id", invitation.project_id)
-			.eq("user_id", profile.id)
-			.maybeSingle();
+		// For project invitations, check existing membership
+		if (invitation.project_id) {
+			const { data: existingMember } = await supabase
+				.from("project_members")
+				.select("id")
+				.eq("project_id", invitation.project_id)
+				.eq("user_id", profile.id)
+				.maybeSingle();
 
-		if (existingMember) {
-			// Still mark the invitation accepted so it doesn't remain pending
-			await supabase
-				.from("invitations")
-				.update({ status: "accepted", accepted_at: new Date().toISOString() })
-				.eq("id", invitation.id);
+			if (existingMember) {
+				await supabase
+					.from("invitations")
+					.update({ status: "accepted", accepted_at: new Date().toISOString() })
+					.eq("id", invitation.id);
 
-			return res.status(409).json({
-				success: false,
-				message: "You are already a member of this project.",
-			});
+				return res.status(409).json({
+					success: false,
+					message: "You are already a member of this project.",
+				});
+			}
 		}
 
-		// Add member and mark invitation accepted in parallel
-		const [memberResult, inviteResult] = await Promise.all([
-			supabase.from("project_members").insert({
+		// Mark invitation accepted
+		const { error: acceptError } = await supabase
+			.from("invitations")
+			.update({ status: "accepted", accepted_at: new Date().toISOString() })
+			.eq("id", invitation.id);
+
+		if (acceptError) throw acceptError;
+
+		// Add to project only for project-scoped invitations
+		if (invitation.project_id) {
+			const { error: memberError } = await supabase.from("project_members").insert({
 				project_id: invitation.project_id,
 				user_id: profile.id,
 				role: invitation.role,
-			}),
-			supabase
-				.from("invitations")
-				.update({ status: "accepted", accepted_at: new Date().toISOString() })
-				.eq("id", invitation.id),
-		]);
-
-		if (memberResult.error) throw memberResult.error;
-		if (inviteResult.error) throw inviteResult.error;
+			});
+			if (memberError) throw memberError;
+		}
 
 		res.status(200).json({
 			success: true,
-			message: "Invitation accepted. You have been added to the project.",
+			message: invitation.project_id
+				? "Invitation accepted. You have been added to the project."
+				: "Invitation accepted. Your account is ready.",
 			data: {
 				project_id: invitation.project_id,
 				role: invitation.role,

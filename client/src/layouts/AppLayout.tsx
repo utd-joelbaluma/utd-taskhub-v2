@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Bell, User, Settings, LogOut, Menu } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -98,13 +98,17 @@ export default function AppLayout() {
 						<Menu className="h-5 w-5" />
 					</button>
 
-					<div className="mr-2 flex min-w-0 shrink-0 items-center gap-2 md:mr-4">
+					<Link
+						to="/"
+						aria-label="TaskHub home"
+						className="mr-2 flex min-w-0 shrink-0 items-center gap-2 md:mr-4"
+					>
 						<img
 							src="/logo.svg"
 							alt="TaskHub"
 							className="h-8 w-auto max-w-[132px]"
 						/>
-					</div>
+					</Link>
 
 					<nav className="hidden items-center gap-1 md:flex">
 						{navLinks.map((link) => (
@@ -293,11 +297,13 @@ export default function AppLayout() {
 
 			<footer className="border-t border-border bg-surface">
 				<div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between gap-4 px-4 py-5 sm:px-5 md:flex-row md:px-6">
-					<img
-						src="/logo.svg"
-						alt="TaskHub"
-						className="h-7 w-auto max-w-[120px]"
-					/>
+					<Link to="/" aria-label="TaskHub home">
+						<img
+							src="/logo.svg"
+							alt="TaskHub"
+							className="h-7 w-auto max-w-[120px]"
+						/>
+					</Link>
 
 					<nav
 						aria-label="Footer navigation"
@@ -322,6 +328,10 @@ export default function AppLayout() {
 							Contact
 						</a>
 					</nav>
+					<p className="text-xs text-muted-foreground/80">
+						Powered by UP-TO-DATE WebDesign | © 2026 TaskHub.
+						Alrights Reserved.
+					</p>
 				</div>
 			</footer>
 		</div>
