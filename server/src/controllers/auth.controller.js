@@ -160,7 +160,10 @@ export async function completeInvite(req, res, next) {
 			});
 		}
 
-		const { error: updateError } = await req.supabase.auth.updateUser({ password });
+		const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+			req.profile.id,
+			{ password },
+		);
 		if (updateError) throw updateError;
 
 		if (full_name?.trim()) {

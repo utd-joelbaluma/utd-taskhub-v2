@@ -172,7 +172,9 @@ export default function AcceptInvitationPage() {
 			localStorage.setItem("access_token", inviteSession.access_token);
 			localStorage.setItem("refresh_token", inviteSession.refresh_token);
 			await completeInvite(completeForm.name.trim(), completeForm.password);
-			navigate("/");
+			localStorage.removeItem("access_token");
+			localStorage.removeItem("refresh_token");
+			navigate("/login", { state: { toast: "Account set up! Sign in to access your workspace." } });
 		} catch (err) {
 			setCompleteError(
 				err instanceof Error ? err.message : "Something went wrong.",

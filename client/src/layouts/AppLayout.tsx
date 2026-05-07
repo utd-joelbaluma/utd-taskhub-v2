@@ -76,7 +76,7 @@ export default function AppLayout() {
 				.slice(0, 2)
 		: "AR";
 
-	const displayName = user?.full_name ?? "Alex Rivera";
+	const displayName = user?.full_name ?? user?.email?.split("@")[0];
 	const role = user?.role ?? "Admin";
 
 	async function handleLogout() {

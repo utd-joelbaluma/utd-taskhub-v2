@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { toast } from "sonner";
 import { Eye, EyeOff, ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,12 @@ import { cn } from "@/lib/utils";
 export default function LoginPage() {
 	const { login, isAuthenticated } = useAuth();
 	const navigate = useNavigate();
+	const location = useLocation();
+
+	useEffect(() => {
+		const message = (location.state as { toast?: string } | null)?.toast;
+		if (message) toast.success(message);
+	}, []);
 	const [showPassword, setShowPassword] = useState(false);
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
