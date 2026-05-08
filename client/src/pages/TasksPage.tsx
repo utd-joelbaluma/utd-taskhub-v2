@@ -1554,9 +1554,9 @@ function SortableTaskCard({
 							type="button"
 							onClick={() => onDelete(task)}
 							className={cn(
-								"text-[11px] font-medium relative text-secondary bg-secondary/5 hover:bg-secondary/10 px-1.5 py-0.5 rounded transition-all duration-150 gap-1 flex items-center justify-center",
+								"text-[11px] font-medium relative text-white bg-secondary px-1.5 py-0.5 rounded transition-all duration-150 gap-1 flex items-center justify-center z-10",
 								confirming
-									? "opacity-100 translate-x-0"
+									? "opacity-100 translate-x-5"
 									: "opacity-0 translate-x-2 pointer-events-none",
 							)}
 						>
@@ -2154,7 +2154,9 @@ export default function TasksPage() {
 						<SelectTrigger className="w-44 h-9">
 							<SelectValue
 								placeholder={
-									filterSprintsLoading ? "Loading..." : "All Sprints"
+									filterSprintsLoading
+										? "Loading..."
+										: "All Sprints"
 								}
 							/>
 						</SelectTrigger>
