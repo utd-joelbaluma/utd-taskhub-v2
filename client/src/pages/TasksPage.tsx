@@ -128,7 +128,7 @@ const PRIORITY_BORDER: Record<ApiTaskPriority, string> = {
 	urgent: "border border-danger/20 hover:border-danger/50 hover:shadow-danger/20",
 	high: "border border-warning/20 hover:border-warning/50 hover:shadow-warning/20",
 	medium: "border border-primary/20 hover:border-primary/50 hover:shadow-primary/20",
-	low: "border border-border/20 hover:border-border/50 hover:shadow-border/20",
+	low: "border border-gray-500/20 hover:border-gray-500/50 hover:shadow-gray-500/20",
 };
 
 const PRIORITY_BADGE_VARIANT: Record<
@@ -1470,19 +1470,20 @@ function SortableTaskCard({
 		<div
 			ref={setNodeRef}
 			style={style}
-			className="relative group cursor-pointer"
+			className="relative group cursor-pointer rounded-lg overflow-hidden"
 			onMouseLeave={() => setConfirming(false)}
 			onClick={() => onView(task)}
 		>
+			<div className="absolute w-1/2 bg-linear-to-r from-white-50 to-white transition-all divide-gray-200 h-full right-0 opacity-0 group-hover:opacity-100"></div>
 			<div
 				{...attributes}
 				{...listeners}
-				className="absolute top-3 right-2 z-10 p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing text-muted hover:text-primary"
+				className="absolute top-4 right-1.5 z-10 p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing  text-muted hover:text-primary"
 				onClick={(e) => e.stopPropagation()}
 			>
 				<Tooltip>
 					<TooltipTrigger asChild>
-						<GripVertical className="h-4 w-4" />
+						<GripVertical className="h-5 w-5" />
 					</TooltipTrigger>
 					<TooltipContent side="left">
 						Click and drag to move task
@@ -1490,7 +1491,7 @@ function SortableTaskCard({
 				</Tooltip>
 			</div>
 			<div
-				className="absolute top-10 right-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white pl-4"
+				className="absolute top-16 right-2 z-10  flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity rounded"
 				onClick={(e) => e.stopPropagation()}
 			>
 				<Tooltip>

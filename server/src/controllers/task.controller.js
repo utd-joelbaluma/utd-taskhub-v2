@@ -20,6 +20,7 @@ const TASK_SELECT = `
 	tags,
 	created_at,
 	updated_at,
+	estimated_time,
 	assigned_to:profiles!tasks_assigned_to_fkey (
 		id,
 		full_name,
@@ -93,10 +94,26 @@ export async function createTask(req, res, next) {
 
 		const errors = validateCreateTask(req.body);
 		if (errors.length > 0) {
-			return res.status(400).json({ success: false, message: "Validation failed.", errors });
+			return res.status(400).json({
+				success: false,
+				message: "Validation failed.",
+				errors,
+			});
 		}
 
-		const { title, description, status, priority, assigned_to, board_column_id, due_date, tags, ticket_id } = req.body;
+		const {
+			title,
+			description,
+			status,
+			priority,
+			assigned_to,
+			board_column_id,
+			due_date,
+			tags,
+			ticket_id,
+			estimated_time,
+			sprint_id,
+		} = req.body;
 
 		// Derive position: place at end of the target column (or project-level if no column)
 		let positionQuery = supabase
@@ -107,7 +124,10 @@ export async function createTask(req, res, next) {
 			.limit(1);
 
 		if (board_column_id) {
-			positionQuery = positionQuery.eq("board_column_id", board_column_id);
+			positionQuery = positionQuery.eq(
+				"board_column_id",
+				board_column_id,
+			);
 		} else {
 			positionQuery = positionQuery.is("board_column_id", null);
 		}
@@ -127,7 +147,11 @@ export async function createTask(req, res, next) {
 				priority: priority || "medium",
 				assigned_to: assigned_to || null,
 				due_date: due_date || null,
-				tags: Array.isArray(tags) ? tags.map(t => t.trim()).filter(Boolean) : [],
+				estimated_time: estimated_time || 0,
+				sprint_id: sprint_id || null,
+				tags: Array.isArray(tags)
+					? tags.map((t) => t.trim()).filter(Boolean)
+					: [],
 				position,
 				created_by: req.profile.id,
 			})
@@ -152,10 +176,26 @@ export async function updateTask(req, res, next) {
 
 		const errors = validateUpdateTask(req.body);
 		if (errors.length > 0) {
-			return res.status(400).json({ success: false, message: "Validation failed.", errors });
+			return res.status(400).json({
+				success: false,
+				message: "Validation failed.",
+				errors,
+			});
 		}
 
-		const ALLOWED = ["title", "description", "developer_notes", "status", "priority", "assigned_to", "board_column_id", "due_date", "tags"];
+		const ALLOWED = [
+			"title",
+			"description",
+			"developer_notes",
+			"status",
+			"priority",
+			"assigned_to",
+			"board_column_id",
+			"due_date",
+			"tags",
+			"estimated_time",
+			"sprint_id",
+		];
 		const updateData = {};
 
 		for (const field of ALLOWED) {
@@ -165,18 +205,30 @@ export async function updateTask(req, res, next) {
 		}
 
 		if (updateData.title) updateData.title = updateData.title.trim();
-		if (updateData.description) updateData.description = updateData.description.trim();
-		if (updateData.developer_notes !== undefined && updateData.developer_notes !== null) {
-			updateData.developer_notes = updateData.developer_notes.trim() || null;
+		if (updateData.description)
+			updateData.description = updateData.description.trim();
+		if (
+			updateData.developer_notes !== undefined &&
+			updateData.developer_notes !== null
+		) {
+			updateData.developer_notes =
+				updateData.developer_notes.trim() || null;
 		}
 		if (updateData.tags !== undefined) {
 			updateData.tags = Array.isArray(updateData.tags)
-				? updateData.tags.map(t => t.trim()).filter(Boolean)
+				? updateData.tags.map((t) => t.trim()).filter(Boolean)
 				: [];
+		}
+		if (updateData.estimated_time !== undefined) {
+			const parsed = Number(updateData.estimated_time);
+			updateData.estimated_time = isNaN(parsed) ? null : parsed;
 		}
 
 		if (Object.keys(updateData).length === 0) {
-			return res.status(400).json({ success: false, message: "No valid fields provided for update." });
+			return res.status(400).json({
+				success: false,
+				message: "No valid fields provided for update.",
+			});
 		}
 
 		const { data, error } = await supabase
@@ -190,10 +242,16 @@ export async function updateTask(req, res, next) {
 		if (error) throw error;
 
 		if (!data) {
-			return res.status(404).json({ success: false, message: "Task not found." });
+			return res
+				.status(404)
+				.json({ success: false, message: "Task not found." });
 		}
 
-		res.status(200).json({ success: true, message: "Task updated successfully.", data });
+		res.status(200).json({
+			success: true,
+			message: "Task updated successfully.",
+			data,
+		});
 	} catch (error) {
 		next(error);
 	}
@@ -213,13 +271,21 @@ export async function deleteTask(req, res, next) {
 		if (findError) throw findError;
 
 		if (!existing) {
-			return res.status(404).json({ success: false, message: "Task not found." });
+			return res
+				.status(404)
+				.json({ success: false, message: "Task not found." });
 		}
 
-		const { error } = await supabase.from("tasks").delete().eq("id", taskId);
+		const { error } = await supabase
+			.from("tasks")
+			.delete()
+			.eq("id", taskId);
 		if (error) throw error;
 
-		res.status(200).json({ success: true, message: "Task deleted successfully." });
+		res.status(200).json({
+			success: true,
+			message: "Task deleted successfully.",
+		});
 	} catch (error) {
 		next(error);
 	}
@@ -231,7 +297,11 @@ export async function moveTask(req, res, next) {
 
 		const errors = validateMoveTask(req.body);
 		if (errors.length > 0) {
-			return res.status(400).json({ success: false, message: "Validation failed.", errors });
+			return res.status(400).json({
+				success: false,
+				message: "Validation failed.",
+				errors,
+			});
 		}
 
 		const { board_column_id, position } = req.body;
@@ -247,7 +317,9 @@ export async function moveTask(req, res, next) {
 		if (findError) throw findError;
 
 		if (!task) {
-			return res.status(404).json({ success: false, message: "Task not found." });
+			return res
+				.status(404)
+				.json({ success: false, message: "Task not found." });
 		}
 
 		// Verify the target column belongs to a board in this project
@@ -260,7 +332,10 @@ export async function moveTask(req, res, next) {
 		if (columnError) throw columnError;
 
 		if (!column || column.boards.project_id !== projectId) {
-			return res.status(400).json({ success: false, message: "board_column_id does not belong to this project." });
+			return res.status(400).json({
+				success: false,
+				message: "board_column_id does not belong to this project.",
+			});
 		}
 
 		// Fetch all tasks in the destination column (excluding the moving task), ordered by position
@@ -285,11 +360,18 @@ export async function moveTask(req, res, next) {
 			.filter((t) => t.id !== taskId || true); // include all; we'll batch update
 
 		// Update all affected tasks' positions and the moving task's column
-		const positionUpdates = updates.filter((t) => t.id !== taskId).map((t) =>
-			supabase.from("tasks").update({ position: t.position }).eq("id", t.id)
-		);
+		const positionUpdates = updates
+			.filter((t) => t.id !== taskId)
+			.map((t) =>
+				supabase
+					.from("tasks")
+					.update({ position: t.position })
+					.eq("id", t.id),
+			);
 
-		const movingTaskPosition = updates.find((t) => t.id === taskId).position;
+		const movingTaskPosition = updates.find(
+			(t) => t.id === taskId,
+		).position;
 
 		await Promise.all([
 			...positionUpdates,
@@ -308,7 +390,11 @@ export async function moveTask(req, res, next) {
 
 		if (error) throw error;
 
-		res.status(200).json({ success: true, message: "Task moved successfully.", data });
+		res.status(200).json({
+			success: true,
+			message: "Task moved successfully.",
+			data,
+		});
 	} catch (error) {
 		next(error);
 	}
@@ -323,11 +409,11 @@ export async function getAllTasks(req, res, next) {
 			.select(TASK_SELECT)
 			.order("created_at", { ascending: false });
 
-		if (project_id)  query = query.eq("project_id", project_id);
-		if (status)      query = query.eq("status", status);
-		if (priority)    query = query.eq("priority", priority);
+		if (project_id) query = query.eq("project_id", project_id);
+		if (status) query = query.eq("status", status);
+		if (priority) query = query.eq("priority", priority);
 		if (assigned_to) query = query.eq("assigned_to", assigned_to);
-		if (search)      query = query.ilike("title", `%${search}%`);
+		if (search) query = query.ilike("title", `%${search}%`);
 
 		const { data, error } = await query;
 		if (error) throw error;
