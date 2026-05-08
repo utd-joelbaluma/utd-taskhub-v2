@@ -61,14 +61,18 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { listUsers, updateUserRole, type UserProfile } from "@/services/user.service";
+import {
+	listUsers,
+	updateUserRole,
+	type UserProfile,
+} from "@/services/user.service";
 import { listRoles, type Role } from "@/services/role.service";
 import { toast } from "sonner";
 
 const navItems = [
 	{ id: "general", label: "General", icon: Settings },
+	{ id: "role-permissions", label: "Role Permissions", icon: Lock },
 	{ id: "members", label: "Members & Roles", icon: Users },
-	{ id: "role-permissions", label: "Manage Role Permissions", icon: Lock },
 	{ id: "boards", label: "Boards & Workflow", icon: LayoutDashboard },
 	{ id: "tickets", label: "Tickets", icon: Ticket },
 	{ id: "notifications", label: "Notifications", icon: Bell },
@@ -76,7 +80,6 @@ const navItems = [
 	{ id: "security", label: "Security", icon: Shield },
 	{ id: "danger", label: "Danger Zone", icon: AlertOctagon, danger: true },
 ];
-
 
 const defaultStatuses = ["Backlog", "In Progress", "Done"];
 
@@ -106,7 +109,12 @@ const integrations = [
 
 function getInitials(name: string | null): string {
 	if (!name) return "?";
-	return name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+	return name
+		.split(" ")
+		.map((w) => w[0])
+		.slice(0, 2)
+		.join("")
+		.toUpperCase();
 }
 
 function ManageRoleDialog({
@@ -139,11 +147,14 @@ function ManageRoleDialog({
 		setSaving(true);
 		try {
 			await updateUserRole(user.id, selectedRoleKey);
-			toast.success("Role updated", { description: `${user.full_name ?? user.email} is now ${selectedRole?.name ?? selectedRoleKey}` });
+			toast.success("Role updated", {
+				description: `${user.full_name ?? user.email} is now ${selectedRole?.name ?? selectedRoleKey}`,
+			});
 			onUpdated();
 			onClose();
 		} catch (err: unknown) {
-			const msg = err instanceof Error ? err.message : "Failed to update role.";
+			const msg =
+				err instanceof Error ? err.message : "Failed to update role.";
 			toast.error(msg);
 		} finally {
 			setSaving(false);
@@ -151,12 +162,18 @@ function ManageRoleDialog({
 	}
 
 	return (
-		<Dialog open={open} onOpenChange={(val) => { if (!val) onClose(); }}>
+		<Dialog
+			open={open}
+			onOpenChange={(val) => {
+				if (!val) onClose();
+			}}
+		>
 			<DialogContent className="max-w-[480px]">
 				<DialogHeader>
 					<DialogTitle>Manage Role</DialogTitle>
 					<DialogDescription>
-						Assign a global role to this user. Permissions are inherited from the role.
+						Assign a global role to this user. Permissions are
+						inherited from the role.
 					</DialogDescription>
 				</DialogHeader>
 
@@ -168,31 +185,46 @@ function ManageRoleDialog({
 							</AvatarFallback>
 						</Avatar>
 						<div>
-							<p className="text-sm font-medium text-foreground leading-none">{user.full_name ?? "Unknown"}</p>
-							<p className="text-xs text-muted mt-0.5">{user.email}</p>
+							<p className="text-sm font-medium text-foreground leading-none">
+								{user.full_name ?? "Unknown"}
+							</p>
+							<p className="text-xs text-muted mt-0.5">
+								{user.email}
+							</p>
 						</div>
 					</div>
 				)}
 
 				<div className="space-y-4">
 					<div>
-						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Role</label>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+							Role
+						</label>
 						{loadingRoles ? (
 							<div className="flex items-center gap-2 text-muted py-2">
 								<Loader2 className="h-4 w-4 animate-spin" />
-								<span className="text-sm">Loading roles...</span>
+								<span className="text-sm">
+									Loading roles...
+								</span>
 							</div>
 						) : (
-							<Select value={selectedRoleKey} onValueChange={setSelectedRoleKey}>
+							<Select
+								value={selectedRoleKey}
+								onValueChange={setSelectedRoleKey}
+							>
 								<SelectTrigger>
 									<SelectValue placeholder="Select a role" />
 								</SelectTrigger>
 								<SelectContent>
 									{roles.map((r) => (
 										<SelectItem key={r.key} value={r.key}>
-											<span className="font-medium">{r.name}</span>
+											<span className="font-medium">
+												{r.name}
+											</span>
 											{r.description && (
-												<span className="ml-2 text-xs text-muted-foreground">{r.description}</span>
+												<span className="ml-2 text-xs text-muted-foreground">
+													{r.description}
+												</span>
 											)}
 										</SelectItem>
 									))}
@@ -206,24 +238,34 @@ function ManageRoleDialog({
 							<div className="flex items-center gap-1.5 mb-2">
 								<ShieldCheck className="h-3.5 w-3.5 text-muted" />
 								<label className="text-sm font-medium text-muted-foreground">
-									Permissions ({selectedRole.permissions.length})
+									Permissions (
+									{selectedRole.permissions.length})
 								</label>
 							</div>
 							{selectedRole.permissions.length === 0 ? (
-								<p className="text-xs text-muted">No permissions assigned to this role.</p>
+								<p className="text-xs text-muted">
+									No permissions assigned to this role.
+								</p>
 							) : (
 								<div className="border border-border rounded-md max-h-[180px] overflow-y-auto divide-y divide-border">
 									{selectedRole.permissions.map((p) => (
-										<div key={p.key} className="flex items-center gap-2.5 px-3 py-2">
+										<div
+											key={p.key}
+											className="flex items-center gap-2.5 px-3 py-2"
+										>
 											<input
 												type="checkbox"
 												checked
 												readOnly
 												className="h-3.5 w-3.5 accent-primary cursor-default"
 											/>
-											<span className="text-xs font-mono text-foreground">{p.key}</span>
+											<span className="text-xs font-mono text-foreground">
+												{p.key}
+											</span>
 											{p.description && (
-												<span className="text-xs text-muted ml-auto truncate max-w-[180px]">{p.description}</span>
+												<span className="text-xs text-muted ml-auto truncate max-w-[180px]">
+													{p.description}
+												</span>
 											)}
 										</div>
 									))}
@@ -235,10 +277,17 @@ function ManageRoleDialog({
 
 				<DialogFooter>
 					<DialogClose asChild>
-						<Button variant="outline" disabled={saving}>Cancel</Button>
+						<Button variant="outline" disabled={saving}>
+							Cancel
+						</Button>
 					</DialogClose>
-					<Button onClick={handleSave} disabled={saving || !selectedRoleKey}>
-						{saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+					<Button
+						onClick={handleSave}
+						disabled={saving || !selectedRoleKey}
+					>
+						{saving && (
+							<Loader2 className="h-4 w-4 animate-spin mr-2" />
+						)}
 						Save
 					</Button>
 				</DialogFooter>
@@ -326,60 +375,178 @@ const PERMISSION_GROUPS: PermGroup[] = [
 		module: "Projects",
 		icon: LayoutDashboard,
 		rows: [
-			{ feature: "View projects", admin: FULL, manager: partial("Assigned"), developer: FULL, user: FULL },
-			{ feature: "Create projects", admin: FULL, manager: FULL, developer: NONE, user: NONE },
-			{ feature: "Manage project settings", admin: FULL, manager: partial("Assigned"), developer: NONE, user: NONE },
-			{ feature: "Delete projects", admin: FULL, manager: NONE, developer: NONE, user: NONE },
+			{
+				feature: "View projects",
+				admin: FULL,
+				manager: partial("Assigned"),
+				developer: FULL,
+				user: FULL,
+			},
+			{
+				feature: "Create projects",
+				admin: FULL,
+				manager: FULL,
+				developer: NONE,
+				user: NONE,
+			},
+			{
+				feature: "Manage project settings",
+				admin: FULL,
+				manager: partial("Assigned"),
+				developer: NONE,
+				user: NONE,
+			},
+			{
+				feature: "Delete projects",
+				admin: FULL,
+				manager: NONE,
+				developer: NONE,
+				user: NONE,
+			},
 		],
 	},
 	{
 		module: "Tasks",
 		icon: CheckCircle2,
 		rows: [
-			{ feature: "View tasks", admin: FULL, manager: FULL, developer: FULL, user: FULL },
-			{ feature: "Create & edit tasks", admin: FULL, manager: FULL, developer: FULL, user: NONE },
-			{ feature: "Delete tasks", admin: FULL, manager: FULL, developer: NONE, user: NONE },
+			{
+				feature: "View tasks",
+				admin: FULL,
+				manager: FULL,
+				developer: FULL,
+				user: FULL,
+			},
+			{
+				feature: "Create & edit tasks",
+				admin: FULL,
+				manager: FULL,
+				developer: FULL,
+				user: NONE,
+			},
+			{
+				feature: "Delete tasks",
+				admin: FULL,
+				manager: FULL,
+				developer: NONE,
+				user: NONE,
+			},
 		],
 	},
 	{
 		module: "Tickets",
 		icon: Ticket,
 		rows: [
-			{ feature: "View tickets", admin: FULL, manager: FULL, developer: FULL, user: FULL },
-			{ feature: "Create tickets", admin: FULL, manager: FULL, developer: FULL, user: FULL },
-			{ feature: "Edit tickets", admin: FULL, manager: FULL, developer: FULL, user: partial("Own only") },
-			{ feature: "Delete tickets", admin: FULL, manager: FULL, developer: NONE, user: partial("Own only") },
+			{
+				feature: "View tickets",
+				admin: FULL,
+				manager: FULL,
+				developer: FULL,
+				user: FULL,
+			},
+			{
+				feature: "Create tickets",
+				admin: FULL,
+				manager: FULL,
+				developer: FULL,
+				user: FULL,
+			},
+			{
+				feature: "Edit tickets",
+				admin: FULL,
+				manager: FULL,
+				developer: FULL,
+				user: partial("Own only"),
+			},
+			{
+				feature: "Delete tickets",
+				admin: FULL,
+				manager: FULL,
+				developer: NONE,
+				user: partial("Own only"),
+			},
 		],
 	},
 	{
 		module: "Sprints",
 		icon: Timer,
 		rows: [
-			{ feature: "View sprints", admin: FULL, manager: FULL, developer: FULL, user: NONE },
-			{ feature: "Create & manage sprints", admin: FULL, manager: FULL, developer: NONE, user: NONE },
-			{ feature: "Delete sprints", admin: FULL, manager: NONE, developer: NONE, user: NONE },
+			{
+				feature: "View sprints",
+				admin: FULL,
+				manager: FULL,
+				developer: FULL,
+				user: NONE,
+			},
+			{
+				feature: "Create & manage sprints",
+				admin: FULL,
+				manager: FULL,
+				developer: NONE,
+				user: NONE,
+			},
+			{
+				feature: "Delete sprints",
+				admin: FULL,
+				manager: NONE,
+				developer: NONE,
+				user: NONE,
+			},
 		],
 	},
 	{
 		module: "Users",
 		icon: Users,
 		rows: [
-			{ feature: "View users", admin: FULL, manager: FULL, developer: NONE, user: NONE },
-			{ feature: "Invite users", admin: FULL, manager: FULL, developer: NONE, user: NONE },
-			{ feature: "Delete users", admin: FULL, manager: FULL, developer: NONE, user: NONE },
+			{
+				feature: "View users",
+				admin: FULL,
+				manager: FULL,
+				developer: NONE,
+				user: NONE,
+			},
+			{
+				feature: "Invite users",
+				admin: FULL,
+				manager: FULL,
+				developer: NONE,
+				user: NONE,
+			},
+			{
+				feature: "Delete users",
+				admin: FULL,
+				manager: FULL,
+				developer: NONE,
+				user: NONE,
+			},
 		],
 	},
 	{
 		module: "Roles & Settings",
 		icon: Shield,
 		rows: [
-			{ feature: "Manage role permissions", admin: FULL, manager: NONE, developer: NONE, user: NONE },
-			{ feature: "Workspace settings", admin: FULL, manager: NONE, developer: NONE, user: NONE },
+			{
+				feature: "Manage role permissions",
+				admin: FULL,
+				manager: NONE,
+				developer: NONE,
+				user: NONE,
+			},
+			{
+				feature: "Workspace settings",
+				admin: FULL,
+				manager: NONE,
+				developer: NONE,
+				user: NONE,
+			},
 		],
 	},
 ];
 
-const ROLE_COLUMNS: { key: keyof Omit<PermRow, "feature">; label: string; variant: string }[] = [
+const ROLE_COLUMNS: {
+	key: keyof Omit<PermRow, "feature">;
+	label: string;
+	variant: string;
+}[] = [
 	{ key: "admin", label: "Admin", variant: "in-progress" },
 	{ key: "manager", label: "Manager", variant: "review" },
 	{ key: "developer", label: "Developer", variant: "done" },
@@ -404,12 +571,18 @@ function AccessCell({
 					disabled={!interactive}
 					className={cn(
 						"inline-flex h-6 w-6 items-center justify-center rounded-full bg-secondary-subtle transition-colors",
-						interactive && "hover:bg-danger-subtle hover:text-danger cursor-pointer",
+						interactive &&
+							"hover:bg-danger-subtle hover:text-danger cursor-pointer",
 						!interactive && "cursor-default",
 					)}
 					title={interactive ? "Click to revoke" : undefined}
 				>
-					<Check className={cn("h-3.5 w-3.5 text-secondary", interactive && "group-hover:hidden")} />
+					<Check
+						className={cn(
+							"h-3.5 w-3.5 text-secondary",
+							interactive && "group-hover:hidden",
+						)}
+					/>
 				</button>
 			</div>
 		);
@@ -424,12 +597,18 @@ function AccessCell({
 					disabled={!interactive}
 					className={cn(
 						"inline-flex h-6 w-6 items-center justify-center rounded-full transition-colors",
-						interactive && "hover:bg-secondary-subtle cursor-pointer",
+						interactive &&
+							"hover:bg-secondary-subtle cursor-pointer",
 						!interactive && "cursor-default",
 					)}
 					title={interactive ? "Click to grant" : undefined}
 				>
-					<Minus className={cn("h-4 w-4 text-border-strong", interactive && "hover:text-secondary")} />
+					<Minus
+						className={cn(
+							"h-4 w-4 text-border-strong",
+							interactive && "hover:text-secondary",
+						)}
+					/>
 				</button>
 			</div>
 		);
@@ -443,7 +622,8 @@ function AccessCell({
 				disabled={!interactive}
 				className={cn(
 					"inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-warning-subtle text-warning border border-warning/20 whitespace-nowrap transition-colors",
-					interactive && "hover:bg-danger-subtle hover:text-danger hover:border-danger/20 cursor-pointer",
+					interactive &&
+						"hover:bg-danger-subtle hover:text-danger hover:border-danger/20 cursor-pointer",
 					!interactive && "cursor-default",
 				)}
 				title={interactive ? "Click to revoke" : undefined}
@@ -461,7 +641,8 @@ function ManageRolePermissionsSection() {
 		PERMISSION_GROUPS.forEach((group, gi) => {
 			group.rows.forEach((row, ri) => {
 				ROLE_COLUMNS.forEach((col) => {
-					init[`${gi}-${ri}-${col.key}`] = row[col.key as keyof Omit<PermRow, "feature">];
+					init[`${gi}-${ri}-${col.key}`] =
+						row[col.key as keyof Omit<PermRow, "feature">];
 				});
 			});
 		});
@@ -472,7 +653,10 @@ function ManageRolePermissionsSection() {
 		const key = `${gi}-${ri}-${roleKey}`;
 		setMatrix((prev) => {
 			const current = prev[key];
-			const original = PERMISSION_GROUPS[gi].rows[ri][roleKey as keyof Omit<PermRow, "feature">];
+			const original =
+				PERMISSION_GROUPS[gi].rows[ri][
+					roleKey as keyof Omit<PermRow, "feature">
+				];
 			return {
 				...prev,
 				[key]: current.type === "none" ? original : NONE,
@@ -488,7 +672,15 @@ function ManageRolePermissionsSection() {
 			{/* Role legend */}
 			<div className="flex items-center gap-3 mb-5 flex-wrap">
 				{ROLE_COLUMNS.map((col) => (
-					<Badge key={col.key} variant={col.variant as Parameters<typeof Badge>[0]["variant"]} className="font-medium">
+					<Badge
+						key={col.key}
+						variant={
+							col.variant as Parameters<
+								typeof Badge
+							>[0]["variant"]
+						}
+						className="font-medium"
+					>
 						{col.label}
 					</Badge>
 				))}
@@ -525,7 +717,11 @@ function ManageRolePermissionsSection() {
 									className="px-4 py-2.5 text-center text-xs font-medium text-muted min-w-28"
 								>
 									<Badge
-										variant={col.variant as Parameters<typeof Badge>[0]["variant"]}
+										variant={
+											col.variant as Parameters<
+												typeof Badge
+											>[0]["variant"]
+										}
 										className="font-medium"
 									>
 										{col.label}
@@ -538,7 +734,10 @@ function ManageRolePermissionsSection() {
 						{PERMISSION_GROUPS.map((group, gi) => (
 							<>
 								{/* Module header row */}
-								<tr key={`group-${group.module}`} className="bg-muted-subtle/60 border-b border-border">
+								<tr
+									key={`group-${group.module}`}
+									className="bg-muted-subtle/60 border-b border-border"
+								>
 									<td
 										colSpan={ROLE_COLUMNS.length + 1}
 										className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide"
@@ -554,17 +753,33 @@ function ManageRolePermissionsSection() {
 										key={`${group.module}-${row.feature}`}
 										className={cn(
 											"border-b border-border last:border-0 transition-colors hover:bg-muted-subtle/60",
-											ri % 2 === 1 && "bg-muted-subtle/30",
+											ri % 2 === 1 &&
+												"bg-muted-subtle/30",
 										)}
 									>
 										<td className="px-4 py-3 text-sm text-foreground">
 											{row.feature}
 										</td>
 										{ROLE_COLUMNS.map((col) => (
-											<td key={col.key} className="px-4 py-3">
+											<td
+												key={col.key}
+												className="px-4 py-3"
+											>
 												<AccessCell
-													level={matrix[`${gi}-${ri}-${col.key}`] ?? row[col.key as keyof Omit<PermRow, "feature">]}
-													onChange={() => toggle(gi, ri, col.key)}
+													level={
+														matrix[
+															`${gi}-${ri}-${col.key}`
+														] ??
+														row[
+															col.key as keyof Omit<
+																PermRow,
+																"feature"
+															>
+														]
+													}
+													onChange={() =>
+														toggle(gi, ri, col.key)
+													}
 												/>
 											</td>
 										))}
@@ -577,7 +792,10 @@ function ManageRolePermissionsSection() {
 			</div>
 
 			<div className="mt-5 flex justify-end">
-				<Button size="sm" onClick={() => toast.success("Permissions saved.")}>
+				<Button
+					size="sm"
+					onClick={() => toast.success("Permissions saved.")}
+				>
 					Save Changes
 				</Button>
 			</div>
@@ -596,7 +814,9 @@ export default function SettingsPage() {
 	// Members state
 	const [members, setMembers] = useState<UserProfile[]>([]);
 	const [loadingMembers, setLoadingMembers] = useState(false);
-	const [roleDialogUser, setRoleDialogUser] = useState<UserProfile | null>(null);
+	const [roleDialogUser, setRoleDialogUser] = useState<UserProfile | null>(
+		null,
+	);
 
 	const fetchMembers = useCallback(async () => {
 		setLoadingMembers(true);
@@ -685,7 +905,7 @@ export default function SettingsPage() {
 	function scrollToSection(id: string) {
 		const el = document.getElementById(id);
 		if (el) {
-			el.scrollIntoView({ behavior: "smooth", block: "start" });
+			el.scrollIntoView({ behavior: "smooth", block: "nearest" });
 		} else {
 			setActiveSection(id);
 		}
@@ -833,6 +1053,10 @@ export default function SettingsPage() {
 						</SectionBlock>
 					</div>
 
+					{/* Manage Role Permissions */}
+					<div id="role-permissions">
+						<ManageRolePermissionsSection />
+					</div>
 					{/* Members & Roles */}
 					<div id="members">
 						<SectionBlock
@@ -873,86 +1097,115 @@ export default function SettingsPage() {
 									<tbody>
 										{loadingMembers && (
 											<tr>
-												<td colSpan={4} className="px-4 py-6 text-center">
+												<td
+													colSpan={4}
+													className="px-4 py-6 text-center"
+												>
 													<div className="flex items-center justify-center gap-2 text-muted">
 														<Loader2 className="h-4 w-4 animate-spin" />
-														<span className="text-sm">Loading members...</span>
-													</div>
-												</td>
-											</tr>
-										)}
-										{!loadingMembers && members.length === 0 && (
-											<tr>
-												<td colSpan={4} className="px-4 py-6 text-center text-sm text-muted">
-													No members found.
-												</td>
-											</tr>
-										)}
-										{!loadingMembers && members.map((m) => (
-											<tr
-												key={m.id}
-												className="border-b border-border last:border-0 hover:bg-muted-subtle transition-colors"
-											>
-												<td className="px-4 py-3">
-													<div className="flex items-center gap-2.5">
-														<Avatar className="h-7 w-7">
-															<AvatarFallback className="text-[10px]">
-																{getInitials(m.full_name)}
-															</AvatarFallback>
-														</Avatar>
-														<div>
-															<p className="text-sm font-medium text-foreground leading-none">
-																{m.full_name ?? "Unknown"}
-															</p>
-															<p className="text-xs text-muted mt-0.5">
-																{m.email}
-															</p>
-														</div>
-													</div>
-												</td>
-												<td className="px-4 py-3">
-													<Badge
-														variant={
-															(m.global_role?.key ?? m.role) === "admin"
-																? "in-progress"
-																: "backlog"
-														}
-														className="text-xs capitalize"
-													>
-														{m.global_role?.name ?? m.role}
-													</Badge>
-												</td>
-												<td className="px-4 py-3">
-													<div className="flex items-center gap-1.5">
-														<span className={cn(
-															"h-1.5 w-1.5 rounded-full shrink-0",
-															m.status === "active" ? "bg-secondary" : "bg-muted"
-														)} />
-														<span className="text-sm text-muted-foreground capitalize">
-															{m.status}
+														<span className="text-sm">
+															Loading members...
 														</span>
 													</div>
 												</td>
-												<td className="px-4 py-3 text-right">
-													<DropdownMenu>
-														<DropdownMenuTrigger asChild>
-															<button className="text-muted hover:text-foreground transition-colors p-1 rounded">
-																<MoreHorizontal className="h-4 w-4" />
-															</button>
-														</DropdownMenuTrigger>
-														<DropdownMenuContent align="end">
-															<DropdownMenuItem
-																className="flex items-center gap-2"
-																onSelect={() => setRoleDialogUser(m)}
-															>
-																<ShieldCheck className="h-3.5 w-3.5" />
-																Manage Roles
-															</DropdownMenuItem>
-														</DropdownMenuContent>
-													</DropdownMenu>
-												</td>
 											</tr>
-										))}
+										)}
+										{!loadingMembers &&
+											members.length === 0 && (
+												<tr>
+													<td
+														colSpan={4}
+														className="px-4 py-6 text-center text-sm text-muted"
+													>
+														No members found.
+													</td>
+												</tr>
+											)}
+										{!loadingMembers &&
+											members.map((m) => (
+												<tr
+													key={m.id}
+													className="border-b border-border last:border-0 hover:bg-muted-subtle transition-colors"
+												>
+													<td className="px-4 py-3">
+														<div className="flex items-center gap-2.5">
+															<Avatar className="h-7 w-7">
+																<AvatarFallback className="text-[10px]">
+																	{getInitials(
+																		m.full_name,
+																	)}
+																</AvatarFallback>
+															</Avatar>
+															<div>
+																<p className="text-sm font-medium text-foreground leading-none">
+																	{m.full_name ??
+																		"Unknown"}
+																</p>
+																<p className="text-xs text-muted mt-0.5">
+																	{m.email}
+																</p>
+															</div>
+														</div>
+													</td>
+													<td className="px-4 py-3">
+														<Badge
+															variant={
+																(m.global_role
+																	?.key ??
+																	m.role) ===
+																"admin"
+																	? "in-progress"
+																	: "backlog"
+															}
+															className="text-xs capitalize"
+														>
+															{m.global_role
+																?.name ??
+																m.role}
+														</Badge>
+													</td>
+													<td className="px-4 py-3">
+														<div className="flex items-center gap-1.5">
+															<span
+																className={cn(
+																	"h-1.5 w-1.5 rounded-full shrink-0",
+																	m.status ===
+																		"active"
+																		? "bg-secondary"
+																		: "bg-muted",
+																)}
+															/>
+															<span className="text-sm text-muted-foreground capitalize">
+																{m.status}
+															</span>
+														</div>
+													</td>
+													<td className="px-4 py-3 text-right">
+														<DropdownMenu>
+															<DropdownMenuTrigger
+																asChild
+															>
+																<button className="text-muted hover:text-foreground transition-colors p-1 rounded">
+																	<MoreHorizontal className="h-4 w-4" />
+																</button>
+															</DropdownMenuTrigger>
+															<DropdownMenuContent align="end">
+																<DropdownMenuItem
+																	className="flex items-center gap-2"
+																	onSelect={() =>
+																		setRoleDialogUser(
+																			m,
+																		)
+																	}
+																>
+																	<ShieldCheck className="h-3.5 w-3.5" />
+																	Manage Roles
+																</DropdownMenuItem>
+															</DropdownMenuContent>
+														</DropdownMenu>
+													</td>
+												</tr>
+											))}
 									</tbody>
 								</table>
 							</div>
@@ -967,11 +1220,6 @@ export default function SettingsPage() {
 						roles={roles}
 						loadingRoles={loadingRoles}
 					/>
-
-					{/* Manage Role Permissions */}
-					<div id="role-permissions">
-						<ManageRolePermissionsSection />
-					</div>
 
 					{/* Boards & Workflow */}
 					<div id="boards">
