@@ -22,6 +22,7 @@ import {
 	type DashboardData,
 	type DashboardTicket,
 } from "@/services/dashboard.service";
+import SkeletonLoader from "@/components/ui/skeleton-loader";
 
 const STATUS_DOT: Record<string, string> = {
 	in_progress: "bg-primary",
@@ -80,10 +81,95 @@ export default function DashboardPage() {
 
 	if (loading)
 		return (
-			<div className="p-8 text-sm text-muted">Loading dashboard...</div>
+			<div className="mx-auto max-w-[1280px] px-6 py-8">
+				{/* Header */}
+				<div className="flex items-start justify-between mb-8">
+					<div>
+						<h1 className="text-3xl font-semibold text-foreground tracking-tight">
+							System Overview
+						</h1>
+						<p className="text-sm text-muted mt-1">
+							Hello {firstName}, here is what requires your
+							attention today.
+						</p>
+					</div>
+				</div>
+
+				{/* Stats Cards */}
+				<div className="mb-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+					{Array.from({ length: 6 }).map((_, index) => (
+						<div
+							key={index}
+							className="rounded-2xl border border-slate-200 bg-white p-5"
+						>
+							<div className="mb-6 flex items-center justify-between">
+								<SkeletonLoader className="h-4 w-24" />
+								<SkeletonLoader className="h-7 w-7 rounded-full" />
+							</div>
+
+							<SkeletonLoader className="h-9 w-14" />
+						</div>
+					))}
+				</div>
+
+				{/* Main Content */}
+				<div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_390px]">
+					<div className="space-y-6">
+						{/* Recent Tasks Card */}
+						<div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+							<div className="flex items-center justify-between border-b border-slate-200 p-6">
+								<SkeletonLoader className="h-6 w-36" />
+								<SkeletonLoader className="h-5 w-16" />
+							</div>
+
+							<div className="grid grid-cols-4 gap-4 border-b border-slate-200 px-6 py-4">
+								<SkeletonLoader className="h-4 w-32" />
+								<SkeletonLoader className="h-4 w-20" />
+								<SkeletonLoader className="h-4 w-16" />
+								<SkeletonLoader className="h-4 w-20" />
+							</div>
+
+							<div className="flex h-24 items-center justify-center">
+								<SkeletonLoader className="h-5 w-36" />
+							</div>
+						</div>
+
+						{/* Tasks by Status Card */}
+						<div className="rounded-2xl border border-slate-200 bg-white p-6">
+							<SkeletonLoader className="mb-8 h-6 w-40" />
+
+							<div className="space-y-6">
+								{Array.from({ length: 4 }).map((_, index) => (
+									<div key={index}>
+										<div className="mb-3 flex items-center justify-between">
+											<SkeletonLoader className="h-5 w-28" />
+											<SkeletonLoader className="h-5 w-5" />
+										</div>
+
+										<SkeletonLoader className="h-2 w-full rounded-full" />
+									</div>
+								))}
+							</div>
+						</div>
+					</div>
+
+					{/* Tickets Card */}
+					<div className="h-fit rounded-2xl border border-slate-200 bg-white p-6">
+						<div className="mb-10 flex items-center justify-between">
+							<SkeletonLoader className="h-6 w-20" />
+							<SkeletonLoader className="h-6 w-6 rounded-full" />
+						</div>
+
+						<div className="mb-10 flex justify-center">
+							<SkeletonLoader className="h-5 w-32" />
+						</div>
+
+						<SkeletonLoader className="h-11 w-full rounded-full" />
+					</div>
+				</div>
+			</div>
 		);
-	if (error)
-		return <div className="p-8 text-sm text-danger">{error}</div>;
+	if (error) return <div className="p-8 text-sm text-danger">{error}</div>;
 	if (!data) return null;
 
 	const { stats, recent_tasks, recent_tickets } = data;
@@ -157,13 +243,10 @@ export default function DashboardPage() {
 						System Overview
 					</h1>
 					<p className="text-sm text-muted mt-1">
-						Hello {firstName}, here is what requires your attention today.
+						Hello {firstName}, here is what requires your attention
+						today.
 					</p>
 				</div>
-				<Button className="flex items-center gap-2">
-					<Plus className="h-4 w-4" />
-					New Task
-				</Button>
 			</div>
 
 			{/* Stat cards */}
@@ -247,8 +330,15 @@ export default function DashboardPage() {
 												{formatDue(task.due_date)}
 											</td>
 											<td className="px-4 py-4">
-												<Badge variant={task.status as never}>
-													{task.status.replace("_", " ")}
+												<Badge
+													variant={
+														task.status as never
+													}
+												>
+													{task.status.replace(
+														"_",
+														" ",
+													)}
 												</Badge>
 											</td>
 										</tr>
@@ -266,7 +356,9 @@ export default function DashboardPage() {
 						<div className="space-y-4">
 							{statusBars.map((item) => {
 								const pct =
-									total > 0 ? Math.round((item.count / total) * 100) : 0;
+									total > 0
+										? Math.round((item.count / total) * 100)
+										: 0;
 								return (
 									<div key={item.label}>
 										<div className="flex items-center justify-between mb-1.5">
@@ -310,13 +402,19 @@ export default function DashboardPage() {
 							) : (
 								recent_tickets.map((t: DashboardTicket) => {
 									const meta =
-										TICKET_TYPE_META[t.type] ?? TICKET_TYPE_META.other;
+										TICKET_TYPE_META[t.type] ??
+										TICKET_TYPE_META.other;
 									return (
-										<div key={t.id} className="flex items-start gap-3">
+										<div
+											key={t.id}
+											className="flex items-start gap-3"
+										>
 											<div
 												className={`h-9 w-9 rounded-full ${meta.iconBg} flex items-center justify-center shrink-0`}
 											>
-												<meta.icon className={`h-4 w-4 ${meta.iconClass}`} />
+												<meta.icon
+													className={`h-4 w-4 ${meta.iconClass}`}
+												/>
 											</div>
 											<div>
 												<p className="text-sm font-medium text-foreground leading-tight">
@@ -324,7 +422,8 @@ export default function DashboardPage() {
 												</p>
 												<p className="text-xs text-muted mt-0.5">
 													#{t.id.slice(0, 8)} &bull;{" "}
-													{t.created_by?.full_name ?? "Unknown"}
+													{t.created_by?.full_name ??
+														"Unknown"}
 												</p>
 											</div>
 										</div>
@@ -332,7 +431,10 @@ export default function DashboardPage() {
 								})
 							)}
 						</div>
-						<Button variant="outline" className="w-full mt-5 text-sm">
+						<Button
+							variant="outline"
+							className="w-full mt-5 text-sm"
+						>
 							Manage Tickets
 						</Button>
 					</Card>
