@@ -590,7 +590,7 @@ function NewTaskDialog({
 					{/* Estimated Time */}
 					<div className="flex flex-col items-center justify-center">
 						<label className="text-sm font-medium text-muted-foreground block w-full text-left mb-1.5">
-							Estimated time
+							Estimated time (optional)
 						</label>
 						<div className="bg-white border border-border rounded-xl px-4 py-1.5 mb-3 w-full text-center">
 							<b className="text-primary text-lg">
@@ -1004,7 +1004,7 @@ function EditTaskDialog({
 					{/* Estimated Time */}
 					<div className="flex flex-col items-center justify-center">
 						<label className="text-sm font-medium text-muted-foreground block w-full text-left mb-1.5">
-							Estimated time
+							Estimated time (optional)
 						</label>
 						<div className="bg-white border border-border rounded-xl px-4 py-1.5 mb-3 w-full text-center">
 							<b className="text-primary text-lg">
