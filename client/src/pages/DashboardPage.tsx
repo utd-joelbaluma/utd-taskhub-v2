@@ -427,7 +427,11 @@ export default function DashboardPage() {
 									Current sprint progress
 								</p>
 							</div>
-							<Badge variant={active_sprint ? "in-progress" : "default"}>
+							<Badge
+								variant={
+									active_sprint ? "in-progress" : "default"
+								}
+							>
 								{active_sprint ? "Active" : "None"}
 							</Badge>
 						</div>
@@ -503,7 +507,8 @@ export default function DashboardPage() {
 									No active sprint
 								</p>
 								<p className="mt-1 text-xs text-muted">
-									Start a sprint to track weekly progress here.
+									Start a sprint to track weekly progress
+									here.
 								</p>
 							</div>
 						)}
