@@ -258,7 +258,7 @@ export default function DashboardPage() {
 							<span
 								className={`text-3xl font-bold tabular-nums ${s.valueClass ?? "text-foreground"}`}
 							>
-								{String(s.value).padStart(2, "0")}
+								{String(s.value).padStart(2, "")}
 							</span>
 							<s.icon className={`h-6 w-6 ${s.iconClass}`} />
 						</div>
