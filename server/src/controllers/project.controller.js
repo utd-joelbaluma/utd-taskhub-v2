@@ -10,7 +10,7 @@ export async function getProjects(req, res, next) {
 
 		let query = supabase
 			.from("projects")
-			.select("*, project_members(user_id, role, profiles(id, full_name, avatar_url)), tasks(id, status)")
+			.select("*, project_members(user_id, role, profiles(id, full_name, avatar_url)), tasks(id, status), sprint:sprints!projects_sprint_id_fkey(id, name, start_date, end_date, status)")
 			.order("created_at", { ascending: false });
 
 		if (status) query = query.eq("status", status);
@@ -36,7 +36,7 @@ export async function getProjectById(req, res, next) {
 
 		const { data, error } = await supabase
 			.from("projects")
-			.select("*, project_members(user_id, role, profiles(id, full_name, avatar_url))")
+			.select("*, project_members(user_id, role, profiles(id, full_name, avatar_url)), sprint:sprints!projects_sprint_id_fkey(id, name, start_date, end_date, status)")
 			.eq("id", id)
 			.maybeSingle();
 
@@ -70,7 +70,7 @@ export async function createProject(req, res, next) {
 			});
 		}
 
-		const { name, description, status, icon_type, icon_value, sprint_name, sprint_end_date, tags } = req.body;
+		const { name, description, status, icon_type, icon_value, sprint_name, sprint_end_date, sprint_id, tags } = req.body;
 
 		const { data, error } = await supabase
 			.from("projects")
@@ -82,6 +82,7 @@ export async function createProject(req, res, next) {
 				icon_value: icon_value?.trim() || "check",
 				sprint_name: sprint_name?.trim() || null,
 				sprint_end_date: sprint_end_date || null,
+				sprint_id: sprint_id || null,
 				tags: Array.isArray(tags) ? tags : [],
 				created_by: req.profile.id,
 			})
@@ -152,6 +153,10 @@ export async function updateProject(req, res, next) {
 
 		if (req.body.tags !== undefined) {
 			updateData.tags = Array.isArray(req.body.tags) ? req.body.tags : [];
+		}
+
+		if (req.body.sprint_id !== undefined) {
+			updateData.sprint_id = req.body.sprint_id || null;
 		}
 
 		if (Object.keys(updateData).length === 0) {

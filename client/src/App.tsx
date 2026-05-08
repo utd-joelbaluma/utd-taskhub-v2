@@ -15,6 +15,7 @@ import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
 import AcceptInvitationPage from '@/pages/AcceptInvitationPage'
 import ProfilePage from '@/pages/ProfilePage'
+import SprintsPage from '@/pages/SprintsPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
             <Route path="/projects/:id" element={<ProjectPage />} />
             <Route path="/tasks" element={<TasksPage />} />
             <Route path="/tickets" element={<TicketsPage />} />
+            <Route path="/sprints" element={<SprintsPage />} />
             <Route path="/kanban" element={<div className="p-6 text-[#191b23]">Kanban Board (coming soon)</div>} />
             <Route path="/analytics" element={<div className="p-6 text-[#191b23]">Analytics (coming soon)</div>} />
             <Route path="/users" element={<UsersPage />} />

@@ -7,7 +7,6 @@ import {
 
 const SPRINT_SELECT = `
 	id,
-	project_id,
 	name,
 	start_date,
 	end_date,
@@ -23,12 +22,9 @@ const SPRINT_SELECT = `
 
 export async function listSprints(req, res, next) {
 	try {
-		const { projectId } = req.params;
-
 		const { data, error } = await supabase
 			.from("sprints")
 			.select(SPRINT_SELECT)
-			.eq("project_id", projectId)
 			.order("start_date", { ascending: true });
 
 		if (error) throw error;
@@ -45,7 +41,6 @@ export async function listSprints(req, res, next) {
 
 export async function createSprint(req, res, next) {
 	try {
-		const { projectId } = req.params;
 		const { name, start_date, end_date, status } = req.body;
 
 		const errors = validateCreateSprint({ name, start_date, end_date, status });
@@ -58,7 +53,6 @@ export async function createSprint(req, res, next) {
 		const { data, error } = await supabase
 			.from("sprints")
 			.insert({
-				project_id: projectId,
 				name: name.trim(),
 				start_date,
 				end_date: resolvedEndDate,
@@ -72,7 +66,7 @@ export async function createSprint(req, res, next) {
 			if (error.code === "23505") {
 				return res.status(409).json({
 					success: false,
-					message: "A sprint already exists for that week in this project.",
+					message: "A sprint already exists for that week.",
 				});
 			}
 			throw error;
@@ -90,7 +84,7 @@ export async function createSprint(req, res, next) {
 
 export async function updateSprint(req, res, next) {
 	try {
-		const { projectId, sprintId } = req.params;
+		const { sprintId } = req.params;
 		const { name, start_date, end_date, status } = req.body;
 
 		const errors = validateUpdateSprint({ name, start_date, end_date, status });
@@ -114,7 +108,6 @@ export async function updateSprint(req, res, next) {
 			.from("sprints")
 			.update(updates)
 			.eq("id", sprintId)
-			.eq("project_id", projectId)
 			.select(SPRINT_SELECT)
 			.maybeSingle();
 
@@ -122,7 +115,7 @@ export async function updateSprint(req, res, next) {
 			if (error.code === "23505") {
 				return res.status(409).json({
 					success: false,
-					message: "A sprint already exists for that week in this project.",
+					message: "A sprint already exists for that week.",
 				});
 			}
 			throw error;
@@ -140,13 +133,12 @@ export async function updateSprint(req, res, next) {
 
 export async function deleteSprint(req, res, next) {
 	try {
-		const { projectId, sprintId } = req.params;
+		const { sprintId } = req.params;
 
 		const { data, error } = await supabase
 			.from("sprints")
 			.delete()
 			.eq("id", sprintId)
-			.eq("project_id", projectId)
 			.select("id")
 			.maybeSingle();
 

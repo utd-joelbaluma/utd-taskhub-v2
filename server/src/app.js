@@ -71,7 +71,7 @@ app.use(`/api/${env.apiVersion}/projects/:projectId/boards/:boardId/columns`, bo
 app.use(`/api/${env.apiVersion}/projects/:projectId/tasks`, taskRoutes);
 app.use(`/api/${env.apiVersion}/projects/:projectId/tickets`, ticketRoutes);
 app.use(`/api/${env.apiVersion}/projects/:projectId/members`, projectMemberRoutes);
-app.use(`/api/${env.apiVersion}/projects/:projectId/sprints`, sprintRoutes);
+app.use(`/api/${env.apiVersion}/sprints`, sprintRoutes);
 app.use(`/api/${env.apiVersion}/users`, userRoutes);
 app.use(`/api/${env.apiVersion}/roles`, roleRoutes);
 

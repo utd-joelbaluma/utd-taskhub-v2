@@ -26,6 +26,11 @@ import {
 	CheckCircle2,
 	Loader2,
 	ShieldCheck,
+	Lock,
+	Check,
+	Minus,
+	Timer,
+	type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,6 +68,7 @@ import { toast } from "sonner";
 const navItems = [
 	{ id: "general", label: "General", icon: Settings },
 	{ id: "members", label: "Members & Roles", icon: Users },
+	{ id: "role-permissions", label: "Manage Role Permissions", icon: Lock },
 	{ id: "boards", label: "Boards & Workflow", icon: LayoutDashboard },
 	{ id: "tickets", label: "Tickets", icon: Ticket },
 	{ id: "notifications", label: "Notifications", icon: Bell },
@@ -108,25 +114,22 @@ function ManageRoleDialog({
 	open,
 	onClose,
 	onUpdated,
+	roles,
+	loadingRoles,
 }: {
 	user: UserProfile | null;
 	open: boolean;
 	onClose: () => void;
 	onUpdated: () => void;
+	roles: Role[];
+	loadingRoles: boolean;
 }) {
-	const [roles, setRoles] = useState<Role[]>([]);
-	const [loadingRoles, setLoadingRoles] = useState(false);
 	const [selectedRoleKey, setSelectedRoleKey] = useState("");
 	const [saving, setSaving] = useState(false);
 
 	useEffect(() => {
 		if (!open) return;
 		setSelectedRoleKey(user?.global_role?.key ?? user?.role ?? "");
-		setLoadingRoles(true);
-		listRoles("global")
-			.then(setRoles)
-			.catch(() => toast.error("Failed to load roles."))
-			.finally(() => setLoadingRoles(false));
 	}, [open, user]);
 
 	const selectedRole = roles.find((r) => r.key === selectedRoleKey);
@@ -295,6 +298,293 @@ function Toggle({
 	);
 }
 
+type AccessLevel =
+	| { type: "full" }
+	| { type: "none" }
+	| { type: "partial"; label: string };
+
+const FULL: AccessLevel = { type: "full" };
+const NONE: AccessLevel = { type: "none" };
+const partial = (label: string): AccessLevel => ({ type: "partial", label });
+
+interface PermRow {
+	feature: string;
+	admin: AccessLevel;
+	manager: AccessLevel;
+	developer: AccessLevel;
+	user: AccessLevel;
+}
+
+interface PermGroup {
+	module: string;
+	icon: LucideIcon;
+	rows: PermRow[];
+}
+
+const PERMISSION_GROUPS: PermGroup[] = [
+	{
+		module: "Projects",
+		icon: LayoutDashboard,
+		rows: [
+			{ feature: "View projects", admin: FULL, manager: partial("Assigned"), developer: FULL, user: FULL },
+			{ feature: "Create projects", admin: FULL, manager: FULL, developer: NONE, user: NONE },
+			{ feature: "Manage project settings", admin: FULL, manager: partial("Assigned"), developer: NONE, user: NONE },
+			{ feature: "Delete projects", admin: FULL, manager: NONE, developer: NONE, user: NONE },
+		],
+	},
+	{
+		module: "Tasks",
+		icon: CheckCircle2,
+		rows: [
+			{ feature: "View tasks", admin: FULL, manager: FULL, developer: FULL, user: FULL },
+			{ feature: "Create & edit tasks", admin: FULL, manager: FULL, developer: FULL, user: NONE },
+			{ feature: "Delete tasks", admin: FULL, manager: FULL, developer: NONE, user: NONE },
+		],
+	},
+	{
+		module: "Tickets",
+		icon: Ticket,
+		rows: [
+			{ feature: "View tickets", admin: FULL, manager: FULL, developer: FULL, user: FULL },
+			{ feature: "Create tickets", admin: FULL, manager: FULL, developer: FULL, user: FULL },
+			{ feature: "Edit tickets", admin: FULL, manager: FULL, developer: FULL, user: partial("Own only") },
+			{ feature: "Delete tickets", admin: FULL, manager: FULL, developer: NONE, user: partial("Own only") },
+		],
+	},
+	{
+		module: "Sprints",
+		icon: Timer,
+		rows: [
+			{ feature: "View sprints", admin: FULL, manager: FULL, developer: FULL, user: NONE },
+			{ feature: "Create & manage sprints", admin: FULL, manager: FULL, developer: NONE, user: NONE },
+			{ feature: "Delete sprints", admin: FULL, manager: NONE, developer: NONE, user: NONE },
+		],
+	},
+	{
+		module: "Users",
+		icon: Users,
+		rows: [
+			{ feature: "View users", admin: FULL, manager: FULL, developer: NONE, user: NONE },
+			{ feature: "Invite users", admin: FULL, manager: FULL, developer: NONE, user: NONE },
+			{ feature: "Delete users", admin: FULL, manager: FULL, developer: NONE, user: NONE },
+		],
+	},
+	{
+		module: "Roles & Settings",
+		icon: Shield,
+		rows: [
+			{ feature: "Manage role permissions", admin: FULL, manager: NONE, developer: NONE, user: NONE },
+			{ feature: "Workspace settings", admin: FULL, manager: NONE, developer: NONE, user: NONE },
+		],
+	},
+];
+
+const ROLE_COLUMNS: { key: keyof Omit<PermRow, "feature">; label: string; variant: string }[] = [
+	{ key: "admin", label: "Admin", variant: "in-progress" },
+	{ key: "manager", label: "Manager", variant: "review" },
+	{ key: "developer", label: "Developer", variant: "done" },
+	{ key: "user", label: "User (Client)", variant: "backlog" },
+];
+
+function AccessCell({
+	level,
+	onChange,
+}: {
+	level: AccessLevel;
+	onChange?: () => void;
+}) {
+	const interactive = !!onChange;
+
+	if (level.type === "full") {
+		return (
+			<div className="flex justify-center">
+				<button
+					type="button"
+					onClick={onChange}
+					disabled={!interactive}
+					className={cn(
+						"inline-flex h-6 w-6 items-center justify-center rounded-full bg-secondary-subtle transition-colors",
+						interactive && "hover:bg-danger-subtle hover:text-danger cursor-pointer",
+						!interactive && "cursor-default",
+					)}
+					title={interactive ? "Click to revoke" : undefined}
+				>
+					<Check className={cn("h-3.5 w-3.5 text-secondary", interactive && "group-hover:hidden")} />
+				</button>
+			</div>
+		);
+	}
+
+	if (level.type === "none") {
+		return (
+			<div className="flex justify-center">
+				<button
+					type="button"
+					onClick={onChange}
+					disabled={!interactive}
+					className={cn(
+						"inline-flex h-6 w-6 items-center justify-center rounded-full transition-colors",
+						interactive && "hover:bg-secondary-subtle cursor-pointer",
+						!interactive && "cursor-default",
+					)}
+					title={interactive ? "Click to grant" : undefined}
+				>
+					<Minus className={cn("h-4 w-4 text-border-strong", interactive && "hover:text-secondary")} />
+				</button>
+			</div>
+		);
+	}
+
+	return (
+		<div className="flex justify-center">
+			<button
+				type="button"
+				onClick={onChange}
+				disabled={!interactive}
+				className={cn(
+					"inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-warning-subtle text-warning border border-warning/20 whitespace-nowrap transition-colors",
+					interactive && "hover:bg-danger-subtle hover:text-danger hover:border-danger/20 cursor-pointer",
+					!interactive && "cursor-default",
+				)}
+				title={interactive ? "Click to revoke" : undefined}
+			>
+				{level.label}
+			</button>
+		</div>
+	);
+}
+
+function ManageRolePermissionsSection() {
+	type MatrixKey = string; // `${groupIdx}-${rowIdx}-${roleKey}`
+	const [matrix, setMatrix] = useState<Record<MatrixKey, AccessLevel>>(() => {
+		const init: Record<MatrixKey, AccessLevel> = {};
+		PERMISSION_GROUPS.forEach((group, gi) => {
+			group.rows.forEach((row, ri) => {
+				ROLE_COLUMNS.forEach((col) => {
+					init[`${gi}-${ri}-${col.key}`] = row[col.key as keyof Omit<PermRow, "feature">];
+				});
+			});
+		});
+		return init;
+	});
+
+	function toggle(gi: number, ri: number, roleKey: string) {
+		const key = `${gi}-${ri}-${roleKey}`;
+		setMatrix((prev) => {
+			const current = prev[key];
+			const original = PERMISSION_GROUPS[gi].rows[ri][roleKey as keyof Omit<PermRow, "feature">];
+			return {
+				...prev,
+				[key]: current.type === "none" ? original : NONE,
+			};
+		});
+	}
+
+	return (
+		<SectionBlock
+			title="Manage Role Permissions"
+			description="Define what each role can access and perform across the workspace."
+		>
+			{/* Role legend */}
+			<div className="flex items-center gap-3 mb-5 flex-wrap">
+				{ROLE_COLUMNS.map((col) => (
+					<Badge key={col.key} variant={col.variant as Parameters<typeof Badge>[0]["variant"]} className="font-medium">
+						{col.label}
+					</Badge>
+				))}
+				<div className="ml-auto flex items-center gap-4 text-xs text-muted">
+					<span className="flex items-center gap-1.5">
+						<span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-secondary-subtle">
+							<Check className="h-3 w-3 text-secondary" />
+						</span>
+						Full access
+					</span>
+					<span className="flex items-center gap-1.5">
+						<span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-warning-subtle text-warning border border-warning/20">
+							Partial
+						</span>
+						Conditional
+					</span>
+					<span className="flex items-center gap-1.5">
+						<Minus className="h-3.5 w-3.5 text-border-strong" />
+						No access
+					</span>
+				</div>
+			</div>
+
+			<div className="overflow-x-auto rounded-lg border border-border">
+				<table className="w-full text-sm">
+					<thead>
+						<tr className="border-b border-border bg-muted-subtle">
+							<th className="px-4 py-2.5 text-left text-xs font-medium text-muted w-56 min-w-44">
+								Feature
+							</th>
+							{ROLE_COLUMNS.map((col) => (
+								<th
+									key={col.key}
+									className="px-4 py-2.5 text-center text-xs font-medium text-muted min-w-28"
+								>
+									<Badge
+										variant={col.variant as Parameters<typeof Badge>[0]["variant"]}
+										className="font-medium"
+									>
+										{col.label}
+									</Badge>
+								</th>
+							))}
+						</tr>
+					</thead>
+					<tbody>
+						{PERMISSION_GROUPS.map((group, gi) => (
+							<>
+								{/* Module header row */}
+								<tr key={`group-${group.module}`} className="bg-muted-subtle/60 border-b border-border">
+									<td
+										colSpan={ROLE_COLUMNS.length + 1}
+										className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide"
+									>
+										<span className="flex items-center gap-2">
+											<group.icon className="h-3.5 w-3.5 text-primary" />
+											{group.module}
+										</span>
+									</td>
+								</tr>
+								{group.rows.map((row, ri) => (
+									<tr
+										key={`${group.module}-${row.feature}`}
+										className={cn(
+											"border-b border-border last:border-0 transition-colors hover:bg-muted-subtle/60",
+											ri % 2 === 1 && "bg-muted-subtle/30",
+										)}
+									>
+										<td className="px-4 py-3 text-sm text-foreground">
+											{row.feature}
+										</td>
+										{ROLE_COLUMNS.map((col) => (
+											<td key={col.key} className="px-4 py-3">
+												<AccessCell
+													level={matrix[`${gi}-${ri}-${col.key}`] ?? row[col.key as keyof Omit<PermRow, "feature">]}
+													onChange={() => toggle(gi, ri, col.key)}
+												/>
+											</td>
+										))}
+									</tr>
+								))}
+							</>
+						))}
+					</tbody>
+				</table>
+			</div>
+
+			<div className="mt-5 flex justify-end">
+				<Button size="sm" onClick={() => toast.success("Permissions saved.")}>
+					Save Changes
+				</Button>
+			</div>
+		</SectionBlock>
+	);
+}
+
 export default function SettingsPage() {
 	const [activeSection, setActiveSection] = useState("general");
 	const [viewMode, setViewMode] = useState<"board" | "list">("board");
@@ -324,6 +614,18 @@ export default function SettingsPage() {
 		fetchMembers();
 	}, [fetchMembers]);
 
+	// Shared roles state (used by ManageRoleDialog and ManageRolePermissionsSection)
+	const [roles, setRoles] = useState<Role[]>([]);
+	const [loadingRoles, setLoadingRoles] = useState(false);
+
+	useEffect(() => {
+		setLoadingRoles(true);
+		listRoles("global")
+			.then(setRoles)
+			.catch(() => toast.error("Failed to load roles."))
+			.finally(() => setLoadingRoles(false));
+	}, []);
+
 	// Tickets state
 	const [ticketPrefix, setTicketPrefix] = useState("TKT");
 	const [defaultPriority, setDefaultPriority] = useState("medium");
@@ -348,6 +650,7 @@ export default function SettingsPage() {
 	const sectionOrder = [
 		"general",
 		"members",
+		"role-permissions",
 		"boards",
 		"tickets",
 		"notifications",
@@ -661,7 +964,14 @@ export default function SettingsPage() {
 						open={roleDialogUser !== null}
 						onClose={() => setRoleDialogUser(null)}
 						onUpdated={fetchMembers}
+						roles={roles}
+						loadingRoles={loadingRoles}
 					/>
+
+					{/* Manage Role Permissions */}
+					<div id="role-permissions">
+						<ManageRolePermissionsSection />
+					</div>
 
 					{/* Boards & Workflow */}
 					<div id="boards">

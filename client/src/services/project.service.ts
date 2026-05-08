@@ -1,5 +1,6 @@
 import { api } from "@/lib/api";
 import type { MemberRole, ProjectMember } from "./project-member.service";
+import type { Sprint } from "./sprint.service";
 
 export type ProjectStatus = "planning" | "in-progress" | "on-hold" | "completed";
 
@@ -12,6 +13,8 @@ export interface Project {
 	icon_value: string | null;
 	sprint_name: string | null;
 	sprint_end_date: string | null;
+	sprint_id: string | null;
+	sprint: Pick<Sprint, "id" | "name" | "start_date" | "end_date" | "status"> | null;
 	tags: string[];
 	created_by: string;
 	created_at: string;
@@ -28,6 +31,7 @@ export interface CreateProjectPayload {
 	icon_value?: string;
 	sprint_name?: string;
 	sprint_end_date?: string;
+	sprint_id?: string | null;
 	tags?: string[];
 }
 
@@ -39,6 +43,7 @@ export interface UpdateProjectPayload {
 	icon_value?: string;
 	sprint_name?: string;
 	sprint_end_date?: string;
+	sprint_id?: string | null;
 	tags?: string[];
 }
 

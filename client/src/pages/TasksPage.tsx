@@ -282,15 +282,11 @@ function NewTaskDialog({
 	const [submitting, setSubmitting] = useState(false);
 	const [estimatedTime, setEstimatedTime] = useState(0);
 	useEffect(() => {
-		if (!open || !form.projectId) {
-			setSprints([]);
-			setSprintsLoading(false);
-			return;
-		}
+		if (!open) return;
 
 		let active = true;
 		setSprintsLoading(true);
-		listSprints(form.projectId)
+		listSprints()
 			.then((data) => {
 				if (active) setSprints(data);
 			})
@@ -304,7 +300,7 @@ function NewTaskDialog({
 		return () => {
 			active = false;
 		};
-	}, [form.projectId, open]);
+	}, [open]);
 
 	const addEstimatedTime = useCallback((minutes: number) => {
 		setEstimatedTime((prev) => prev + minutes);
@@ -472,7 +468,7 @@ function NewTaskDialog({
 											v === NO_SPRINT_VALUE ? "" : v,
 										)
 									}
-									disabled={!form.projectId || sprintsLoading}
+									disabled={sprintsLoading}
 								>
 									<SelectTrigger>
 										<SelectValue
@@ -1815,14 +1811,9 @@ export default function TasksPage() {
 	// ── Sprint filter options ────────────────────────────────────────────────
 
 	useEffect(() => {
-		setFilterSprint("all");
-		if (filterProject === "all") {
-			setFilterSprintOptions([]);
-			return;
-		}
 		let active = true;
 		setFilterSprintsLoading(true);
-		listSprints(filterProject)
+		listSprints()
 			.then((data) => {
 				if (active) setFilterSprintOptions(data);
 			})
@@ -1835,7 +1826,7 @@ export default function TasksPage() {
 		return () => {
 			active = false;
 		};
-	}, [filterProject]);
+	}, []);
 
 	// ── DnD ──────────────────────────────────────────────────────────────────
 
@@ -2158,18 +2149,12 @@ export default function TasksPage() {
 					<Select
 						value={filterSprint}
 						onValueChange={setFilterSprint}
-						disabled={
-							filterProject === "all" || filterSprintsLoading
-						}
+						disabled={filterSprintsLoading}
 					>
 						<SelectTrigger className="w-44 h-9">
 							<SelectValue
 								placeholder={
-									filterProject === "all"
-										? "All Sprints"
-										: filterSprintsLoading
-											? "Loading..."
-											: "All Sprints"
+									filterSprintsLoading ? "Loading..." : "All Sprints"
 								}
 							/>
 						</SelectTrigger>
