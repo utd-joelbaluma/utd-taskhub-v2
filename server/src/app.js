@@ -22,6 +22,7 @@ import {
 	errorHandler,
 } from "./middlewares/error.middleware.js";
 import { getAllTasks } from "./controllers/task.controller.js";
+import { getDashboard } from "./controllers/dashboard.controller.js";
 import { requireAuth } from "./middlewares/auth.middleware.js";
 import { bindSupabaseContext } from "./config/supabase.js";
 
@@ -75,6 +76,7 @@ app.use(`/api/${env.apiVersion}/users`, userRoutes);
 app.use(`/api/${env.apiVersion}/roles`, roleRoutes);
 
 app.get(`/api/${env.apiVersion}/tasks`, requireAuth, getAllTasks);
+app.get(`/api/${env.apiVersion}/dashboard`, requireAuth, getDashboard);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

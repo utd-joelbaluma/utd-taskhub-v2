@@ -11,6 +11,12 @@ import {
 	loginWithEmail,
 	logout as logoutService,
 } from "@/services/auth.service";
+import {
+	clearStoredAuth,
+	getStoredAccessToken,
+	getStoredRefreshToken,
+	storeAuthTokens,
+} from "@/lib/auth-storage";
 
 interface AuthState {
 	user: User | null;
@@ -18,7 +24,7 @@ interface AuthState {
 }
 
 interface AuthContextValue extends AuthState {
-	login: (email: string, password: string) => Promise<void>;
+	login: (email: string, password: string, remember?: boolean) => Promise<void>;
 	logout: () => Promise<void>;
 	isAuthenticated: boolean;
 }
@@ -29,8 +35,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 	const [state, setState] = useState<AuthState>({ user: null, loading: true });
 
 	const loadUser = useCallback(async () => {
-		const token = localStorage.getItem("access_token");
-		if (!token) {
+		const token = getStoredAccessToken();
+		const refreshToken = getStoredRefreshToken();
+		if (!token && !refreshToken) {
 			setState({ user: null, loading: false });
 			return;
 		}
@@ -38,8 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 			const user = await getMe();
 			setState({ user, loading: false });
 		} catch {
-			localStorage.removeItem("access_token");
-			localStorage.removeItem("refresh_token");
+			clearStoredAuth();
 			setState({ user: null, loading: false });
 		}
 	}, []);
@@ -48,12 +54,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		loadUser();
 	}, [loadUser]);
 
-	const login = useCallback(async (email: string, password: string) => {
-		const data = await loginWithEmail(email, password);
-		localStorage.setItem("access_token", data.access_token);
-		localStorage.setItem("refresh_token", data.refresh_token);
-		setState({ user: data.user, loading: false });
-	}, []);
+	const login = useCallback(
+		async (email: string, password: string, remember = false) => {
+			const data = await loginWithEmail(email, password);
+			storeAuthTokens(data, { remember });
+			setState({ user: data.user, loading: false });
+		},
+		[],
+	);
 
 	const logout = useCallback(async () => {
 		await logoutService();

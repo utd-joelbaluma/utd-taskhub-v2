@@ -132,7 +132,7 @@ export async function listUserInvitations(req, res, next) {
 
 export async function updateUserRole(req, res, next) {
 	try {
-		const { userId } = req.params;
+		const { id: userId } = req.params;
 		const { role_key } = req.body;
 
 		if (!role_key || typeof role_key !== "string") {

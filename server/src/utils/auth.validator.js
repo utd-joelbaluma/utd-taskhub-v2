@@ -42,3 +42,13 @@ export function validateLogin(payload) {
 
 	return errors;
 }
+
+export function validateRefreshSession(payload) {
+	const errors = [];
+
+	if (!payload.refresh_token || typeof payload.refresh_token !== "string") {
+		errors.push("Refresh token is required.");
+	}
+
+	return errors;
+}

@@ -21,6 +21,14 @@ const TASK_SELECT = `
 	created_at,
 	updated_at,
 	estimated_time,
+	sprint_id,
+	sprint:sprints (
+		id,
+		name,
+		status,
+		start_date,
+		end_date
+	),
 	assigned_to:profiles!tasks_assigned_to_fkey (
 		id,
 		full_name,

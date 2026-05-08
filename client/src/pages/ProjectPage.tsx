@@ -1,6 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Pencil, TrendingUp, Loader2, X, Trash2 } from "lucide-react";
+import {
+	ArrowLeft,
+	Plus,
+	Pencil,
+	TrendingUp,
+	Loader2,
+	X,
+	Trash2,
+} from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -59,9 +67,7 @@ import {
 	DEFAULT_PROJECT_ICON,
 	type ProjectIconType,
 } from "@/components/projects/project-icon-options";
-import {
-	ProjectIconPicker,
-} from "@/components/projects/project-icon-picker";
+import { ProjectIconPicker } from "@/components/projects/project-icon-picker";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -361,7 +367,7 @@ function EditProjectDialog({
 						)}
 					</div>
 
-					<ProjectIconPicker
+					{/* <ProjectIconPicker
 						iconType={form.iconType}
 						iconValue={form.iconValue}
 						onChange={({ iconType, iconValue }) => {
@@ -372,7 +378,7 @@ function EditProjectDialog({
 								submit: undefined,
 							}));
 						}}
-					/>
+					/> */}
 
 					{/* Status + Sprint Name */}
 					<div className="grid grid-cols-2 gap-4">
@@ -659,7 +665,10 @@ function NewSprintDialog({
 							placeholder="e.g. Sprint 1"
 							value={form.name}
 							onChange={(e) => {
-								setForm((p) => ({ ...p, name: e.target.value }));
+								setForm((p) => ({
+									...p,
+									name: e.target.value,
+								}));
 								setErrors((p) => ({ ...p, name: undefined }));
 							}}
 							className={errors.name ? "border-danger" : ""}
@@ -764,7 +773,11 @@ function EditSprintDialog({
 		if (!open) return;
 		const start = new Date(sprint.start_date + "T00:00:00");
 		const end = new Date(sprint.end_date + "T00:00:00");
-		setForm({ name: sprint.name, week: { start, end }, status: sprint.status });
+		setForm({
+			name: sprint.name,
+			week: { start, end },
+			status: sprint.status,
+		});
 		setErrors({});
 	}, [open, sprint]);
 
@@ -819,7 +832,10 @@ function EditSprintDialog({
 						<Input
 							value={form.name}
 							onChange={(e) => {
-								setForm((p) => ({ ...p, name: e.target.value }));
+								setForm((p) => ({
+									...p,
+									name: e.target.value,
+								}));
 								setErrors((p) => ({ ...p, name: undefined }));
 							}}
 							className={errors.name ? "border-danger" : ""}
@@ -1073,7 +1089,9 @@ function NewTaskDialog({
 							<SelectTrigger>
 								<SelectValue
 									placeholder={
-										sprintsLoading ? "Loading..." : "Select sprint"
+										sprintsLoading
+											? "Loading..."
+											: "Select sprint"
 									}
 								/>
 							</SelectTrigger>
@@ -1082,7 +1100,10 @@ function NewTaskDialog({
 									No sprint
 								</SelectItem>
 								{sprints.map((sprint) => (
-									<SelectItem key={sprint.id} value={sprint.id}>
+									<SelectItem
+										key={sprint.id}
+										value={sprint.id}
+									>
 										{sprint.name}
 									</SelectItem>
 								))}
@@ -1281,8 +1302,9 @@ function NewTaskDialog({
 							<p className="text-xs text-muted mt-2">
 								Assigned to{" "}
 								<span className="font-medium text-foreground">
-									{members.find((m) => m.user_id === form.assignedTo)
-										?.profiles?.full_name ?? form.assignedTo}
+									{members.find(
+										(m) => m.user_id === form.assignedTo,
+									)?.profiles?.full_name ?? form.assignedTo}
 								</span>
 							</p>
 						)}
@@ -1382,7 +1404,12 @@ export default function ProjectPage() {
 	const [newTaskOpen, setNewTaskOpen] = useState(false);
 	const [newSprintOpen, setNewSprintOpen] = useState(false);
 	const [editingSprint, setEditingSprint] = useState<Sprint | null>(null);
-	const [deletingSprintId, setDeletingSprintId] = useState<string | null>(null);
+	const [deletingSprintId, setDeletingSprintId] = useState<string | null>(
+		null,
+	);
+	const [startingSprintId, setStartingSprintId] = useState<string | null>(
+		null,
+	);
 
 	useEffect(() => {
 		if (!id) return;
@@ -1423,6 +1450,29 @@ export default function ProjectPage() {
 			toast.success("Sprint deleted.");
 		} catch {
 			toast.error("Failed to delete sprint.");
+		}
+	}
+
+	async function handleStartSprint(sprintId: string) {
+		if (!id) return;
+		const alreadyActive = sprints.some((s) => s.status === "active");
+		if (alreadyActive) {
+			toast.error("A sprint is already active for this project.");
+			return;
+		}
+		setStartingSprintId(sprintId);
+		try {
+			const updated = await updateSprint(id, sprintId, {
+				status: "active",
+			});
+			setSprints((prev) =>
+				prev.map((s) => (s.id === sprintId ? updated : s)),
+			);
+			toast.success("Sprint started.");
+		} catch {
+			toast.error("Failed to start sprint.");
+		} finally {
+			setStartingSprintId(null);
 		}
 	}
 
@@ -1882,7 +1932,29 @@ export default function ProjectPage() {
 												</Button>
 											</div>
 										) : (
-											<div className="flex items-center gap-1 shrink-0">
+											<div className="flex items-center gap-2 shrink-0">
+												{sprint.status ===
+													"planned" && (
+													<Button
+														size="sm"
+														variant="outline"
+														disabled={
+															startingSprintId ===
+															sprint.id
+														}
+														onClick={() =>
+															handleStartSprint(
+																sprint.id,
+															)
+														}
+													>
+														{startingSprintId ===
+															sprint.id && (
+															<Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+														)}
+														Start Sprint
+													</Button>
+												)}
 												<Button
 													size="icon"
 													variant="ghost"

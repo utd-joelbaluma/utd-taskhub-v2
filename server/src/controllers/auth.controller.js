@@ -1,5 +1,9 @@
 import { supabase, supabaseAdmin } from "../config/supabase.js";
-import { validateRegister, validateLogin } from "../utils/auth.validator.js";
+import {
+	validateRegister,
+	validateLogin,
+	validateRefreshSession,
+} from "../utils/auth.validator.js";
 
 export async function register(req, res, next) {
 	try {
@@ -109,6 +113,68 @@ export async function login(req, res, next) {
 		res.status(200).json({
 			success: true,
 			message: "Logged in successfully.",
+			data: {
+				access_token: data.session.access_token,
+				refresh_token: data.session.refresh_token,
+				expires_at: data.session.expires_at,
+				user: profile,
+			},
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function refreshSession(req, res, next) {
+	try {
+		const errors = validateRefreshSession(req.body);
+
+		if (errors.length > 0) {
+			return res.status(400).json({
+				success: false,
+				message: "Validation failed.",
+				errors,
+			});
+		}
+
+		const { refresh_token } = req.body;
+
+		const { data, error } = await supabase.auth.refreshSession({
+			refresh_token,
+		});
+
+		if (error || !data.session || !data.user) {
+			return res.status(401).json({
+				success: false,
+				message: "Session expired.",
+			});
+		}
+
+		const { data: profile, error: profileError } = await supabase
+			.from("profiles")
+			.select("*")
+			.eq("id", data.user.id)
+			.maybeSingle();
+
+		if (profileError) throw profileError;
+
+		if (!profile) {
+			return res.status(404).json({
+				success: false,
+				message: "User profile not found.",
+			});
+		}
+
+		if (profile.status === "disabled") {
+			return res.status(403).json({
+				success: false,
+				message: "Your account has been disabled.",
+			});
+		}
+
+		res.status(200).json({
+			success: true,
+			message: "Session refreshed successfully.",
 			data: {
 				access_token: data.session.access_token,
 				refresh_token: data.session.refresh_token,

@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import { clearStoredAuth } from "@/lib/auth-storage";
 import type { User } from "@/types/user";
 
 export interface LoginResponse {
@@ -50,6 +51,5 @@ export async function completeInvite(
 
 export async function logout(): Promise<void> {
 	await api.post("/auth/logout", {}).catch(() => {});
-	localStorage.removeItem("access_token");
-	localStorage.removeItem("refresh_token");
+	clearStoredAuth();
 }

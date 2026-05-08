@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { clearStoredAuth, storeAuthTokens } from "@/lib/auth-storage";
 import { acceptInvitation } from "@/services/invitation.service";
 import { registerUser, loginWithEmail, completeInvite } from "@/services/auth.service";
 import { useAuth } from "@/context/AuthContext";
@@ -133,8 +134,7 @@ export default function AcceptInvitationPage() {
 			await registerUser(invitedEmail, form.password, form.name.trim());
 			await acceptInvitation(token);
 			const session = await loginWithEmail(invitedEmail, form.password);
-			localStorage.setItem("access_token", session.access_token);
-			localStorage.setItem("refresh_token", session.refresh_token);
+			storeAuthTokens(session, { remember: false });
 			navigate("/");
 		} catch (err) {
 			setError(
@@ -169,11 +169,9 @@ export default function AcceptInvitationPage() {
 
 		setCompleteLoading(true);
 		try {
-			localStorage.setItem("access_token", inviteSession.access_token);
-			localStorage.setItem("refresh_token", inviteSession.refresh_token);
+			storeAuthTokens(inviteSession, { remember: false });
 			await completeInvite(completeForm.name.trim(), completeForm.password);
-			localStorage.removeItem("access_token");
-			localStorage.removeItem("refresh_token");
+			clearStoredAuth();
 			navigate("/login", { state: { toast: "Account set up! Sign in to access your workspace." } });
 		} catch (err) {
 			setCompleteError(
@@ -196,8 +194,7 @@ export default function AcceptInvitationPage() {
 		setLoginLoading(true);
 		try {
 			const session = await loginWithEmail(loginForm.email, loginForm.password);
-			localStorage.setItem("access_token", session.access_token);
-			localStorage.setItem("refresh_token", session.refresh_token);
+			storeAuthTokens(session, { remember: false });
 			navigate("/");
 		} catch (err) {
 			setLoginError(

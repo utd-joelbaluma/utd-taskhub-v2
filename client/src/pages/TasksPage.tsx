@@ -63,6 +63,7 @@ import {
 	updateTask,
 	deleteTask,
 	type Task as ApiTask,
+	type TaskSprint,
 	type ApiTaskStatus,
 	type ApiTaskPriority,
 	type CreateTaskPayload,
@@ -76,7 +77,7 @@ import {
 	ProjectDescriptionPreview,
 } from "@/components/projects/project-description";
 import { projectDescriptionText } from "@/components/projects/project-description-utils";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import {
 	Tooltip,
 	TooltipContent,
@@ -101,6 +102,7 @@ interface UiTask {
 	due_date: string | null;
 	tags: string[];
 	estimated_time: number;
+	sprint: TaskSprint | null;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -225,6 +227,7 @@ function toUiTask(t: ApiTask): UiTask | null {
 		due_date: t.due_date,
 		tags: t.tags ?? [],
 		estimated_time: t.estimated_time ?? 0,
+		sprint: t.sprint ?? null,
 	};
 }
 
@@ -452,39 +455,49 @@ function NewTaskDialog({
 							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
 								Select Sprint
 							</label>
-							<Select
-								value={form.sprintId || NO_SPRINT_VALUE}
-								onValueChange={(v) =>
-									set(
-										"sprintId",
-										v === NO_SPRINT_VALUE ? "" : v,
-									)
-								}
-								disabled={!form.projectId || sprintsLoading}
-							>
-								<SelectTrigger>
-									<SelectValue
-										placeholder={
-											sprintsLoading
-												? "Loading..."
-												: "Select sprint"
-										}
-									/>
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value={NO_SPRINT_VALUE}>
-										No sprint
-									</SelectItem>
-									{sprints.map((sprint) => (
-										<SelectItem
-											key={sprint.id}
-											value={sprint.id}
-										>
-											{sprint.name}
+							<div className="relative">
+								{sprintsLoading && (
+									<>
+										<div className="h-full w-full absolute rounded-2xl bg-white/20 backdrop-blur-xs top-0 left-0 pointer-events-none"></div>
+										<div className="bg-white/50 backdrop-blur-xs h-full w-full absolute rounded-2xl text-slate-600 flex items-center px-2 text-xs justify-center z-10 border border-border pointer-events-none">
+											loading...
+										</div>
+									</>
+								)}
+								<Select
+									value={form.sprintId || NO_SPRINT_VALUE}
+									onValueChange={(v) =>
+										set(
+											"sprintId",
+											v === NO_SPRINT_VALUE ? "" : v,
+										)
+									}
+									disabled={!form.projectId || sprintsLoading}
+								>
+									<SelectTrigger>
+										<SelectValue
+											placeholder={
+												sprintsLoading
+													? "Loading..."
+													: "Select sprint"
+											}
+										/>
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value={NO_SPRINT_VALUE}>
+											No sprint
 										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
+										{sprints.map((sprint) => (
+											<SelectItem
+												key={sprint.id}
+												value={sprint.id}
+											>
+												{sprint.name}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
 						</div>
 					</div>
 					{/* Title */}
@@ -1221,7 +1234,7 @@ function TaskDetailDialog({
 		>
 			<DialogContent className="max-w-2xl">
 				<DialogHeader>
-					<DialogTitle className="text-lg font-semibold leading-snug pr-6">
+					<DialogTitle className="text-lg font-bold text-primary leading-snug pr-6">
 						{task?.title}
 					</DialogTitle>
 				</DialogHeader>
@@ -1257,6 +1270,14 @@ function TaskDetailDialog({
 							</p>
 							<p className="text-sm text-foreground">
 								{project?.name ?? "—"}
+							</p>
+						</div>
+						<div>
+							<p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
+								Sprint
+							</p>
+							<p className="text-sm text-foreground">
+								{task?.sprint?.name ?? "—"}
 							</p>
 						</div>
 						<div>
@@ -1299,6 +1320,14 @@ function TaskDetailDialog({
 							</p>
 							<p className="text-sm text-foreground">
 								{formatTime(task?.estimated_time ?? 0)}
+							</p>
+						</div>
+						<div>
+							<p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
+								Sprint
+							</p>
+							<p className="text-sm text-foreground">
+								{task?.sprint?.name ?? "—"}
 							</p>
 						</div>
 					</div>
@@ -1412,9 +1441,17 @@ function TaskCardContent({
 				{task.title}
 			</p>
 
-			<p className="text-[11px] text-muted">{projectName}</p>
+			<p className="text-[10px] text-muted">
+				{projectName}&nbsp;
+				{task.sprint && (
+					<>
+						<span className="font-bold">&middot;</span>&nbsp;
+						{task.sprint.name}
+					</>
+				)}
+			</p>
 
-			<div className="flex items-center justify-between pt-0.5 border-t border-border">
+			<div className="flex items-center justify-between pt-1 border-t border-border">
 				{assignee ? (
 					<Avatar className="h-5 w-5">
 						<AvatarFallback
@@ -1428,7 +1465,9 @@ function TaskCardContent({
 				)}
 				<div className="flex items-center gap-1 text-[11px] text-muted">
 					<Calendar className="h-3 w-3" />
-					{task.due_date ? task.due_date.slice(0, 10) : "—"}
+					{task.due_date
+						? formatDate(task.due_date.slice(0, 10))
+						: "—"}
 				</div>
 			</div>
 		</div>
@@ -1690,6 +1729,15 @@ function ListRow({
 				)}
 			</td>
 			<td className="px-4 py-3.5">
+				{task.sprint ? (
+					<span className="text-xs text-muted-foreground">
+						{task.sprint.name}
+					</span>
+				) : (
+					<span className="text-xs text-muted">—</span>
+				)}
+			</td>
+			<td className="px-4 py-3.5">
 				<div className="flex items-center gap-1 text-xs text-muted">
 					<Calendar className="h-3 w-3" />
 					{task.due_date ? task.due_date.slice(0, 10) : "—"}
@@ -1715,6 +1763,11 @@ export default function TasksPage() {
 	const [view, setView] = useState<"board" | "list">("board");
 
 	const [filterProject, setFilterProject] = useState("all");
+	const [filterSprint, setFilterSprint] = useState("all");
+	const [filterSprintOptions, setFilterSprintOptions] = useState<Sprint[]>(
+		[],
+	);
+	const [filterSprintsLoading, setFilterSprintsLoading] = useState(false);
 	const [filterUser, setFilterUser] = useState("all");
 	const [filterStatus, setFilterStatus] = useState("all");
 	const [search, setSearch] = useState("");
@@ -1758,6 +1811,31 @@ export default function TasksPage() {
 			cancelled = true;
 		};
 	}, []);
+
+	// ── Sprint filter options ────────────────────────────────────────────────
+
+	useEffect(() => {
+		setFilterSprint("all");
+		if (filterProject === "all") {
+			setFilterSprintOptions([]);
+			return;
+		}
+		let active = true;
+		setFilterSprintsLoading(true);
+		listSprints(filterProject)
+			.then((data) => {
+				if (active) setFilterSprintOptions(data);
+			})
+			.catch(() => {
+				if (active) setFilterSprintOptions([]);
+			})
+			.finally(() => {
+				if (active) setFilterSprintsLoading(false);
+			});
+		return () => {
+			active = false;
+		};
+	}, [filterProject]);
 
 	// ── DnD ──────────────────────────────────────────────────────────────────
 
@@ -1892,6 +1970,8 @@ export default function TasksPage() {
 		return tasks.filter((t) => {
 			if (filterProject !== "all" && t.project_id !== filterProject)
 				return false;
+			if (filterSprint !== "all" && t.sprint?.id !== filterSprint)
+				return false;
 			if (filterUser !== "all" && t.assigned_to?.id !== filterUser)
 				return false;
 			if (
@@ -1920,6 +2000,7 @@ export default function TasksPage() {
 
 	const isFiltered =
 		filterProject !== "all" ||
+		filterSprint !== "all" ||
 		filterUser !== "all" ||
 		filterStatus !== "all" ||
 		search !== "";
@@ -2064,6 +2145,45 @@ export default function TasksPage() {
 					</SelectContent>
 				</Select>
 
+				{/* Sprint */}
+				<div className="relative">
+					{filterSprintsLoading && (
+						<>
+							<div className="h-full w-full absolute rounded-2xl bg-white/20 backdrop-blur-xs top-0 left-0 pointer-events-none"></div>
+							<div className="bg-white/50 backdrop-blur-xs h-full w-full absolute rounded-2xl text-slate-600 flex items-center px-3 text-xs justify-start z-10 border border-border pointer-events-none">
+								loading...
+							</div>
+						</>
+					)}
+					<Select
+						value={filterSprint}
+						onValueChange={setFilterSprint}
+						disabled={
+							filterProject === "all" || filterSprintsLoading
+						}
+					>
+						<SelectTrigger className="w-44 h-9">
+							<SelectValue
+								placeholder={
+									filterProject === "all"
+										? "All Sprints"
+										: filterSprintsLoading
+											? "Loading..."
+											: "All Sprints"
+								}
+							/>
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">All Sprints</SelectItem>
+							{filterSprintOptions.map((s) => (
+								<SelectItem key={s.id} value={s.id}>
+									{s.name}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</div>
+
 				{/* Search */}
 				<div className="relative">
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted pointer-events-none" />
@@ -2118,6 +2238,7 @@ export default function TasksPage() {
 					<button
 						onClick={() => {
 							setFilterProject("all");
+							setFilterSprint("all");
 							setFilterUser("all");
 							setFilterStatus("all");
 							setSearch("");
@@ -2217,6 +2338,7 @@ export default function TasksPage() {
 										"Priority",
 										"Status",
 										"Assignee",
+										"Sprint",
 										"Due",
 									].map((h, i) => (
 										<th

@@ -15,6 +15,14 @@ export interface TaskProfile {
 	email: string;
 }
 
+export interface TaskSprint {
+	id: string;
+	name: string;
+	status: string;
+	start_date: string | null;
+	end_date: string | null;
+}
+
 export interface Task {
 	id: string;
 	project_id: string;
@@ -29,7 +37,8 @@ export interface Task {
 	due_date: string | null;
 	tags: string[];
 	position: number;
-	sprint_id?: string;
+	sprint_id?: string | null;
+	sprint?: TaskSprint | null;
 	estimated_time?: number;
 	created_at: string;
 	updated_at: string;
