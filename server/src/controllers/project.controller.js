@@ -6,7 +6,7 @@ import {
 
 export async function getProjects(req, res, next) {
 	try {
-		const { status, search } = req.query;
+		const { status, search, sprint_id } = req.query;
 
 		let query = supabase
 			.from("projects")
@@ -15,6 +15,7 @@ export async function getProjects(req, res, next) {
 
 		if (status) query = query.eq("status", status);
 		if (search) query = query.ilike("name", `%${search}%`);
+		if (sprint_id) query = query.eq("sprint_id", sprint_id);
 
 		const { data, error } = await query;
 

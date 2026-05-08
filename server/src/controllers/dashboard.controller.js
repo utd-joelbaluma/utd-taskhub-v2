@@ -39,6 +39,51 @@ export async function getDashboard(req, res, next) {
 
 		const projectIds = (memberRows ?? []).map((r) => r.project_id);
 		let recent_tickets = [];
+		let active_sprint = null;
+
+		const { data: activeSprintRow, error: activeSprintError } =
+			await req.supabase
+				.from("sprints")
+				.select("id, name, start_date, end_date, status")
+				.eq("status", "active")
+				.order("start_date", { ascending: false })
+				.limit(1)
+				.maybeSingle();
+
+		if (activeSprintError) throw activeSprintError;
+
+		if (activeSprintRow) {
+			let sprintTasks = [];
+
+			if (projectIds.length > 0) {
+				const { data: sprintTaskRows, error: sprintTasksError } =
+					await req.supabase
+						.from("tasks")
+						.select("id, status")
+						.eq("sprint_id", activeSprintRow.id)
+						.in("project_id", projectIds);
+
+				if (sprintTasksError) throw sprintTasksError;
+				sprintTasks = sprintTaskRows ?? [];
+			}
+
+			const totalTasks = sprintTasks.length;
+			const completedTasks = sprintTasks.filter(
+				(t) => t.status === "done",
+			).length;
+			const openTasks = sprintTasks.filter(
+				(t) => t.status !== "done" && t.status !== "cancelled",
+			).length;
+
+			active_sprint = {
+				...activeSprintRow,
+				total_tasks: totalTasks,
+				completed_tasks: completedTasks,
+				open_tasks: openTasks,
+				progress:
+					totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
+			};
+		}
 
 		if (projectIds.length > 0) {
 			const { count: ticketCount, error: countError } = await req.supabase
@@ -66,7 +111,7 @@ export async function getDashboard(req, res, next) {
 
 		res.json({
 			success: true,
-			data: { stats, recent_tasks, recent_tickets },
+			data: { stats, active_sprint, recent_tasks, recent_tickets },
 		});
 	} catch (err) {
 		next(err);

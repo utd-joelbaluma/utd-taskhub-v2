@@ -46,8 +46,8 @@ app.use(
 		credentials: true,
 	}),
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "3mb" }));
+app.use(express.urlencoded({ extended: true, limit: "3mb" }));
 app.use(bindSupabaseContext);
 
 if (env.nodeEnv === "development") {

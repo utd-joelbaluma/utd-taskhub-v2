@@ -60,7 +60,6 @@ import {
 	DEFAULT_PROJECT_ICON,
 	type ProjectIconType,
 } from "@/components/projects/project-icon-options";
-import { ProjectIconPicker } from "@/components/projects/project-icon-picker";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 

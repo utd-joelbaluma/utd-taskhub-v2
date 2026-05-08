@@ -10,6 +10,13 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 
@@ -67,6 +74,8 @@ export default function AppLayout() {
 	const { user, logout } = useAuth();
 	const navigate = useNavigate();
 	const [mobileNavOpen, setMobileNavOpen] = useState(false);
+	const [notificationsDialogOpen, setNotificationsDialogOpen] =
+		useState(false);
 
 	const initials = user?.full_name
 		? user.full_name
@@ -197,7 +206,10 @@ export default function AppLayout() {
 									))}
 								</div>
 								<DropdownMenuSeparator />
-								<DropdownMenuItem className="justify-center text-xs text-primary font-medium py-2">
+								<DropdownMenuItem
+									className="justify-center text-xs text-primary font-medium py-2"
+									onSelect={() => setNotificationsDialogOpen(true)}
+								>
 									View all notifications
 								</DropdownMenuItem>
 							</DropdownMenuContent>
@@ -335,6 +347,64 @@ export default function AppLayout() {
 					</p>
 				</div>
 			</footer>
+
+			<Dialog
+				open={notificationsDialogOpen}
+				onOpenChange={setNotificationsDialogOpen}
+			>
+				<DialogContent className="max-w-[560px] p-5">
+					<DialogHeader className="mb-3 pb-0">
+						<DialogTitle>Notifications</DialogTitle>
+						<DialogDescription>
+							Review your recent workspace activity and task updates.
+						</DialogDescription>
+					</DialogHeader>
+
+					<div className="flex items-center justify-between border-y border-border py-3">
+						<span className="text-sm font-medium text-foreground">
+							All notifications
+						</span>
+						{unreadCount > 0 && (
+							<span className="rounded-full bg-primary-subtle px-2.5 py-1 text-xs font-medium text-primary">
+								{unreadCount} unread
+							</span>
+						)}
+					</div>
+
+					<div className="max-h-[60vh] overflow-y-auto py-2">
+						{SAMPLE_NOTIFICATIONS.map((notif) => (
+							<div
+								key={notif.id}
+								className={cn(
+									"flex gap-3 border-b border-border py-3 last:border-b-0",
+									notif.unread && "bg-primary-subtle/30",
+								)}
+							>
+								<span
+									className={cn(
+										"mt-2 h-2 w-2 shrink-0 rounded-full",
+										notif.unread ? "bg-primary" : "bg-transparent",
+									)}
+									aria-hidden="true"
+								/>
+								<div className="min-w-0 flex-1">
+									<div className="flex items-start justify-between gap-3">
+										<p className="text-sm font-medium leading-snug text-foreground">
+											{notif.title}
+										</p>
+										<span className="shrink-0 text-xs text-muted-foreground">
+											{notif.time}
+										</span>
+									</div>
+									<p className="mt-1 text-sm leading-snug text-muted-foreground">
+										{notif.description}
+									</p>
+								</div>
+							</div>
+						))}
+					</div>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

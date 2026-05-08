@@ -6,11 +6,13 @@ import {
 	ShieldCheck,
 	Ticket,
 	AlertTriangle,
-	Plus,
 	MoreVertical,
 	Bug,
+	CalendarDays,
 	KeyRound,
 	Moon,
+	Target,
+	Timer,
 	Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -62,6 +64,36 @@ function formatDue(dateStr: string | null): string {
 	if (diff === 1) return "Tomorrow";
 	if (diff === -1) return "Yesterday";
 	return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function toLocalDate(dateStr: string): Date {
+	return new Date(`${dateStr}T00:00:00`);
+}
+
+function formatSprintDate(dateStr: string): string {
+	return toLocalDate(dateStr).toLocaleDateString("en-US", {
+		month: "short",
+		day: "numeric",
+	});
+}
+
+function formatSprintRange(startDate: string, endDate: string): string {
+	return `${formatSprintDate(startDate)} - ${formatSprintDate(endDate)}`;
+}
+
+function formatSprintTimeLeft(endDate: string): string {
+	const end = toLocalDate(endDate);
+	const today = new Date();
+	today.setHours(0, 0, 0, 0);
+
+	const days = Math.ceil(
+		(end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+	);
+
+	if (days < 0) return "Past due";
+	if (days === 0) return "Ends today";
+	if (days === 1) return "1 day left";
+	return `${days} days left`;
 }
 
 export default function DashboardPage() {
@@ -172,7 +204,7 @@ export default function DashboardPage() {
 	if (error) return <div className="p-8 text-sm text-danger">{error}</div>;
 	if (!data) return null;
 
-	const { stats, recent_tasks, recent_tickets } = data;
+	const { stats, active_sprint, recent_tasks, recent_tickets } = data;
 
 	const statCards = [
 		{
@@ -384,6 +416,99 @@ export default function DashboardPage() {
 
 				{/* RIGHT */}
 				<div className="flex flex-col gap-6">
+					{/* Active Sprint */}
+					<Card className="p-5">
+						<div className="mb-5 flex items-center justify-between">
+							<div>
+								<h2 className="text-base font-semibold text-foreground">
+									Active Sprint
+								</h2>
+								<p className="mt-1 text-xs text-muted">
+									Current sprint progress
+								</p>
+							</div>
+							<Badge variant={active_sprint ? "in-progress" : "default"}>
+								{active_sprint ? "Active" : "None"}
+							</Badge>
+						</div>
+
+						{active_sprint ? (
+							<div className="space-y-5">
+								<div>
+									<p className="text-lg font-semibold leading-tight text-foreground">
+										{active_sprint.name}
+									</p>
+									<div className="mt-2 flex items-center gap-2 text-sm text-muted">
+										<CalendarDays className="h-4 w-4" />
+										<span>
+											{formatSprintRange(
+												active_sprint.start_date,
+												active_sprint.end_date,
+											)}
+										</span>
+									</div>
+								</div>
+
+								<div>
+									<div className="mb-2 flex items-center justify-between">
+										<span className="text-sm text-muted">
+											Progress
+										</span>
+										<span className="text-sm font-semibold text-foreground">
+											{active_sprint.progress}%
+										</span>
+									</div>
+									<div className="h-2 w-full overflow-hidden rounded-full bg-border">
+										<div
+											className="h-full rounded-full bg-primary transition-all"
+											style={{
+												width: `${active_sprint.progress}%`,
+											}}
+										/>
+									</div>
+								</div>
+
+								<div className="grid grid-cols-2 gap-3">
+									<div className="rounded-lg border border-border p-3">
+										<div className="mb-2 flex items-center gap-2 text-xs text-muted">
+											<Target className="h-4 w-4" />
+											<span>Tasks</span>
+										</div>
+										<p className="text-sm font-semibold text-foreground">
+											{active_sprint.completed_tasks}/
+											{active_sprint.total_tasks} done
+										</p>
+									</div>
+									<div className="rounded-lg border border-border p-3">
+										<div className="mb-2 flex items-center gap-2 text-xs text-muted">
+											<Timer className="h-4 w-4" />
+											<span>Remaining</span>
+										</div>
+										<p className="text-sm font-semibold text-foreground">
+											{formatSprintTimeLeft(
+												active_sprint.end_date,
+											)}
+										</p>
+									</div>
+								</div>
+
+								<p className="text-xs text-muted">
+									{active_sprint.open_tasks} open tasks in
+									your projects
+								</p>
+							</div>
+						) : (
+							<div className="rounded-lg border border-dashed border-border px-4 py-6 text-center">
+								<p className="text-sm font-medium text-foreground">
+									No active sprint
+								</p>
+								<p className="mt-1 text-xs text-muted">
+									Start a sprint to track weekly progress here.
+								</p>
+							</div>
+						)}
+					</Card>
+
 					{/* Tickets */}
 					<Card className="p-5">
 						<div className="flex items-center justify-between mb-4">

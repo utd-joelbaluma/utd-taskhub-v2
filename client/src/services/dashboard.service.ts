@@ -26,8 +26,21 @@ export interface DashboardTicket {
 	created_by: { full_name: string | null } | null;
 }
 
+export interface DashboardActiveSprint {
+	id: string;
+	name: string;
+	start_date: string;
+	end_date: string;
+	status: "active";
+	total_tasks: number;
+	completed_tasks: number;
+	open_tasks: number;
+	progress: number;
+}
+
 export interface DashboardData {
 	stats: DashboardStats;
+	active_sprint: DashboardActiveSprint | null;
 	recent_tasks: DashboardTask[];
 	recent_tickets: DashboardTicket[];
 }

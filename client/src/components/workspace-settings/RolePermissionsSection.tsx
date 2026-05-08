@@ -207,6 +207,13 @@ const PERMISSION_GROUPS: PermGroup[] = [
 				developer: NONE,
 				user: NONE,
 			},
+			{
+				feature: "View system logs",
+				admin: FULL,
+				manager: NONE,
+				developer: NONE,
+				user: NONE,
+			},
 		],
 	},
 ];

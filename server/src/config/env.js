@@ -13,4 +13,5 @@ export const env = {
 	supabaseUrl: process.env.SUPABASE_URL,
 	supabaseSecretKey: process.env.SUPABASE_SECRET_KEY,
 	supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
+	supabaseAvatarBucket: process.env.SUPABASE_AVATAR_BUCKET || "avatars",
 };

@@ -2,29 +2,28 @@ import { useState, useEffect } from "react";
 import {
 	Settings,
 	Users,
-	LayoutDashboard,
-	Ticket,
-	Bell,
-	Shield,
-	Plug,
-	AlertOctagon,
 	Lock,
+	FileClock,
+	type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GeneralSection } from "@/components/workspace-settings/GeneralSection";
 import { MembersSection } from "@/components/workspace-settings/MembersSection";
 import { RolePermissionsSection } from "@/components/workspace-settings/RolePermissionsSection";
-import { BoardsSection } from "@/components/workspace-settings/BoardsSection";
-import { TicketsSection } from "@/components/workspace-settings/TicketsSection";
-import { NotificationsSection } from "@/components/workspace-settings/NotificationsSection";
-import { IntegrationsSection } from "@/components/workspace-settings/IntegrationsSection";
-import { SecuritySection } from "@/components/workspace-settings/SecuritySection";
-import { DangerZoneSection } from "@/components/workspace-settings/DangerZoneSection";
+import { SystemLogsSection } from "@/components/workspace-settings/SystemLogsSection";
 
-const navItems = [
+interface SettingsNavItem {
+	id: string;
+	label: string;
+	icon: LucideIcon;
+	danger?: boolean;
+}
+
+const navItems: SettingsNavItem[] = [
 	{ id: "general", label: "General", icon: Settings },
 	{ id: "role-permissions", label: "Role Permissions", icon: Lock },
 	{ id: "members", label: "Members & Roles", icon: Users },
+	{ id: "system-logs", label: "System Logs", icon: FileClock },
 	// { id: "boards", label: "Boards & Workflow", icon: LayoutDashboard },
 	// { id: "tickets", label: "Tickets", icon: Ticket },
 	// { id: "notifications", label: "Notifications", icon: Bell },
@@ -119,6 +118,9 @@ export default function SettingsPage() {
 					</div>
 					<div id="members">
 						<MembersSection />
+					</div>
+					<div id="system-logs">
+						<SystemLogsSection />
 					</div>
 					{/* <div id="boards">
 						<BoardsSection />

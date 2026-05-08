@@ -55,10 +55,12 @@ export interface AddMembersOptions {
 export async function listProjects(params?: {
 	status?: string;
 	search?: string;
+	sprint_id?: string;
 }): Promise<Project[]> {
 	const query = new URLSearchParams();
 	if (params?.status) query.set("status", params.status);
 	if (params?.search) query.set("search", params.search);
+	if (params?.sprint_id) query.set("sprint_id", params.sprint_id);
 	const qs = query.toString();
 	const res = await api.get<{ success: boolean; data: Project[] }>(
 		`/projects${qs ? `?${qs}` : ""}`

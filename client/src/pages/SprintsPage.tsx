@@ -357,6 +357,7 @@ export default function SprintsPage() {
 	const [newOpen, setNewOpen] = useState(false);
 	const [editSprint, setEditSprint] = useState<Sprint | null>(null);
 	const [deletingId, setDeletingId] = useState<string | null>(null);
+	const [updatingId, setUpdatingId] = useState<string | null>(null);
 
 	useEffect(() => {
 		listSprints()
@@ -382,12 +383,28 @@ export default function SprintsPage() {
 			toast.error("Another sprint is already active.");
 			return;
 		}
+		setUpdatingId(sprint.id);
 		try {
 			const updated = await updateSprint(sprint.id, { status: "active" });
 			setSprints((prev) => prev.map((s) => (s.id === sprint.id ? updated : s)));
 			toast.success("Sprint started.");
 		} catch {
 			toast.error("Failed to start sprint.");
+		} finally {
+			setUpdatingId(null);
+		}
+	}
+
+	async function handleComplete(sprint: Sprint) {
+		setUpdatingId(sprint.id);
+		try {
+			const updated = await updateSprint(sprint.id, { status: "completed" });
+			setSprints((prev) => prev.map((s) => (s.id === sprint.id ? updated : s)));
+			toast.success("Sprint ended.");
+		} catch {
+			toast.error("Failed to end sprint.");
+		} finally {
+			setUpdatingId(null);
 		}
 	}
 
@@ -431,6 +448,7 @@ export default function SprintsPage() {
 					{sprints.map((sprint) => {
 						const { variant, label } = STATUS_BADGE[sprint.status];
 						const isDeleting = deletingId === sprint.id;
+						const isUpdating = updatingId === sprint.id;
 						return (
 							<Card
 								key={sprint.id}
@@ -471,9 +489,22 @@ export default function SprintsPage() {
 											<Button
 												size="sm"
 												variant="outline"
+												disabled={isUpdating}
 												onClick={() => handleActivate(sprint)}
 											>
+												{isUpdating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
 												Start Sprint
+											</Button>
+										)}
+										{sprint.status === "active" && (
+											<Button
+												size="sm"
+												variant="outline"
+												disabled={isUpdating}
+												onClick={() => handleComplete(sprint)}
+											>
+												{isUpdating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+												End sprint
 											</Button>
 										)}
 										<Button

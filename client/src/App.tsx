@@ -16,6 +16,9 @@ import RegisterPage from '@/pages/RegisterPage'
 import AcceptInvitationPage from '@/pages/AcceptInvitationPage'
 import ProfilePage from '@/pages/ProfilePage'
 import SprintsPage from '@/pages/SprintsPage'
+import TermsPage from '@/pages/TermsPage'
+import PrivacyPage from '@/pages/PrivacyPage'
+import ContactPage from '@/pages/ContactPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 
 function App() {
@@ -27,6 +30,9 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/invitations/accept" element={<AcceptInvitationPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/contact" element={<ContactPage />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
             <Route path="/" element={<DashboardPage />} />

@@ -1771,6 +1771,7 @@ export default function TasksPage() {
 	const columnsRef = useRef(columns);
 	columnsRef.current = columns;
 	const dragSrcColRef = useRef<ColumnId | null>(null);
+	const didApplyDefaultSprintFilterRef = useRef(false);
 
 	// ── Data loading ─────────────────────────────────────────────────────────
 
@@ -1815,7 +1816,21 @@ export default function TasksPage() {
 		setFilterSprintsLoading(true);
 		listSprints()
 			.then((data) => {
-				if (active) setFilterSprintOptions(data);
+				if (!active) return;
+				setFilterSprintOptions(data);
+
+				const activeSprint = data.find(
+					(sprint) => sprint.status === "active",
+				);
+				if (
+					activeSprint &&
+					!didApplyDefaultSprintFilterRef.current
+				) {
+					setFilterSprint((current) => {
+						didApplyDefaultSprintFilterRef.current = true;
+						return current === "all" ? activeSprint.id : current;
+					});
+				}
 			})
 			.catch(() => {
 				if (active) setFilterSprintOptions([]);
@@ -1982,6 +1997,9 @@ export default function TasksPage() {
 	}, {} as Columns);
 
 	const allFilteredTasks = COLUMN_IDS.flatMap((c) => filteredColumns[c]);
+	const defaultSprintFilter =
+		filterSprintOptions.find((sprint) => sprint.status === "active")?.id ??
+		"all";
 
 	const activeTask = activeTaskId
 		? (COLUMN_IDS.flatMap((c) => columns[c]).find(
@@ -2225,7 +2243,7 @@ export default function TasksPage() {
 					<button
 						onClick={() => {
 							setFilterProject("all");
-							setFilterSprint("all");
+							setFilterSprint(defaultSprintFilter);
 							setFilterUser("all");
 							setFilterStatus("all");
 							setSearch("");

@@ -41,6 +41,7 @@ import {
 } from "@/services/project.service";
 import { addMember } from "@/services/project-member.service";
 import { listProfiles, type Profile } from "@/services/profile.service";
+import { listSprints, type Sprint } from "@/services/sprint.service";
 import { ProjectDescriptionEditor } from "@/components/projects/project-description";
 import { projectDescriptionText } from "@/components/projects/project-description-utils";
 import {
@@ -112,6 +113,10 @@ function avatarColor(index: number): string {
 
 function safePct(completed: number, total: number) {
 	return total === 0 ? 0 : Math.round((completed / total) * 100);
+}
+
+function projectSprintName(project: Project) {
+	return project.sprint?.name || project.sprint_name || "No sprint";
 }
 
 type TeamMember = { initials: string; color: string };
@@ -218,7 +223,7 @@ function ProjectCard({
 			<div className="flex items-center justify-between gap-3 pt-1 border-t border-border">
 				<TeamAvatars team={team} />
 				<span className="truncate text-right text-[10px] text-muted">
-					{project.sprint_name || "No sprint"}
+					{projectSprintName(project)}
 				</span>
 			</div>
 		</Card>
@@ -281,7 +286,7 @@ function ProjectRow({
 				<TeamAvatars team={team} max={3} />
 			</td>
 			<td className="px-4 py-4 text-xs text-muted whitespace-nowrap">
-				{project.sprint_name || "—"}
+				{projectSprintName(project)}
 			</td>
 			<td className="px-4 py-4 text-right">
 				<ChevronRight className="h-4 w-4 text-muted ml-auto" />
@@ -644,20 +649,26 @@ export default function ProjectsPage() {
 	const navigate = useNavigate();
 	const [projects, setProjects] = useState<Project[]>([]);
 	const [profiles, setProfiles] = useState<Profile[]>([]);
+	const [sprints, setSprints] = useState<Sprint[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [profilesLoading, setProfilesLoading] = useState(true);
+	const [sprintsLoading, setSprintsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [filter, setFilter] = useState<ProjectStatus | "all">("all");
+	const [sprintFilter, setSprintFilter] = useState("all");
 	const [search, setSearch] = useState("");
 	const [view, setView] = useState<"grid" | "list">("grid");
 
 	const fetchProjects = useCallback(async () => {
+		if (sprintsLoading) return;
+
 		try {
 			setLoading(true);
 			setError(null);
-			const params: { status?: string; search?: string } = {};
+			const params: { status?: string; search?: string; sprint_id?: string } = {};
 			if (filter !== "all") params.status = filter;
+			if (sprintFilter !== "all") params.sprint_id = sprintFilter;
 			if (search) params.search = search;
 			const data = await listProjects(params);
 			setProjects(data);
@@ -666,11 +677,34 @@ export default function ProjectsPage() {
 		} finally {
 			setLoading(false);
 		}
-	}, [filter, search]);
+	}, [filter, search, sprintFilter, sprintsLoading]);
 
 	useEffect(() => {
 		fetchProjects();
 	}, [fetchProjects]);
+
+	useEffect(() => {
+		let active = true;
+
+		listSprints()
+			.then((data) => {
+				if (!active) return;
+				setSprints(data);
+				setSprintFilter(data.find((s) => s.status === "active")?.id ?? "all");
+			})
+			.catch(() => {
+				if (!active) return;
+				setSprints([]);
+				setSprintFilter("all");
+			})
+			.finally(() => {
+				if (active) setSprintsLoading(false);
+			});
+
+		return () => {
+			active = false;
+		};
+	}, []);
 
 	useEffect(() => {
 		listProfiles()
@@ -686,12 +720,13 @@ export default function ProjectsPage() {
 
 	const filtered = projects.filter((p) => {
 		const matchStatus = filter === "all" || p.status === filter;
+		const matchSprint = sprintFilter === "all" || p.sprint_id === sprintFilter;
 		const matchSearch =
 			p.name.toLowerCase().includes(search.toLowerCase()) ||
 			projectDescriptionText(p.description)
 				.toLowerCase()
 				.includes(search.toLowerCase());
-		return matchStatus && matchSearch;
+		return matchStatus && matchSprint && matchSearch;
 	});
 
 	return (
@@ -734,7 +769,29 @@ export default function ProjectsPage() {
 					))}
 				</div>
 
-				<div className="flex items-center gap-2">
+				<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+					<Select
+						value={sprintFilter}
+						onValueChange={setSprintFilter}
+						disabled={sprintsLoading}
+					>
+						<SelectTrigger className="h-9 w-full text-sm sm:w-48">
+							<SelectValue
+								placeholder={
+									sprintsLoading ? "Loading sprints..." : "All Sprints"
+								}
+							/>
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">All Sprints</SelectItem>
+							{sprints.map((sprint) => (
+								<SelectItem key={sprint.id} value={sprint.id}>
+									{sprint.name}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+
 					<div className="relative min-w-0 flex-1 sm:flex-none">
 						<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted pointer-events-none" />
 						<Input
