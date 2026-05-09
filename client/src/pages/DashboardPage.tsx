@@ -282,7 +282,7 @@ export default function DashboardPage() {
 			</div>
 
 			{/* Stat cards */}
-			<div className="grid grid-cols-6 gap-4 mb-8">
+			<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
 				{statCards.map((s) => (
 					<Card key={s.label} className="p-4">
 						<p className="text-xs text-muted mb-3">{s.label}</p>
@@ -299,122 +299,9 @@ export default function DashboardPage() {
 			</div>
 
 			{/* Main content: left + right columns */}
-			<div className="grid grid-cols-[1fr_320px] gap-6">
+			<div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
 				{/* LEFT */}
-				<div className="flex flex-col gap-6">
-					{/* Recent Tasks */}
-					<Card className="p-0 overflow-hidden">
-						<div className="flex items-center justify-between px-5 py-4 border-b border-border">
-							<h2 className="text-base font-semibold text-foreground">
-								Recent Tasks
-							</h2>
-							<button className="text-sm text-primary font-medium hover:underline">
-								View All
-							</button>
-						</div>
-						<table className="w-full text-sm">
-							<thead>
-								<tr className="border-b border-border">
-									<th className="px-5 py-3 text-[10px] font-medium uppercase tracking-wider text-muted text-left">
-										Task Description
-									</th>
-									<th className="px-4 py-3 text-[10px] font-medium uppercase tracking-wider text-muted text-left">
-										Project
-									</th>
-									<th className="px-4 py-3 text-[10px] font-medium uppercase tracking-wider text-muted text-left">
-										Due
-									</th>
-									<th className="px-4 py-3 text-[10px] font-medium uppercase tracking-wider text-muted text-left">
-										Status
-									</th>
-								</tr>
-							</thead>
-							<tbody>
-								{recent_tasks.length === 0 ? (
-									<tr>
-										<td
-											colSpan={4}
-											className="px-5 py-6 text-sm text-muted text-center"
-										>
-											No active tasks
-										</td>
-									</tr>
-								) : (
-									recent_tasks.map((task) => (
-										<tr
-											key={task.id}
-											className="border-b border-border last:border-0 hover:bg-muted-subtle transition-colors"
-										>
-											<td className="px-5 py-4">
-												<div className="flex items-center gap-2.5">
-													<span
-														className={`h-2 w-2 rounded-full shrink-0 ${STATUS_DOT[task.status] ?? "bg-muted"}`}
-													/>
-													<span className="text-sm font-medium text-foreground">
-														{task.title}
-													</span>
-												</div>
-											</td>
-											<td className="px-4 py-4 text-sm text-muted-foreground">
-												{task.project?.name ?? "—"}
-											</td>
-											<td className="px-4 py-4 text-sm text-muted-foreground">
-												{formatDue(task.due_date)}
-											</td>
-											<td className="px-4 py-4">
-												<Badge
-													variant={
-														task.status as never
-													}
-												>
-													{task.status.replace(
-														"_",
-														" ",
-													)}
-												</Badge>
-											</td>
-										</tr>
-									))
-								)}
-							</tbody>
-						</table>
-					</Card>
 
-					{/* Tasks by Status */}
-					<Card className="p-5">
-						<h2 className="text-base font-semibold text-foreground mb-5">
-							Tasks by Status
-						</h2>
-						<div className="space-y-4">
-							{statusBars.map((item) => {
-								const pct =
-									total > 0
-										? Math.round((item.count / total) * 100)
-										: 0;
-								return (
-									<div key={item.label}>
-										<div className="flex items-center justify-between mb-1.5">
-											<span className="text-sm text-foreground">
-												{item.label}
-											</span>
-											<span className="text-sm font-medium text-foreground">
-												{item.count}
-											</span>
-										</div>
-										<div className="h-1.5 w-full bg-border rounded-full overflow-hidden">
-											<div
-												className={`h-full ${item.barClass} rounded-full transition-all`}
-												style={{ width: `${pct}%` }}
-											/>
-										</div>
-									</div>
-								);
-							})}
-						</div>
-					</Card>
-				</div>
-
-				{/* RIGHT */}
 				<div className="flex flex-col gap-6">
 					{/* Active Sprint */}
 					<Card className="p-5">
@@ -567,6 +454,120 @@ export default function DashboardPage() {
 						>
 							Manage Tickets
 						</Button>
+					</Card>
+				</div>
+
+				{/* RIGHT */}
+				<div className="flex flex-col gap-6">
+					{/* Recent Tasks */}
+					<Card className="p-0 overflow-hidden">
+						<div className="flex items-center justify-between px-5 py-4 border-b border-border">
+							<h2 className="text-base font-semibold text-foreground">
+								Recent Tasks
+							</h2>
+							<button className="text-sm text-primary font-medium hover:underline">
+								View All
+							</button>
+						</div>
+						<table className="w-full text-sm">
+							<thead>
+								<tr className="border-b border-border">
+									<th className="px-5 py-3 text-[10px] font-medium uppercase tracking-wider text-muted text-left">
+										Task Description
+									</th>
+									<th className="px-4 py-3 text-[10px] font-medium uppercase tracking-wider text-muted text-left">
+										Project
+									</th>
+									<th className="px-4 py-3 text-[10px] font-medium uppercase tracking-wider text-muted text-left">
+										Due
+									</th>
+									<th className="px-4 py-3 text-[10px] font-medium uppercase tracking-wider text-muted text-left">
+										Status
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								{recent_tasks.length === 0 ? (
+									<tr>
+										<td
+											colSpan={4}
+											className="px-5 py-6 text-sm text-muted text-center"
+										>
+											No active tasks
+										</td>
+									</tr>
+								) : (
+									recent_tasks.map((task) => (
+										<tr
+											key={task.id}
+											className="border-b border-border last:border-0 hover:bg-muted-subtle transition-colors"
+										>
+											<td className="px-5 py-4">
+												<div className="flex items-center gap-2.5">
+													<span
+														className={`h-2 w-2 rounded-full shrink-0 ${STATUS_DOT[task.status] ?? "bg-muted"}`}
+													/>
+													<span className="text-sm font-medium text-foreground">
+														{task.title}
+													</span>
+												</div>
+											</td>
+											<td className="px-4 py-4 text-sm text-muted-foreground">
+												{task.project?.name ?? "—"}
+											</td>
+											<td className="px-4 py-4 text-sm text-muted-foreground">
+												{formatDue(task.due_date)}
+											</td>
+											<td className="px-4 py-4">
+												<Badge
+													variant={
+														task.status as never
+													}
+												>
+													{task.status.replace(
+														"_",
+														" ",
+													)}
+												</Badge>
+											</td>
+										</tr>
+									))
+								)}
+							</tbody>
+						</table>
+					</Card>
+
+					{/* Tasks by Status */}
+					<Card className="p-5">
+						<h2 className="text-base font-semibold text-foreground mb-5">
+							Tasks by Status
+						</h2>
+						<div className="space-y-4">
+							{statusBars.map((item) => {
+								const pct =
+									total > 0
+										? Math.round((item.count / total) * 100)
+										: 0;
+								return (
+									<div key={item.label}>
+										<div className="flex items-center justify-between mb-1.5">
+											<span className="text-sm text-foreground">
+												{item.label}
+											</span>
+											<span className="text-sm font-medium text-foreground">
+												{item.count}
+											</span>
+										</div>
+										<div className="h-1.5 w-full bg-border rounded-full overflow-hidden">
+											<div
+												className={`h-full ${item.barClass} rounded-full transition-all`}
+												style={{ width: `${pct}%` }}
+											/>
+										</div>
+									</div>
+								);
+							})}
+						</div>
 					</Card>
 				</div>
 			</div>

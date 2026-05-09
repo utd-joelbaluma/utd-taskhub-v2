@@ -18,6 +18,7 @@ import userRoutes from "./routes/user.routes.js";
 import roleRoutes from "./routes/role.routes.js";
 import sprintRoutes from "./routes/sprint.routes.js";
 import systemLogRoutes from "./routes/system-log.routes.js";
+import workspaceSettingsRoutes from "./routes/workspace-settings.routes.js";
 import {
 	notFoundHandler,
 	errorHandler,
@@ -76,6 +77,7 @@ app.use(`/api/${env.apiVersion}/sprints`, sprintRoutes);
 app.use(`/api/${env.apiVersion}/users`, userRoutes);
 app.use(`/api/${env.apiVersion}/roles`, roleRoutes);
 app.use(`/api/${env.apiVersion}/system-logs`, systemLogRoutes);
+app.use(`/api/${env.apiVersion}/workspace-settings`, workspaceSettingsRoutes);
 
 app.get(`/api/${env.apiVersion}/tasks`, requireAuth, getAllTasks);
 app.get(`/api/${env.apiVersion}/dashboard`, requireAuth, getDashboard);
