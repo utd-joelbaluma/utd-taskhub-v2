@@ -17,14 +17,17 @@ export async function register(req, res, next) {
 			});
 		}
 
-		const { email, password, full_name } = req.body;
+		const { email, password, full_name, role } = req.body;
 
 		const { data: authData, error: authError } =
 			await supabaseAdmin.auth.admin.createUser({
 				email: email.trim().toLowerCase(),
 				password,
 				email_confirm: true,
-				user_metadata: { full_name: full_name?.trim() || null },
+				user_metadata: {
+					full_name: full_name?.trim() || null,
+					role: role,
+				},
 			});
 
 		if (authError) {
@@ -46,7 +49,7 @@ export async function register(req, res, next) {
 		// Trigger has already inserted the profile row; update full_name if provided
 		const { data: profile, error: profileError } = await supabase
 			.from("profiles")
-			.update({ full_name: full_name?.trim() || null })
+			.update({ full_name: full_name?.trim() || null, role: role })
 			.eq("id", authData.user.id)
 			.select()
 			.single();

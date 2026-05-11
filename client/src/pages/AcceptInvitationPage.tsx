@@ -44,6 +44,7 @@ export default function AcceptInvitationPage() {
 
 	const [pageState, setPageState] = useState<PageState>("loading");
 	const [invitedEmail, setInvitedEmail] = useState("");
+	const [invitedRole, setInvitedRole] = useState("");
 	const [statusMessage, setStatusMessage] = useState("");
 
 	const [form, setForm] = useState({ name: "", password: "", confirm: "" });
@@ -110,8 +111,9 @@ export default function AcceptInvitationPage() {
 
 		acceptInvitation(token)
 			.then((res) => {
+				setInvitedEmail(res.data?.email ?? "");
+				setInvitedRole(res.data?.role ?? "");
 				if (res.requires_registration) {
-					setInvitedEmail(res.data?.email ?? "");
 					setPageState("requires_registration");
 				} else if (hashType === "invite" && hashAccessToken) {
 					// Came from Supabase invite email — user has no password yet
