@@ -314,18 +314,31 @@ export function EditTaskDialog({
 						<label className="text-sm font-medium text-muted-foreground mb-2 block">
 							Assignee
 						</label>
+
 						<div className="flex flex-wrap gap-2">
 							{profiles.map((profile, idx) => {
 								const cap = capacityMap.get(profile.id);
 								const assignedPct = cap
-									? Math.min(Math.round((cap.assignedHours / cap.capacityHours) * 100), 100)
+									? Math.min(
+											Math.round(
+												(cap.assignedHours /
+													cap.capacityHours) *
+													100,
+											),
+											100,
+										)
 									: null;
 								return (
 									<button
 										key={profile.id}
 										type="button"
 										onClick={() =>
-											set("assigneeId", form.assigneeId === profile.id ? "" : profile.id)
+											set(
+												"assigneeId",
+												form.assigneeId === profile.id
+													? ""
+													: profile.id,
+											)
 										}
 										className={cn(
 											"flex flex-col items-start gap-1.5 px-3 py-2 rounded-lg border text-sm transition-colors",
@@ -335,40 +348,64 @@ export function EditTaskDialog({
 										)}
 									>
 										<div className="flex items-center gap-2">
-											<Avatar className="h-5 w-5 shrink-0">
+											<Avatar className="h-10 w-10 shrink-0">
 												<AvatarFallback
-													className={`text-[9px] text-white ${AVATAR_COLORS[idx % AVATAR_COLORS.length]}`}
+													className={`text-sm text-white ${AVATAR_COLORS[idx % AVATAR_COLORS.length]}`}
 												>
-													{getInitials(profile.full_name ?? profile.email)}
+													{getInitials(
+														profile.full_name ??
+															profile.email,
+													)}
 												</AvatarFallback>
 											</Avatar>
-											{profile.full_name ?? profile.email}
-										</div>
-										{cap !== undefined && assignedPct !== null && (
-											<div className="w-full flex flex-col gap-0.5">
-												<div className="h-1 w-full rounded-full bg-muted overflow-hidden">
-													<div
-														className={cn(
-															"h-full rounded-full transition-all",
-															cap.isOverbooked ? "bg-danger" : "bg-primary",
-														)}
-														style={{ width: `${assignedPct}%` }}
-													/>
-												</div>
-												<span className={cn("text-[9px]", cap.isOverbooked ? "text-danger" : "text-muted-foreground")}>
-													{cap.assignedHours}h / {cap.capacityHours}h
+											<div className="flex flex-col items-start">
+												<span className="font-bold text-primary text-sm">
+													{profile.full_name}
 												</span>
+												<small className="text-xs font-light">
+													{profile.email}
+												</small>
 											</div>
-										)}
+										</div>
+										{cap !== undefined &&
+											assignedPct !== null && (
+												<div className="w-full flex flex-col gap-0.5">
+													<div className="h-1 w-full rounded-full bg-muted overflow-hidden">
+														<div
+															className={cn(
+																"h-full rounded-full transition-all",
+																cap.isOverbooked
+																	? "bg-danger"
+																	: "bg-primary",
+															)}
+															style={{
+																width: `${assignedPct}%`,
+															}}
+														/>
+													</div>
+													<span
+														className={cn(
+															"text-[9px]",
+															cap.isOverbooked
+																? "text-danger"
+																: "text-muted-foreground",
+														)}
+													>
+														{cap.assignedHours}h /{" "}
+														{cap.capacityHours}h
+													</span>
+												</div>
+											)}
 									</button>
 								);
 							})}
 						</div>
 						{selectedAssignee && (
-							<p className="text-xs text-muted mt-2">
-								Assigned to{" "}
-								<span className="font-medium text-foreground">
-									{selectedAssignee.full_name ?? selectedAssignee.email}
+							<p className="text-base text-muted mt-2">
+								Assigned to:{" "}
+								<span className="font-bold text-primary">
+									{selectedAssignee.full_name ??
+										selectedAssignee.email}
 								</span>
 							</p>
 						)}
