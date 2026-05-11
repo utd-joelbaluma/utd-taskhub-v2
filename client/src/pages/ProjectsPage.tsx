@@ -50,6 +50,7 @@ import {
 } from "@/components/projects/project-icon-options";
 import { ProjectIcon } from "@/components/projects/project-icon-picker";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -530,7 +531,7 @@ function NewProjectDialog({
 					</div>
 
 					{/* Sprint End Date + Tags */}
-					<div className="grid gap-4 sm:grid-cols-2">
+					<div className="grid gap-4 sm:grid-cols-2 hidden">
 						<div>
 							<label className="text-xs font-medium text-muted-foreground mb-1.5 block">
 								First Sprint Name
@@ -647,6 +648,10 @@ function NewProjectDialog({
 
 export default function ProjectsPage() {
 	const navigate = useNavigate();
+	const { user } = useAuth();
+	const canCreateProject =
+		user?.global_role?.key === "admin" ||
+		user?.global_role?.key === "manager";
 	const [projects, setProjects] = useState<Project[]>([]);
 	const [profiles, setProfiles] = useState<Profile[]>([]);
 	const [sprints, setSprints] = useState<Sprint[]>([]);
@@ -666,7 +671,11 @@ export default function ProjectsPage() {
 		try {
 			setLoading(true);
 			setError(null);
-			const params: { status?: string; search?: string; sprint_id?: string } = {};
+			const params: {
+				status?: string;
+				search?: string;
+				sprint_id?: string;
+			} = {};
 			if (filter !== "all") params.status = filter;
 			if (sprintFilter !== "all") params.sprint_id = sprintFilter;
 			if (search) params.search = search;
@@ -690,7 +699,9 @@ export default function ProjectsPage() {
 			.then((data) => {
 				if (!active) return;
 				setSprints(data);
-				setSprintFilter(data.find((s) => s.status === "active")?.id ?? "all");
+				setSprintFilter(
+					data.find((s) => s.status === "active")?.id ?? "all",
+				);
 			})
 			.catch(() => {
 				if (!active) return;
@@ -720,7 +731,8 @@ export default function ProjectsPage() {
 
 	const filtered = projects.filter((p) => {
 		const matchStatus = filter === "all" || p.status === filter;
-		const matchSprint = sprintFilter === "all" || p.sprint_id === sprintFilter;
+		const matchSprint =
+			sprintFilter === "all" || p.sprint_id === sprintFilter;
 		const matchSearch =
 			p.name.toLowerCase().includes(search.toLowerCase()) ||
 			projectDescriptionText(p.description)
@@ -741,13 +753,15 @@ export default function ProjectsPage() {
 						{projects.length} projects total
 					</p>
 				</div>
-				<Button
-					className="hidden items-center gap-2 sm:flex"
-					onClick={() => setDialogOpen(true)}
-				>
-					<Plus className="h-4 w-4" />
-					New Project
-				</Button>
+				{canCreateProject && (
+					<Button
+						className="hidden items-center gap-2 sm:flex"
+						onClick={() => setDialogOpen(true)}
+					>
+						<Plus className="h-4 w-4" />
+						New Project
+					</Button>
+				)}
 			</div>
 
 			{/* Filters + Search + View toggle */}
@@ -778,7 +792,9 @@ export default function ProjectsPage() {
 						<SelectTrigger className="h-9 w-full text-sm sm:w-48">
 							<SelectValue
 								placeholder={
-									sprintsLoading ? "Loading sprints..." : "All Sprints"
+									sprintsLoading
+										? "Loading sprints..."
+										: "All Sprints"
 								}
 							/>
 						</SelectTrigger>
@@ -827,14 +843,16 @@ export default function ProjectsPage() {
 						</button>
 					</div>
 
-					<Button
-						size="icon"
-						className="shrink-0 sm:hidden"
-						onClick={() => setDialogOpen(true)}
-						aria-label="New Project"
-					>
-						<Plus className="h-4 w-4" />
-					</Button>
+					{canCreateProject && (
+						<Button
+							size="icon"
+							className="shrink-0 sm:hidden"
+							onClick={() => setDialogOpen(true)}
+							aria-label="New Project"
+						>
+							<Plus className="h-4 w-4" />
+						</Button>
+					)}
 				</div>
 			</div>
 

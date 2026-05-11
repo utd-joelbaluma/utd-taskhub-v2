@@ -51,6 +51,7 @@ import {
 	type ApiTaskPriority,
 } from "@/services/task.service";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 import {
 	ProjectDescriptionEditor,
 	ProjectDescriptionPreview,
@@ -1026,6 +1027,7 @@ function NewTaskDialog({
 export default function ProjectPage() {
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
+	const { user } = useAuth();
 
 	const [activeTab, setActiveTab] = useState<Tab>("Overview");
 	const [project, setProject] = useState<Project | null>(null);
@@ -1097,6 +1099,11 @@ export default function ProjectPage() {
 	const { variant: statusVariant, label: statusLabel } =
 		STATUS_BADGE[project.status];
 	const members = project.project_members ?? [];
+	const myMembership = members.find((m) => m.user_id === user?.id);
+	const canEditProject =
+		user?.global_role?.key === "admin" ||
+		myMembership?.role === "owner" ||
+		myMembership?.role === "manager";
 	const doneCount = tasks.filter((t) => t.status === "done").length;
 	const pct =
 		tasks.length === 0 ? 0 : Math.round((doneCount / tasks.length) * 100);
@@ -1129,14 +1136,16 @@ export default function ProjectPage() {
 					/>
 				</div>
 				<div className="flex items-center gap-2 shrink-0">
-					<Button
-						variant="outline"
-						className="flex items-center gap-2"
-						onClick={() => setEditOpen(true)}
-					>
-						<Pencil className="h-3.5 w-3.5" />
-						Edit Project
-					</Button>
+					{canEditProject && (
+						<Button
+							variant="outline"
+							className="flex items-center gap-2"
+							onClick={() => setEditOpen(true)}
+						>
+							<Pencil className="h-3.5 w-3.5" />
+							Edit Project
+						</Button>
+					)}
 					<Button
 						className="flex items-center gap-2"
 						onClick={() => setNewTaskOpen(true)}

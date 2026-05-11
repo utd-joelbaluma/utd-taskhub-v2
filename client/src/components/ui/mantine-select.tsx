@@ -44,12 +44,11 @@ export default function MantineSelect({
 	searchable = true,
 	clearable = false,
 	nothingFoundMessage = "No results found",
-	renderOption,
-	renderSelected,
+	renderOption = undefined,
 	className,
 	size = "md",
 }: CustomSelectProps) {
-	const selectedOption = data.find((item) => item.value === value);
+	// const selectedOption = data.find((item) => item.value === value);
 
 	return (
 		<Select
@@ -93,30 +92,30 @@ export default function MantineSelect({
 					</Group>
 				);
 			}}
-			valueComponent={() => {
-				if (renderSelected) {
-					return renderSelected(selectedOption);
-				}
+			// valueComponent={() => {
+			// 	if (renderSelected) {
+			// 		return renderSelected(selectedOption);
+			// 	}
 
-				if (!selectedOption) {
-					return null;
-				}
+			// 	if (!selectedOption) {
+			// 		return null;
+			// 	}
 
-				return (
-					<Group gap="sm">
-						{selectedOption.image && (
-							<Image
-								src={selectedOption.image}
-								w={24}
-								h={24}
-								radius="xl"
-							/>
-						)}
+			// 	return (
+			// 		<Group gap="sm">
+			// 			{selectedOption.image && (
+			// 				<Image
+			// 					src={selectedOption.image}
+			// 					w={24}
+			// 					h={24}
+			// 					radius="xl"
+			// 				/>
+			// 			)}
 
-						<Text size="sm">{selectedOption.label}</Text>
-					</Group>
-				);
-			}}
+			// 			<Text size="sm">{selectedOption.label}</Text>
+			// 		</Group>
+			// 	);
+			// }}
 		/>
 	);
 }
