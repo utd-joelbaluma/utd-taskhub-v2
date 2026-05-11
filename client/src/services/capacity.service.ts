@@ -11,3 +11,12 @@ export async function getUserSprintCapacity(
   }>(`/users/${userId}/sprint-capacity`);
   return res.data;
 }
+
+export async function getTeamSprintCapacity(): Promise<SprintCapacitySummary[]> {
+  const res = await api.get<{
+    success: boolean;
+    count: number;
+    data: SprintCapacitySummary[];
+  }>("/users/sprint-capacity");
+  return res.data ?? [];
+}

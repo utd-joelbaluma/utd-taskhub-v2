@@ -26,6 +26,8 @@ import {
 } from "@/services/task.service";
 import { type Profile } from "@/services/profile.service";
 import { listSprints, type Sprint } from "@/services/sprint.service";
+import { getTeamSprintCapacity } from "@/services/capacity.service";
+import { type SprintCapacitySummary } from "@/types/capacity";
 import {
 	ProjectDescriptionEditor,
 } from "@/components/projects/project-description";
@@ -85,6 +87,7 @@ export function EditTaskDialog({
 	const [estimatedTime, setEstimatedTime] = useState(0);
 	const [sprints, setSprints] = useState<Sprint[]>([]);
 	const [sprintsLoading, setSprintsLoading] = useState(false);
+	const [capacityMap, setCapacityMap] = useState<Map<string, SprintCapacitySummary>>(new Map());
 
 	useEffect(() => {
 		if (task) {
@@ -112,6 +115,14 @@ export function EditTaskDialog({
 			})
 			.catch(() => { if (active) setSprints([]); })
 			.finally(() => { if (active) setSprintsLoading(false); });
+
+		getTeamSprintCapacity()
+			.then((summaries) => {
+				if (!active) return;
+				setCapacityMap(new Map(summaries.map((s) => [s.userId, s])));
+			})
+			.catch(() => {});
+
 		return () => { active = false; };
 	}, [task]);
 
@@ -304,30 +315,54 @@ export function EditTaskDialog({
 							Assignee
 						</label>
 						<div className="flex flex-wrap gap-2">
-							{profiles.map((profile, idx) => (
-								<button
-									key={profile.id}
-									type="button"
-									onClick={() =>
-										set("assigneeId", form.assigneeId === profile.id ? "" : profile.id)
-									}
-									className={cn(
-										"flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors",
-										form.assigneeId === profile.id
-											? "border-primary bg-primary-subtle text-primary font-medium"
-											: "border-border hover:bg-muted-subtle text-foreground",
-									)}
-								>
-									<Avatar className="h-5 w-5 shrink-0">
-										<AvatarFallback
-											className={`text-[9px] text-white ${AVATAR_COLORS[idx % AVATAR_COLORS.length]}`}
-										>
-											{getInitials(profile.full_name ?? profile.email)}
-										</AvatarFallback>
-									</Avatar>
-									{profile.full_name ?? profile.email}
-								</button>
-							))}
+							{profiles.map((profile, idx) => {
+								const cap = capacityMap.get(profile.id);
+								const assignedPct = cap
+									? Math.min(Math.round((cap.assignedHours / cap.capacityHours) * 100), 100)
+									: null;
+								return (
+									<button
+										key={profile.id}
+										type="button"
+										onClick={() =>
+											set("assigneeId", form.assigneeId === profile.id ? "" : profile.id)
+										}
+										className={cn(
+											"flex flex-col items-start gap-1.5 px-3 py-2 rounded-lg border text-sm transition-colors",
+											form.assigneeId === profile.id
+												? "border-primary bg-primary-subtle text-primary font-medium"
+												: "border-border hover:bg-muted-subtle text-foreground",
+										)}
+									>
+										<div className="flex items-center gap-2">
+											<Avatar className="h-5 w-5 shrink-0">
+												<AvatarFallback
+													className={`text-[9px] text-white ${AVATAR_COLORS[idx % AVATAR_COLORS.length]}`}
+												>
+													{getInitials(profile.full_name ?? profile.email)}
+												</AvatarFallback>
+											</Avatar>
+											{profile.full_name ?? profile.email}
+										</div>
+										{cap !== undefined && assignedPct !== null && (
+											<div className="w-full flex flex-col gap-0.5">
+												<div className="h-1 w-full rounded-full bg-muted overflow-hidden">
+													<div
+														className={cn(
+															"h-full rounded-full transition-all",
+															cap.isOverbooked ? "bg-danger" : "bg-primary",
+														)}
+														style={{ width: `${assignedPct}%` }}
+													/>
+												</div>
+												<span className={cn("text-[9px]", cap.isOverbooked ? "text-danger" : "text-muted-foreground")}>
+													{cap.assignedHours}h / {cap.capacityHours}h
+												</span>
+											</div>
+										)}
+									</button>
+								);
+							})}
 						</div>
 						{selectedAssignee && (
 							<p className="text-xs text-muted mt-2">

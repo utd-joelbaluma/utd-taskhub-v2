@@ -130,7 +130,7 @@ export default function TasksPage() {
 	// ── DnD ──────────────────────────────────────────────────────────────────
 
 	const sensors = useSensors(
-		useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+		useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
 		useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
 	);
 
@@ -147,12 +147,12 @@ export default function TasksPage() {
 		return rectIntersection(args);
 	}, []);
 
-	function onDragStart({ active }: DragStartEvent) {
+	const onDragStart = useCallback(({ active }: DragStartEvent) => {
 		setActiveTaskId(active.id as string);
 		dragSrcColRef.current = findColumnId(active.id as string);
-	}
+	}, []);
 
-	function onDragOver({ active, over }: DragOverEvent) {
+	const onDragOver = useCallback(({ active, over }: DragOverEvent) => {
 		if (!over) return;
 		const activeId = active.id as string;
 		const overId = over.id as string;
@@ -181,9 +181,9 @@ export default function TasksPage() {
 			];
 			return { ...prev, [srcColId]: newSrc, [dstColId]: newDst };
 		});
-	}
+	}, []);
 
-	function onDragEnd({ active, over }: DragEndEvent) {
+	const onDragEnd = useCallback(({ active, over }: DragEndEvent) => {
 		setActiveTaskId(null);
 		if (!over) return;
 
@@ -232,7 +232,7 @@ export default function TasksPage() {
 			if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return prev;
 			return { ...prev, [colId]: arrayMove(items, fromIdx, toIdx) };
 		});
-	}
+	}, []);
 
 	// ── Filtering ────────────────────────────────────────────────────────────
 
@@ -252,8 +252,8 @@ export default function TasksPage() {
 	}, [columns, filterProject, filterSprint, filterUser, filterStatus, search]);
 
 	const allFilteredTasks = useMemo(
-		() => COLUMN_IDS.flatMap((c) => filteredColumns[c]),
-		[filteredColumns],
+		() => (view === "list" ? COLUMN_IDS.flatMap((c) => filteredColumns[c]) : []),
+		[view, filteredColumns],
 	);
 
 	const defaultSprintFilter = useMemo(
@@ -280,18 +280,21 @@ export default function TasksPage() {
 
 	// ── Handlers ─────────────────────────────────────────────────────────────
 
-	async function handleCreateTask(projectId: string, payload: CreateTaskPayload) {
-		const apiTask = await createTask(projectId, payload);
-		const ui = toUiTask(apiTask);
-		if (!ui) return;
-		setColumns((prev) => ({
-			...prev,
-			[ui.columnId]: [ui, ...prev[ui.columnId]],
-		}));
-		toast.success("Task created", { description: apiTask.title });
-	}
+	const handleCreateTask = useCallback(
+		async (projectId: string, payload: CreateTaskPayload) => {
+			const apiTask = await createTask(projectId, payload);
+			const ui = toUiTask(apiTask);
+			if (!ui) return;
+			setColumns((prev) => ({
+				...prev,
+				[ui.columnId]: [ui, ...prev[ui.columnId]],
+			}));
+			toast.success("Task created", { description: apiTask.title });
+		},
+		[],
+	);
 
-	async function handleDeleteTask(task: UiTask) {
+	const handleDeleteTask = useCallback(async (task: UiTask) => {
 		setColumns((prev) => ({
 			...prev,
 			[task.columnId]: prev[task.columnId].filter((t) => t.id !== task.id),
@@ -306,9 +309,9 @@ export default function TasksPage() {
 			}));
 			toast.error("Failed to delete task", { description: "Please try again." });
 		}
-	}
+	}, []);
 
-	async function handleSaveNotes(task: UiTask, notes: string) {
+	const handleSaveNotes = useCallback(async (task: UiTask, notes: string) => {
 		const apiTask = await updateTask(task.project_id, task.id, { developer_notes: notes });
 		const updated = toUiTask(apiTask);
 		if (!updated) return;
@@ -320,27 +323,30 @@ export default function TasksPage() {
 		}));
 		setViewTask(updated);
 		toast.success("Notes saved");
-	}
+	}, []);
 
-	async function handleEditTask(task: UiTask, payload: UpdateTaskPayload) {
-		const apiTask = await updateTask(task.project_id, task.id, payload);
-		const updated = toUiTask(apiTask);
-		if (!updated) return;
-		setColumns((prev) => {
-			const withoutOld = {
-				...prev,
-				[task.columnId]: prev[task.columnId].filter((t) => t.id !== task.id),
-			};
-			return {
-				...withoutOld,
-				[updated.columnId]: [
-					updated,
-					...withoutOld[updated.columnId].filter((t) => t.id !== updated.id),
-				],
-			};
-		});
-		toast.success("Task updated", { description: apiTask.title });
-	}
+	const handleEditTask = useCallback(
+		async (task: UiTask, payload: UpdateTaskPayload) => {
+			const apiTask = await updateTask(task.project_id, task.id, payload);
+			const updated = toUiTask(apiTask);
+			if (!updated) return;
+			setColumns((prev) => {
+				const withoutOld = {
+					...prev,
+					[task.columnId]: prev[task.columnId].filter((t) => t.id !== task.id),
+				};
+				return {
+					...withoutOld,
+					[updated.columnId]: [
+						updated,
+						...withoutOld[updated.columnId].filter((t) => t.id !== updated.id),
+					],
+				};
+			});
+			toast.success("Task updated", { description: apiTask.title });
+		},
+		[],
+	);
 
 	// ── Loading / Error ───────────────────────────────────────────────────────
 

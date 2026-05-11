@@ -59,7 +59,9 @@ export function TaskDetailDialog({
 	return (
 		<Dialog
 			open={!!task}
-			onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}
+			onOpenChange={(isOpen) => {
+				if (!isOpen) onClose();
+			}}
 		>
 			<DialogContent className="max-w-2xl">
 				<DialogHeader>
@@ -71,12 +73,17 @@ export function TaskDetailDialog({
 				<div className="space-y-5">
 					{/* Status + Priority */}
 					<div className="flex items-center gap-2">
-						<Badge variant={STATUS_BADGE[task?.apiStatus ?? "todo"].variant}>
+						<Badge
+							variant={
+								STATUS_BADGE[task?.apiStatus ?? "todo"].variant
+							}
+						>
 							{STATUS_BADGE[task?.apiStatus ?? "todo"].label}
 						</Badge>
 						<Badge variant={task?.priority ?? "medium"}>
 							{task?.priority &&
-								task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+								task.priority.charAt(0).toUpperCase() +
+									task.priority.slice(1)}
 						</Badge>
 					</div>
 
@@ -86,13 +93,17 @@ export function TaskDetailDialog({
 							<p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
 								Project
 							</p>
-							<p className="text-sm text-foreground">{project?.name ?? "—"}</p>
+							<p className="text-sm text-foreground font-bold">
+								{project?.name ?? "—"}
+							</p>
 						</div>
 						<div>
 							<p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
 								Sprint
 							</p>
-							<p className="text-sm text-foreground">{task?.sprint?.name ?? "—"}</p>
+							<p className="text-sm text-foreground font-bold">
+								{task?.sprint?.name ?? "—"}
+							</p>
 						</div>
 						<div>
 							<p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
@@ -104,10 +115,13 @@ export function TaskDetailDialog({
 										<AvatarFallback
 											className={`text-[9px] text-white ${profileColorClass(assignee.id)}`}
 										>
-											{getInitials(assignee.full_name ?? assignee.email)}
+											{getInitials(
+												assignee.full_name ??
+													assignee.email,
+											)}
 										</AvatarFallback>
 									</Avatar>
-									<span className="text-sm text-foreground">
+									<span className="text-sm font-bold text-primary">
 										{assignee.full_name ?? assignee.email}
 									</span>
 								</div>
@@ -120,15 +134,19 @@ export function TaskDetailDialog({
 								Due Date
 							</p>
 							<p className="text-sm text-foreground">
-								{task?.due_date ? task.due_date.slice(0, 10) : "—"}
+								{task?.due_date
+									? task.due_date.slice(0, 10)
+									: "—"}
 							</p>
 						</div>
 						<div>
 							<p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
 								Estimated Time
 							</p>
-							<p className="text-sm text-foreground">
-								{task?.estimated_time ? formatTime(task.estimated_time) : "—"}
+							<p className="text-sm text-foreground font-bold">
+								{task?.estimated_time
+									? formatTime(task.estimated_time)
+									: "—"}
 							</p>
 						</div>
 					</div>
@@ -153,16 +171,19 @@ export function TaskDetailDialog({
 					)}
 
 					{/* Description */}
-					{task?.description && projectDescriptionText(task.description) && (
-						<div>
-							<p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
-								Description
-							</p>
-							<div className="text-sm text-foreground">
-								<ProjectDescriptionPreview value={task.description} />
+					{task?.description &&
+						projectDescriptionText(task.description) && (
+							<div>
+								<p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
+									Description
+								</p>
+								<div className="text-sm text-black bg-slate-100 p-2 rounded">
+									<ProjectDescriptionPreview
+										value={task.description}
+									/>
+								</div>
 							</div>
-						</div>
-					)}
+						)}
 
 					{/* Developer's Notes */}
 					<div>
@@ -179,10 +200,14 @@ export function TaskDetailDialog({
 
 				<DialogFooter>
 					<DialogClose asChild>
-						<Button variant="outline" disabled={saving}>Close</Button>
+						<Button variant="outline" disabled={saving}>
+							Close
+						</Button>
 					</DialogClose>
 					<Button onClick={handleSave} disabled={saving}>
-						{saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+						{saving && (
+							<Loader2 className="h-4 w-4 animate-spin mr-2" />
+						)}
 						Save Notes
 					</Button>
 				</DialogFooter>

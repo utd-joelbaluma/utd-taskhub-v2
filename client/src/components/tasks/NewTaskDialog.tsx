@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { listSprints, type Sprint } from "@/services/sprint.service";
+import { getTeamSprintCapacity } from "@/services/capacity.service";
+import { type SprintCapacitySummary } from "@/types/capacity";
 import {
 	type ApiTaskPriority,
 	type CreateTaskPayload,
@@ -30,7 +32,6 @@ import { type Profile } from "@/services/profile.service";
 import { ProjectDescriptionEditor } from "@/components/projects/project-description";
 import { projectDescriptionText } from "@/components/projects/project-description-utils";
 import { cn } from "@/lib/utils";
-import MantineSelect from "@/components/ui/mantine-select";
 import { EstimatedTimeField } from "./TaskForm";
 import {
 	type ColumnId,
@@ -77,6 +78,9 @@ export function NewTaskDialog({
 	const [sprintsLoading, setSprintsLoading] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
 	const [estimatedTime, setEstimatedTime] = useState(0);
+	const [capacityMap, setCapacityMap] = useState<
+		Map<string, SprintCapacitySummary>
+	>(new Map());
 
 	useEffect(() => {
 		if (!open) return;
@@ -95,6 +99,16 @@ export function NewTaskDialog({
 			.finally(() => {
 				if (active) setSprintsLoading(false);
 			});
+
+		getTeamSprintCapacity()
+			.then((summaries) => {
+				if (!active) return;
+				setCapacityMap(new Map(summaries.map((s) => [s.userId, s])));
+			})
+			.catch(() => {
+				// silently degrade — capacity bars won't show
+			});
+
 		return () => {
 			active = false;
 		};
@@ -127,7 +141,7 @@ export function NewTaskDialog({
 	}
 
 	function handleProjectChange(projectId: string) {
-		setForm((prev) => ({ ...prev, projectId, sprintId: "" }));
+		setForm((prev) => ({ ...prev, projectId }));
 		setErrors((e) => ({ ...e, projectId: undefined }));
 	}
 
@@ -383,70 +397,96 @@ export function NewTaskDialog({
 						<label className="text-sm font-medium text-muted-foreground mb-2 block">
 							Assignee
 						</label>
-						<div className="flex flex-col gap-2">
-							<MantineSelect
-								value={form.assigneeId}
-								onChange={(value: string | null) =>
-									set("assigneeId", value ?? "")
-								}
-								data={profiles.map((p) => ({
-									value: p.id,
-									label: p.full_name + " email:" + p.email,
-									description: p.role,
-									image: () => {
-										return (
-											<Avatar className="h-5 w-5 shrink-0">
+
+						<div className="flex flex-wrap gap-2">
+							{profiles.map((profile, idx) => {
+								const cap = capacityMap.get(profile.id);
+								const assignedPct = cap
+									? Math.min(
+											Math.round(
+												(cap.assignedHours /
+													cap.capacityHours) *
+													100,
+											),
+											100,
+										)
+									: null;
+								return (
+									<button
+										key={profile.id}
+										type="button"
+										onClick={() =>
+											set(
+												"assigneeId",
+												form.assigneeId === profile.id
+													? ""
+													: profile.id,
+											)
+										}
+										className={cn(
+											"flex flex-col items-start gap-1.5 px-3 py-2 rounded-lg border text-sm transition-colors",
+											form.assigneeId === profile.id
+												? "border-primary bg-primary-subtle text-primary font-medium"
+												: "border-border hover:bg-muted-subtle text-foreground",
+										)}
+									>
+										<div className="flex items-center gap-2">
+											<Avatar className="h-10 w-10 shrink-0">
 												<AvatarFallback
-													className={`text-[9px] text-white `}
+													className={`text-sm text-white ${AVATAR_COLORS[idx % AVATAR_COLORS.length]}`}
 												>
 													{getInitials(
-														p.full_name ?? p.email,
+														profile.full_name ??
+															profile.email,
 													)}
 												</AvatarFallback>
 											</Avatar>
-										);
-									},
-								}))}
-							/>
-						</div>
-						<div className="flex flex-wrap gap-2">
-							{profiles.map((profile, idx) => (
-								<button
-									key={profile.id}
-									type="button"
-									onClick={() =>
-										set(
-											"assigneeId",
-											form.assigneeId === profile.id
-												? ""
-												: profile.id,
-										)
-									}
-									className={cn(
-										"flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors",
-										form.assigneeId === profile.id
-											? "border-primary bg-primary-subtle text-primary font-medium"
-											: "border-border hover:bg-muted-subtle text-foreground",
-									)}
-								>
-									<Avatar className="h-5 w-5 shrink-0">
-										<AvatarFallback
-											className={`text-[9px] text-white ${AVATAR_COLORS[idx % AVATAR_COLORS.length]}`}
-										>
-											{getInitials(
-												profile.full_name ??
-													profile.email,
+											<div className="flex flex-col items-start">
+												<span className="font-bold text-primary text-sm">
+													{profile.full_name}
+												</span>
+												<small className="text-xs font-light">
+													{profile.email}
+												</small>
+											</div>
+										</div>
+										{cap !== undefined &&
+											assignedPct !== null && (
+												<div className="w-full flex flex-col gap-0.5">
+													<div className="h-1 w-full rounded-full bg-muted overflow-hidden">
+														<div
+															className={cn(
+																"h-full rounded-full transition-all",
+																cap.isOverbooked
+																	? "bg-danger"
+																	: "bg-primary",
+															)}
+															style={{
+																width: `${assignedPct}%`,
+															}}
+														/>
+													</div>
+													<span
+														className={cn(
+															"text-[9px]",
+															cap.isOverbooked
+																? "text-danger"
+																: "text-muted-foreground",
+														)}
+													>
+														{cap.assignedHours}h /{" "}
+														{cap.capacityHours}h
+													</span>
+												</div>
 											)}
-										</AvatarFallback>
-									</Avatar>
-									{profile.full_name ?? profile.email}
-								</button>
-							))}
+									</button>
+								);
+							})}
 						</div>
 						{selectedAssignee && (
-							<p className="text-xs text-muted mt-2">
-								Assigned to{" "}
-								<span className="font-medium text-foreground">
+							<p className="text-base text-muted mt-2">
+								Assigned to:{" "}
+								<span className="font-bold text-primary">
 									{selectedAssignee.full_name ??
 										selectedAssignee.email}
 								</span>

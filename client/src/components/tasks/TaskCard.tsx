@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useMemo, useState } from "react";
 import {
 	SortableContext,
 	useSortable,
@@ -35,7 +35,7 @@ import {
 
 // ── TaskCardContent ───────────────────────────────────────────────────────────
 
-export function TaskCardContent({
+function TaskCardContentBase({
 	task,
 	projects,
 	isDragging = false,
@@ -104,9 +104,11 @@ export function TaskCardContent({
 	);
 }
 
+export const TaskCardContent = memo(TaskCardContentBase);
+
 // ── SortableTaskCard ──────────────────────────────────────────────────────────
 
-export function SortableTaskCard({
+function SortableTaskCardBase({
 	task,
 	projects,
 	onEdit,
@@ -220,9 +222,11 @@ export function SortableTaskCard({
 	);
 }
 
+export const SortableTaskCard = memo(SortableTaskCardBase);
+
 // ── BoardColumn ───────────────────────────────────────────────────────────────
 
-export function BoardColumn({
+function BoardColumnBase({
 	colId,
 	tasks,
 	projects,
@@ -239,6 +243,7 @@ export function BoardColumn({
 }) {
 	const { setNodeRef, isOver } = useDroppable({ id: colId });
 	const { dot } = COLUMN_BADGE[colId];
+	const itemIds = useMemo(() => tasks.map((t) => t.id), [tasks]);
 
 	return (
 		<div className="flex flex-col min-w-[280px] flex-1">
@@ -262,7 +267,7 @@ export function BoardColumn({
 				)}
 			>
 				<SortableContext
-					items={tasks.map((t) => t.id)}
+					items={itemIds}
 					strategy={verticalListSortingStrategy}
 				>
 					{tasks.map((task) => (
@@ -286,6 +291,8 @@ export function BoardColumn({
 		</div>
 	);
 }
+
+export const BoardColumn = memo(BoardColumnBase);
 
 export type { ColumnId, UiTask };
 export { COLUMN_IDS };

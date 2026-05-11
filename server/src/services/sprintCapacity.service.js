@@ -13,10 +13,17 @@ export async function getActiveSprint(client) {
 
 export async function findOrCreateCapacityRecord(client, userId, sprintId) {
 	// Insert only if not exists — preserves existing capacity_hours on conflict
-	await client.from("user_sprint_capacity").upsert(
-		{ user_id: userId, sprint_id: sprintId, capacity_hours: 40, assigned_hours: 0 },
-		{ onConflict: "user_id,sprint_id", ignoreDuplicates: true },
-	);
+	await client
+		.from("user_sprint_capacity")
+		.upsert(
+			{
+				user_id: userId,
+				sprint_id: sprintId,
+				capacity_hours: 40,
+				assigned_hours: 0,
+			},
+			{ onConflict: "user_id,sprint_id", ignoreDuplicates: true },
+		);
 
 	const { data, error } = await client
 		.from("user_sprint_capacity")
@@ -38,16 +45,26 @@ export async function calculateAssignedHours(client, userId, sprintId) {
 		.neq("status", "cancelled");
 
 	if (error) throw error;
-	return (data || []).reduce((sum, t) => sum + (t.estimated_time || 0), 0);
+	return (data || []).reduce(
+		(sum, t) => sum + (t.estimated_time / 60 || 0),
+		0,
+	);
 }
 
 export async function refreshUserCapacity(client, userId, sprintId) {
 	await findOrCreateCapacityRecord(client, userId, sprintId);
-	const assignedHours = await calculateAssignedHours(client, userId, sprintId);
+	const assignedHours = await calculateAssignedHours(
+		client,
+		userId,
+		sprintId,
+	);
 
 	const { error } = await client
 		.from("user_sprint_capacity")
-		.update({ assigned_hours: assignedHours, updated_at: new Date().toISOString() })
+		.update({
+			assigned_hours: assignedHours,
+			updated_at: new Date().toISOString(),
+		})
 		.eq("user_id", userId)
 		.eq("sprint_id", sprintId);
 
@@ -59,7 +76,11 @@ export async function getCapacitySummary(client, userId) {
 	if (!sprint) return null;
 
 	const record = await findOrCreateCapacityRecord(client, userId, sprint.id);
-	const assignedHours = await calculateAssignedHours(client, userId, sprint.id);
+	const assignedHours = await calculateAssignedHours(
+		client,
+		userId,
+		sprint.id,
+	);
 
 	return {
 		userId,

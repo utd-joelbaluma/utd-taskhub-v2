@@ -61,7 +61,7 @@ const SprintCapacity = ({ userId }: SprintCapacityProps) => {
 	}
 
 	const assignedPct = Math.min(
-		Math.round((data.assignedHours / data.capacityHours) * 100),
+		Math.round((data.assignedHours / 60 / data.capacityHours) * 100),
 		100,
 	);
 	const remainingPct = 100 - assignedPct;
@@ -92,7 +92,7 @@ const SprintCapacity = ({ userId }: SprintCapacityProps) => {
 							data.isOverbooked ? "text-danger" : "text-primary"
 						}
 					>
-						{data.assignedHours}
+						{data.assignedHours / 60}
 					</b>
 					<span className="text-muted-foreground">
 						{" "}
