@@ -1,13 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-	ArrowLeft,
-	Plus,
-	Pencil,
-	TrendingUp,
-	Loader2,
-	X,
-} from "lucide-react";
+import { ArrowLeft, Plus, Pencil, TrendingUp, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -36,10 +29,7 @@ import {
 	type Project,
 	type ProjectStatus,
 } from "@/services/project.service";
-import {
-	listSprints,
-	type Sprint,
-} from "@/services/sprint.service";
+import { listSprints, type Sprint } from "@/services/sprint.service";
 import { toast } from "sonner";
 import { addMember, removeMember } from "@/services/project-member.service";
 import { listProfiles, type Profile } from "@/services/profile.service";
@@ -102,7 +92,6 @@ const TASK_PRIORITY_BADGE: Record<
 	urgent: { variant: "urgent", label: "Urgent" },
 };
 
-
 const AVATAR_COLORS = [
 	"bg-primary",
 	"bg-accent",
@@ -138,7 +127,6 @@ function formatDate(iso: string | null): string {
 		year: "numeric",
 	});
 }
-
 
 // ── Team Avatars ──────────────────────────────────────────────────────────────
 
@@ -1028,7 +1016,7 @@ function AddMemberDialog({
 	open,
 	onClose,
 	projectId,
-	createdBy,
+	// createdBy,
 	currentMemberIds,
 	profiles,
 	onAdded,
@@ -1036,7 +1024,7 @@ function AddMemberDialog({
 	open: boolean;
 	onClose: () => void;
 	projectId: string;
-	createdBy: string;
+	// createdBy: string;
 	currentMemberIds: string[];
 	profiles: Profile[];
 	onAdded: (userId: string) => void;
@@ -1065,7 +1053,10 @@ function AddMemberDialog({
 	}
 
 	function handleOpenChange(isOpen: boolean) {
-		if (!isOpen) { setSelectedId(""); setError(null); }
+		if (!isOpen) {
+			setSelectedId("");
+			setError(null);
+		}
 		if (!isOpen) onClose();
 	}
 
@@ -1074,12 +1065,16 @@ function AddMemberDialog({
 			<DialogContent className="max-w-[420px]">
 				<DialogHeader>
 					<DialogTitle>Add Team Member</DialogTitle>
-					<DialogDescription>Select a user to add to this project.</DialogDescription>
+					<DialogDescription>
+						Select a user to add to this project.
+					</DialogDescription>
 				</DialogHeader>
 
 				<div className="space-y-4">
 					{available.length === 0 ? (
-						<p className="text-sm text-muted text-center py-4">All users are already members.</p>
+						<p className="text-sm text-muted text-center py-4">
+							All users are already members.
+						</p>
 					) : (
 						<div className="space-y-2 max-h-64 overflow-y-auto">
 							{available.map((p, i) => (
@@ -1101,7 +1096,9 @@ function AddMemberDialog({
 										className="sr-only"
 									/>
 									<Avatar className="h-8 w-8 shrink-0">
-										<AvatarFallback className={`text-[10px] text-white ${avatarColor(i)}`}>
+										<AvatarFallback
+											className={`text-[10px] text-white ${avatarColor(i)}`}
+										>
 											{getInitials(p.full_name)}
 										</AvatarFallback>
 									</Avatar>
@@ -1109,7 +1106,9 @@ function AddMemberDialog({
 										<p className="text-sm font-medium text-foreground truncate">
 											{p.full_name ?? p.email}
 										</p>
-										<p className="text-xs text-muted truncate">{p.email}</p>
+										<p className="text-xs text-muted truncate">
+											{p.email}
+										</p>
 									</div>
 								</label>
 							))}
@@ -1121,10 +1120,19 @@ function AddMemberDialog({
 
 				<DialogFooter>
 					<DialogClose asChild>
-						<Button variant="outline" disabled={submitting}>Cancel</Button>
+						<Button variant="outline" disabled={submitting}>
+							Cancel
+						</Button>
 					</DialogClose>
-					<Button onClick={handleSubmit} disabled={submitting || !selectedId || available.length === 0}>
-						{submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+					<Button
+						onClick={handleSubmit}
+						disabled={
+							submitting || !selectedId || available.length === 0
+						}
+					>
+						{submitting && (
+							<Loader2 className="h-4 w-4 animate-spin mr-2" />
+						)}
 						Add Member
 					</Button>
 				</DialogFooter>
@@ -1158,7 +1166,12 @@ export default function ProjectPage() {
 		setLoading(true);
 		setTasksLoading(true);
 
-		Promise.all([getProject(id), listTasks(id), listProfiles(), listSprints()])
+		Promise.all([
+			getProject(id),
+			listTasks(id),
+			listProfiles(),
+			listSprints(),
+		])
 			.then(([proj, taskList, profileList, sprintList]) => {
 				setProject(proj);
 				setTasks(taskList);
@@ -1177,8 +1190,18 @@ export default function ProjectPage() {
 		setAssigningSprintId(true);
 		try {
 			const updated = await updateProject(id, { sprint_id: sprintId });
-			setProject((prev) => prev ? { ...prev, sprint_id: updated.sprint_id, sprint: updated.sprint } : prev);
-			toast.success(sprintId ? "Project assigned to sprint." : "Sprint removed.");
+			setProject((prev) =>
+				prev
+					? {
+							...prev,
+							sprint_id: updated.sprint_id,
+							sprint: updated.sprint,
+						}
+					: prev,
+			);
+			toast.success(
+				sprintId ? "Project assigned to sprint." : "Sprint removed.",
+			);
 		} catch {
 			toast.error("Failed to update sprint assignment.");
 		} finally {
@@ -1339,14 +1362,21 @@ export default function ProjectPage() {
 									</h2>
 									{project.sprint && (
 										<p className="text-sm text-muted mt-0.5">
-											Ends {formatDate(project.sprint.end_date)}
+											Ends{" "}
+											{formatDate(
+												project.sprint.end_date,
+											)}
 										</p>
 									)}
 									<div className="mt-3">
 										<Select
-											value={project.sprint_id ?? "__none__"}
+											value={
+												project.sprint_id ?? "__none__"
+											}
 											onValueChange={(v) =>
-												handleAssignSprint(v === "__none__" ? null : v)
+												handleAssignSprint(
+													v === "__none__" ? null : v,
+												)
 											}
 											disabled={assigningSprintId}
 										>
@@ -1354,9 +1384,14 @@ export default function ProjectPage() {
 												<SelectValue placeholder="Assign to sprint" />
 											</SelectTrigger>
 											<SelectContent>
-												<SelectItem value="__none__">No sprint</SelectItem>
+												<SelectItem value="__none__">
+													No sprint
+												</SelectItem>
 												{allSprints.map((s) => (
-													<SelectItem key={s.id} value={s.id}>
+													<SelectItem
+														key={s.id}
+														value={s.id}
+													>
 														{s.name}
 													</SelectItem>
 												))}
@@ -1582,8 +1617,14 @@ export default function ProjectPage() {
 			{activeTab === "Teams" && (
 				<div className="space-y-4">
 					<div className="flex items-center justify-between">
-						<p className="text-sm text-muted">{members.length} member{members.length !== 1 ? "s" : ""}</p>
-						<Button className="flex items-center gap-2" onClick={() => setAddUserOpen(true)}>
+						<p className="text-sm text-muted">
+							{members.length} member
+							{members.length !== 1 ? "s" : ""}
+						</p>
+						<Button
+							className="flex items-center gap-2"
+							onClick={() => setAddUserOpen(true)}
+						>
 							<Plus className="h-4 w-4" />
 							Add Member
 						</Button>
@@ -1593,37 +1634,61 @@ export default function ProjectPage() {
 						<table className="w-full text-sm">
 							<thead>
 								<tr className="border-b border-border bg-muted-subtle/40">
-									{["Member", "Email", "Role", "Joined"].map((h) => (
-										<th key={h} className="px-5 py-3 text-xs font-medium text-muted text-left">{h}</th>
-									))}
+									{["Member", "Email", "Role", "Joined"].map(
+										(h) => (
+											<th
+												key={h}
+												className="px-5 py-3 text-xs font-medium text-muted text-left"
+											>
+												{h}
+											</th>
+										),
+									)}
 									<th className="px-5 py-3" />
 								</tr>
 							</thead>
 							<tbody>
 								{members.length === 0 ? (
 									<tr>
-										<td colSpan={5} className="px-5 py-10 text-center text-sm text-muted">
+										<td
+											colSpan={5}
+											className="px-5 py-10 text-center text-sm text-muted"
+										>
 											No members yet.
 										</td>
 									</tr>
 								) : (
 									members.map((m, i) => {
-										const isOwner = m.user_id === project.created_by;
+										const isOwner =
+											m.user_id === project.created_by;
 										return (
-											<tr key={m.user_id} className="border-b border-border last:border-0 hover:bg-muted-subtle transition-colors">
+											<tr
+												key={m.user_id}
+												className="border-b border-border last:border-0 hover:bg-muted-subtle transition-colors"
+											>
 												<td className="px-5 py-4">
 													<div className="flex items-center gap-3">
 														<Avatar className="h-8 w-8 shrink-0">
-															<AvatarFallback className={`text-[10px] text-white ${avatarColor(i)}`}>
-																{getInitials(m.profiles?.full_name ?? null)}
+															<AvatarFallback
+																className={`text-[10px] text-white ${avatarColor(i)}`}
+															>
+																{getInitials(
+																	m.profiles
+																		?.full_name ??
+																		null,
+																)}
 															</AvatarFallback>
 														</Avatar>
 														<div>
 															<p className="text-sm font-medium text-foreground">
-																{m.profiles?.full_name ?? "Unknown"}
+																{m.profiles
+																	?.full_name ??
+																	"Unknown"}
 															</p>
 															{isOwner && (
-																<span className="text-[10px] text-muted">Owner</span>
+																<span className="text-[10px] text-muted">
+																	Owner
+																</span>
 															)}
 														</div>
 													</div>
@@ -1632,7 +1697,9 @@ export default function ProjectPage() {
 													{m.profiles?.email ?? "—"}
 												</td>
 												<td className="px-5 py-4">
-													<span className="capitalize text-sm text-foreground">{m.role}</span>
+													<span className="capitalize text-sm text-foreground">
+														{m.role}
+													</span>
 												</td>
 												<td className="px-5 py-4 text-sm text-muted whitespace-nowrap">
 													{formatDate(m.joined_at)}
@@ -1645,20 +1712,35 @@ export default function ProjectPage() {
 															className="text-danger border-danger/30 hover:bg-danger/5"
 															onClick={async () => {
 																try {
-																	await removeMember(project.id, m.user_id);
-																	setProject((prev) =>
-																		prev
-																			? {
-																					...prev,
-																					project_members: prev.project_members.filter(
-																						(pm) => pm.user_id !== m.user_id,
-																					),
-																				}
-																			: prev,
+																	await removeMember(
+																		project.id,
+																		m.user_id,
 																	);
-																	toast.success("Member removed");
+																	setProject(
+																		(
+																			prev,
+																		) =>
+																			prev
+																				? {
+																						...prev,
+																						project_members:
+																							prev.project_members.filter(
+																								(
+																									pm,
+																								) =>
+																									pm.user_id !==
+																									m.user_id,
+																							),
+																					}
+																				: prev,
+																	);
+																	toast.success(
+																		"Member removed",
+																	);
 																} catch {
-																	toast.error("Failed to remove member");
+																	toast.error(
+																		"Failed to remove member",
+																	);
 																}
 															}}
 														>
@@ -1690,7 +1772,7 @@ export default function ProjectPage() {
 				open={addUserOpen}
 				onClose={() => setAddUserOpen(false)}
 				projectId={project.id}
-				createdBy={project.created_by}
+				// createdBy={project.created_by}
 				currentMemberIds={members.map((m) => m.user_id)}
 				profiles={profiles}
 				onAdded={async () => {
@@ -1722,7 +1804,6 @@ export default function ProjectPage() {
 				members={members}
 				onCreated={(task) => setTasks((prev) => [task, ...prev])}
 			/>
-
 		</div>
 	);
 }

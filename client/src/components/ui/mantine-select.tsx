@@ -1,6 +1,6 @@
 // components/CustomSelect.tsx
 
-import { Group, Image, Select, Text } from "@mantine/core";
+import { Group, Select, Text } from "@mantine/core";
 
 import type { ComboboxItem } from "@mantine/core";
 type SelectOption = ComboboxItem & {

@@ -6,14 +6,14 @@ import { supabase } from '../config/supabase.js';
 // ---------------------------------------------------------------------------
 
 const USERS = [
-  { initials: 'AR', full_name: 'Alex Rivera',     email: 'alex.rivera@taskhub.dev',     password: 'Taskhub2024!', role: 'admin' },
-  { initials: 'AM', full_name: 'Alex Martinez',   email: 'alex.martinez@taskhub.dev',   password: 'Taskhub2024!', role: 'developer' },
-  { initials: 'PR', full_name: 'Paula Rodriguez', email: 'paula.rodriguez@taskhub.dev', password: 'Taskhub2024!', role: 'developer' },
-  { initials: 'TS', full_name: 'Tyler Smith',     email: 'tyler.smith@taskhub.dev',     password: 'Taskhub2024!', role: 'developer' },
-  { initials: 'KL', full_name: 'Kate Liu',        email: 'kate.liu@taskhub.dev',        password: 'Taskhub2024!', role: 'manager' },
-  { initials: 'JD', full_name: 'Jordan Davis',    email: 'jordan.davis@taskhub.dev',    password: 'Taskhub2024!', role: 'developer' },
-  { initials: 'DM', full_name: 'Diego Morales',   email: 'diego.morales@taskhub.dev',   password: 'Taskhub2024!', role: 'developer' },
-  { initials: 'MN', full_name: 'Maria Nguyen',    email: 'maria.nguyen@taskhub.dev',    password: 'Taskhub2024!', role: 'developer' },
+  { initials: 'AR', full_name: 'Alex Rivera',     email: 'alex.rivera@taskhub.dev',     password: 'Taskhub2024!', role: 'admin',     avatar_url: 'https://api.dicebear.com/9.x/initials/svg?seed=Alex+Rivera' },
+  { initials: 'AM', full_name: 'Alex Martinez',   email: 'alex.martinez@taskhub.dev',   password: 'Taskhub2024!', role: 'developer', avatar_url: 'https://api.dicebear.com/9.x/initials/svg?seed=Alex+Martinez' },
+  { initials: 'PR', full_name: 'Paula Rodriguez', email: 'paula.rodriguez@taskhub.dev', password: 'Taskhub2024!', role: 'developer', avatar_url: 'https://api.dicebear.com/9.x/initials/svg?seed=Paula+Rodriguez' },
+  { initials: 'TS', full_name: 'Tyler Smith',     email: 'tyler.smith@taskhub.dev',     password: 'Taskhub2024!', role: 'developer', avatar_url: 'https://api.dicebear.com/9.x/initials/svg?seed=Tyler+Smith' },
+  { initials: 'KL', full_name: 'Kate Liu',        email: 'kate.liu@taskhub.dev',        password: 'Taskhub2024!', role: 'manager',   avatar_url: 'https://api.dicebear.com/9.x/initials/svg?seed=Kate+Liu' },
+  { initials: 'JD', full_name: 'Jordan Davis',    email: 'jordan.davis@taskhub.dev',    password: 'Taskhub2024!', role: 'developer', avatar_url: 'https://api.dicebear.com/9.x/initials/svg?seed=Jordan+Davis' },
+  { initials: 'DM', full_name: 'Diego Morales',   email: 'diego.morales@taskhub.dev',   password: 'Taskhub2024!', role: 'developer', avatar_url: 'https://api.dicebear.com/9.x/initials/svg?seed=Diego+Morales' },
+  { initials: 'MN', full_name: 'Maria Nguyen',    email: 'maria.nguyen@taskhub.dev',    password: 'Taskhub2024!', role: 'developer', avatar_url: 'https://api.dicebear.com/9.x/initials/svg?seed=Maria+Nguyen' },
 ];
 
 const PROJECTS = [
@@ -85,27 +85,117 @@ const PROJECT_MEMBERS = [
 // tasks.status uses underscores; projects.status uses hyphens (schema constraint)
 const TASKS = [
   // To Do
-  { title: 'Set up CI/CD pipeline',          status: 'todo',        priority: 'high',   tags: ['DevOps'],     project: 'Internal System',      due_date: '2026-05-12', assigned_to: 'AM', position: 0 },
-  { title: 'Update API documentation',        status: 'todo',        priority: 'medium', tags: ['Docs'],       project: 'Customer Portal',      due_date: '2026-05-15', assigned_to: 'KL', position: 1 },
-  { title: 'User permission audit',           status: 'todo',        priority: 'low',    tags: ['Security'],   project: 'Internal System',      due_date: '2026-05-20', assigned_to: 'JD', position: 2 },
-  { title: 'Subscription upgrade flow',       status: 'todo',        priority: 'medium', tags: ['UX'],         project: 'Customer Portal',      due_date: '2026-05-18', assigned_to: 'PR', position: 3 },
-  { title: 'Kafka consumer group refactor',   status: 'todo',        priority: 'high',   tags: ['Backend'],    project: 'Data Pipeline v2',     due_date: '2026-05-22', assigned_to: 'TS', position: 4 },
+  {
+    title: 'Set up CI/CD pipeline',
+    description: 'Configure GitHub Actions workflows for automated build, test, and deployment to staging and production environments.',
+    status: 'todo', priority: 'high', tags: ['DevOps'],
+    project: 'Internal System', due_date: '2026-05-12', assigned_to: 'AM', position: 0,
+  },
+  {
+    title: 'Update API documentation',
+    description: 'Refresh OpenAPI spec to reflect recent endpoint changes. Add request/response examples for all invoice and subscription routes.',
+    status: 'todo', priority: 'medium', tags: ['Docs'],
+    project: 'Customer Portal', due_date: '2026-05-15', assigned_to: 'KL', position: 1,
+  },
+  {
+    title: 'User permission audit',
+    description: 'Review all role-based access control rules across the system. Identify any over-privileged accounts and document findings.',
+    status: 'todo', priority: 'low', tags: ['Security'],
+    project: 'Internal System', due_date: '2026-05-20', assigned_to: 'JD', position: 2,
+  },
+  {
+    title: 'Subscription upgrade flow',
+    description: 'Design and implement the UI flow for customers upgrading from free to paid plans. Includes plan comparison page and payment confirmation.',
+    status: 'todo', priority: 'medium', tags: ['UX'],
+    project: 'Customer Portal', due_date: '2026-05-18', assigned_to: 'PR', position: 3,
+  },
+  {
+    title: 'Kafka consumer group refactor',
+    description: 'Reorganise consumer groups to improve parallelism and reduce lag. Update offset management strategy to at-least-once semantics.',
+    status: 'todo', priority: 'high', tags: ['Backend'],
+    project: 'Data Pipeline v2', due_date: '2026-05-22', assigned_to: 'TS', position: 4,
+  },
   // In Progress
-  { title: 'Refactor authentication middleware', status: 'in_progress', priority: 'urgent', tags: ['Security'], project: 'Internal System',    due_date: '2026-05-07', assigned_to: 'AM', position: 0 },
-  { title: 'Invoice PDF export',              status: 'in_progress', priority: 'high',   tags: ['Feature'],    project: 'Customer Portal',      due_date: '2026-05-10', assigned_to: 'PR', position: 1 },
-  { title: 'PKCE flow implementation',        status: 'in_progress', priority: 'high',   tags: ['Security'],   project: 'Auth Service Rewrite', due_date: '2026-05-11', assigned_to: 'DM', position: 2 },
-  { title: 'Database migration scripts',      status: 'in_progress', priority: 'medium', tags: ['Backend'],    project: 'Internal System',      due_date: '2026-05-24', assigned_to: 'JD', position: 3 },
-  { title: 'Mobile offline sync',             status: 'in_progress', priority: 'high',   tags: ['Mobile'],     project: 'Mobile App',           due_date: '2026-05-13', assigned_to: 'MN', position: 4 },
+  {
+    title: 'Refactor authentication middleware',
+    description: 'Break monolithic auth middleware into composable guards. Replace manual JWT parsing with a shared utility and add token rotation support.',
+    status: 'in_progress', priority: 'urgent', tags: ['Security'],
+    project: 'Internal System', due_date: '2026-05-07', assigned_to: 'AM', position: 0,
+  },
+  {
+    title: 'Invoice PDF export',
+    description: 'Generate downloadable PDF invoices from the billing portal using a server-side renderer. Support custom branding per account.',
+    status: 'in_progress', priority: 'high', tags: ['Feature'],
+    project: 'Customer Portal', due_date: '2026-05-10', assigned_to: 'PR', position: 1,
+  },
+  {
+    title: 'PKCE flow implementation',
+    description: 'Implement Proof Key for Code Exchange for all public OAuth clients. Replace implicit grant flow across mobile and SPA integrations.',
+    status: 'in_progress', priority: 'high', tags: ['Security'],
+    project: 'Auth Service Rewrite', due_date: '2026-05-11', assigned_to: 'DM', position: 2,
+  },
+  {
+    title: 'Database migration scripts',
+    description: 'Write idempotent SQL migration scripts for the schema changes in v2. Include rollback procedures and test against a production snapshot.',
+    status: 'in_progress', priority: 'medium', tags: ['Backend'],
+    project: 'Internal System', due_date: '2026-05-24', assigned_to: 'JD', position: 3,
+  },
+  {
+    title: 'Mobile offline sync',
+    description: 'Implement local-first data persistence using SQLite. Sync queued mutations to the server when connectivity is restored.',
+    status: 'in_progress', priority: 'high', tags: ['Mobile'],
+    project: 'Mobile App', due_date: '2026-05-13', assigned_to: 'MN', position: 4,
+  },
   // Review
-  { title: 'API authentication layer',        status: 'review',      priority: 'high',   tags: ['Security'],   project: 'Internal System',      due_date: '2026-05-09', assigned_to: 'AM', position: 0 },
-  { title: 'Session revocation endpoint',     status: 'review',      priority: 'high',   tags: ['Backend'],    project: 'Auth Service Rewrite', due_date: '2026-05-10', assigned_to: 'DM', position: 1 },
-  { title: 'Accessibility audit fixes',       status: 'review',      priority: 'medium', tags: ['UX'],         project: 'Customer Portal',      due_date: '2026-05-14', assigned_to: 'PR', position: 2 },
-  { title: 'Component token documentation',   status: 'review',      priority: 'low',    tags: ['Design'],     project: 'Design System',        due_date: '2026-05-16', assigned_to: 'TS', position: 3 },
+  {
+    title: 'API authentication layer',
+    description: 'Build a unified authentication layer that validates JWTs, checks scopes, and propagates user context to all downstream services.',
+    status: 'review', priority: 'high', tags: ['Security'],
+    project: 'Internal System', due_date: '2026-05-09', assigned_to: 'AM', position: 0,
+  },
+  {
+    title: 'Session revocation endpoint',
+    description: 'Expose a POST /auth/revoke endpoint that invalidates active refresh tokens. Add to blocklist with a TTL matching the original expiry.',
+    status: 'review', priority: 'high', tags: ['Backend'],
+    project: 'Auth Service Rewrite', due_date: '2026-05-10', assigned_to: 'DM', position: 1,
+  },
+  {
+    title: 'Accessibility audit fixes',
+    description: 'Address WCAG 2.1 AA violations found in the last audit. Focus on keyboard navigation, focus management, and ARIA labelling across all forms.',
+    status: 'review', priority: 'medium', tags: ['UX'],
+    project: 'Customer Portal', due_date: '2026-05-14', assigned_to: 'PR', position: 2,
+  },
+  {
+    title: 'Component token documentation',
+    description: 'Document all design tokens in Storybook with live usage examples. Include token name, value, and which components consume each token.',
+    status: 'review', priority: 'low', tags: ['Design'],
+    project: 'Design System', due_date: '2026-05-16', assigned_to: 'TS', position: 3,
+  },
   // Done
-  { title: 'Login page redesign',             status: 'done',        priority: 'high',   tags: ['UX'],         project: 'Customer Portal',      due_date: '2026-05-02', assigned_to: 'PR', position: 0 },
-  { title: 'Push notification service',       status: 'done',        priority: 'medium', tags: ['Mobile'],     project: 'Mobile App',           due_date: '2026-04-30', assigned_to: 'KL', position: 1 },
-  { title: 'Rate limiter middleware',          status: 'done',        priority: 'high',   tags: ['Backend'],    project: 'Internal System',      due_date: '2026-05-01', assigned_to: 'AM', position: 2 },
-  { title: 'Figma token export script',       status: 'done',        priority: 'low',    tags: ['Design'],     project: 'Design System',        due_date: '2026-04-28', assigned_to: 'TS', position: 3 },
+  {
+    title: 'Login page redesign',
+    description: 'Redesigned the login and forgot-password pages to match the new brand guidelines. Improved error state copy and added OAuth provider buttons.',
+    status: 'done', priority: 'high', tags: ['UX'],
+    project: 'Customer Portal', due_date: '2026-05-02', assigned_to: 'PR', position: 0,
+  },
+  {
+    title: 'Push notification service',
+    description: 'Integrated Firebase Cloud Messaging for iOS and Android push notifications. Supports per-user topic subscriptions and silent background updates.',
+    status: 'done', priority: 'medium', tags: ['Mobile'],
+    project: 'Mobile App', due_date: '2026-04-30', assigned_to: 'KL', position: 1,
+  },
+  {
+    title: 'Rate limiter middleware',
+    description: 'Added sliding-window rate limiting to all public API routes using an in-memory store. Configurable per-route limits with 429 response and Retry-After header.',
+    status: 'done', priority: 'high', tags: ['Backend'],
+    project: 'Internal System', due_date: '2026-05-01', assigned_to: 'AM', position: 2,
+  },
+  {
+    title: 'Figma token export script',
+    description: 'Built a Node.js script that reads Figma Variables via the REST API and exports them as CSS custom properties and a JSON token file for the component library.',
+    status: 'done', priority: 'low', tags: ['Design'],
+    project: 'Design System', due_date: '2026-04-28', assigned_to: 'TS', position: 3,
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -156,7 +246,7 @@ async function seedUsers() {
 
     const { error: profileErr } = await supabase
       .from('profiles')
-      .update({ role: user.role, full_name: user.full_name })
+      .update({ role: user.role, full_name: user.full_name, avatar_url: user.avatar_url })
       .eq('id', userId);
     if (profileErr) fail('seedUsers:profileUpdate', profileErr);
 
@@ -221,6 +311,7 @@ async function seedTasks(userMap, projectMap) {
   const rows = TASKS.map(t => ({
     project_id: projectMap.get(t.project),
     title: t.title,
+    description: t.description,
     status: t.status,
     priority: t.priority,
     tags: t.tags,

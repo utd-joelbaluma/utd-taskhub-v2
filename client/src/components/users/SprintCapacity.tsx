@@ -61,11 +61,12 @@ const SprintCapacity = ({ userId }: SprintCapacityProps) => {
 	}
 
 	const assignedPct = Math.min(
-		Math.round((data.assignedHours / 60 / data.capacityHours) * 100),
+		Math.round((data.assignedHours / data.capacityHours) * 100),
 		100,
 	);
 	const remainingPct = 100 - assignedPct;
-	const barColor = data.isOverbooked ? "red" : "royalblue";
+	const barColor =
+		assignedPct >= 75 ? (data.isOverbooked ? "red" : "orange") : "blue";
 
 	return (
 		<div className="flex flex-col w-full mt-4 gap-1">
@@ -92,7 +93,7 @@ const SprintCapacity = ({ userId }: SprintCapacityProps) => {
 							data.isOverbooked ? "text-danger" : "text-primary"
 						}
 					>
-						{data.assignedHours / 60}
+						{data.assignedHours}
 					</b>
 					<span className="text-muted-foreground">
 						{" "}

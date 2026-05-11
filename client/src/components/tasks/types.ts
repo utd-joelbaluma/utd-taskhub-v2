@@ -46,7 +46,10 @@ export const COLUMN_LABELS: Record<ColumnId, string> = {
 
 export const COLUMN_BADGE: Record<
 	ColumnId,
-	{ variant: "backlog" | "todo" | "in-progress" | "review" | "done"; dot: string }
+	{
+		variant: "backlog" | "todo" | "in-progress" | "review" | "done";
+		dot: string;
+	}
 > = {
 	backlog: { variant: "backlog", dot: "bg-muted" },
 	todo: { variant: "todo", dot: "bg-muted" },
@@ -64,7 +67,10 @@ export const PRIORITY_BORDER: Record<ApiTaskPriority, string> = {
 
 export const STATUS_BADGE: Record<
 	ApiTaskStatus,
-	{ variant: "backlog" | "todo" | "in-progress" | "review" | "done"; label: string }
+	{
+		variant: "backlog" | "todo" | "in-progress" | "review" | "done";
+		label: string;
+	}
 > = {
 	backlog: { variant: "backlog", label: "Backlog" },
 	todo: { variant: "todo", label: "To Do" },
@@ -145,7 +151,14 @@ export function toUiTask(t: ApiTask): UiTask | null {
 }
 
 export function emptyColumns(): Columns {
-	return Object.fromEntries(COLUMN_IDS.map((c) => [c, []])) as Columns;
+	// return Object.fromEntries(COLUMN_IDS.map((c) => [c, []])) as Columns;
+	return {
+		backlog: [],
+		todo: [],
+		"in-progress": [],
+		review: [],
+		done: [],
+	};
 }
 
 export function buildColumns(tasks: UiTask[]): Columns {
