@@ -28,13 +28,19 @@ export async function register(req, res, next) {
 			});
 
 		if (authError) {
-			if (authError.message.toLowerCase().includes("already registered")) {
+			if (
+				authError.message.toLowerCase().includes("already registered")
+			) {
 				return res.status(409).json({
 					success: false,
 					message: "An account with this email already exists.",
 				});
+			} else {
+				return res.status(500).json({
+					success: false,
+					message: authError.message,
+				});
 			}
-			throw authError;
 		}
 
 		// Trigger has already inserted the profile row; update full_name if provided
@@ -226,10 +232,10 @@ export async function completeInvite(req, res, next) {
 			});
 		}
 
-		const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-			req.profile.id,
-			{ password },
-		);
+		const { error: updateError } =
+			await supabaseAdmin.auth.admin.updateUserById(req.profile.id, {
+				password,
+			});
 		if (updateError) throw updateError;
 
 		if (full_name?.trim()) {
@@ -239,7 +245,10 @@ export async function completeInvite(req, res, next) {
 				.eq("id", req.profile.id);
 		}
 
-		res.status(200).json({ success: true, message: "Account setup complete." });
+		res.status(200).json({
+			success: true,
+			message: "Account setup complete.",
+		});
 	} catch (error) {
 		next(error);
 	}

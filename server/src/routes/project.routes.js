@@ -24,7 +24,7 @@ const router = express.Router();
 
 // Project CRUD
 router.get("/", requireAuth, getProjects);
-router.get("/:id", requireAuth, getProjectById);
+router.get("/:id", requireAuth, requireProjectMember, getProjectById);
 router.post("/", requireAuth, requirePermission("projects.create"), createProject);
 router.patch(
 	"/:id",

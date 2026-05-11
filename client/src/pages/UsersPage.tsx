@@ -365,7 +365,7 @@ function InviteDialog({
 							<p className="text-xs text-danger mt-1">{error}</p>
 						)}
 					</div>
-					<div className="hidden">
+					<div className="">
 						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
 							Role
 						</label>

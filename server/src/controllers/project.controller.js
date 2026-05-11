@@ -13,6 +13,18 @@ export async function getProjects(req, res, next) {
 			.select("*, project_members(user_id, role, profiles(id, full_name, avatar_url)), tasks(id, status), sprint:sprints!projects_sprint_id_fkey(id, name, start_date, end_date, status)")
 			.order("created_at", { ascending: false });
 
+		if (req.profile.global_role.key !== "admin") {
+			const { data: memberships, error: memberError } = await req.supabaseAdmin
+				.from("project_members")
+				.select("project_id")
+				.eq("user_id", req.profile.id);
+
+			if (memberError) throw memberError;
+
+			const projectIds = memberships?.map((m) => m.project_id) ?? [];
+			query = query.in("id", projectIds);
+		}
+
 		if (status) query = query.eq("status", status);
 		if (search) query = query.ilike("name", `%${search}%`);
 		if (sprint_id) query = query.eq("sprint_id", sprint_id);
