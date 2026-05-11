@@ -20,19 +20,14 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import {
-	listSprints,
-	type Sprint,
-} from "@/services/sprint.service";
+import { listSprints, type Sprint } from "@/services/sprint.service";
 import {
 	type ApiTaskPriority,
 	type CreateTaskPayload,
 } from "@/services/task.service";
 import { type Project } from "@/services/project.service";
 import { type Profile } from "@/services/profile.service";
-import {
-	ProjectDescriptionEditor,
-} from "@/components/projects/project-description";
+import { ProjectDescriptionEditor } from "@/components/projects/project-description";
 import { projectDescriptionText } from "@/components/projects/project-description-utils";
 import { cn } from "@/lib/utils";
 import MantineSelect from "@/components/ui/mantine-select";
@@ -74,7 +69,10 @@ export function NewTaskDialog({
 	profiles: Profile[];
 }) {
 	const [form, setForm] = useState(EMPTY_TASK_FORM);
-	const [errors, setErrors] = useState<{ title?: string; projectId?: string }>({});
+	const [errors, setErrors] = useState<{
+		title?: string;
+		projectId?: string;
+	}>({});
 	const [sprints, setSprints] = useState<Sprint[]>([]);
 	const [sprintsLoading, setSprintsLoading] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
@@ -85,10 +83,21 @@ export function NewTaskDialog({
 		let active = true;
 		setSprintsLoading(true);
 		listSprints()
-			.then((data) => { if (active) setSprints(data); })
-			.catch(() => { if (active) setSprints([]); })
-			.finally(() => { if (active) setSprintsLoading(false); });
-		return () => { active = false; };
+			.then((data) => {
+				if (!active) return;
+				setSprints(data);
+				const activeSprint = data.find((s) => s.status === "active");
+				if (activeSprint) set("sprintId", activeSprint.id);
+			})
+			.catch(() => {
+				if (active) setSprints([]);
+			})
+			.finally(() => {
+				if (active) setSprintsLoading(false);
+			});
+		return () => {
+			active = false;
+		};
 	}, [open]);
 
 	function set<K extends keyof typeof EMPTY_TASK_FORM>(
@@ -102,13 +111,19 @@ export function NewTaskDialog({
 
 	function addTag() {
 		const tag = form.tagInput.trim();
-		if (!tag || form.tags.includes(tag)) { set("tagInput", ""); return; }
+		if (!tag || form.tags.includes(tag)) {
+			set("tagInput", "");
+			return;
+		}
 		set("tags", [...form.tags, tag]);
 		set("tagInput", "");
 	}
 
 	function removeTag(tag: string) {
-		set("tags", form.tags.filter((t) => t !== tag));
+		set(
+			"tags",
+			form.tags.filter((t) => t !== tag),
+		);
 	}
 
 	function handleProjectChange(projectId: string) {
@@ -130,7 +145,9 @@ export function NewTaskDialog({
 		try {
 			await onCreate(form.projectId, {
 				title: form.title.trim(),
-				description: projectDescriptionText(form.description) ? form.description : undefined,
+				description: projectDescriptionText(form.description)
+					? form.description
+					: undefined,
 				status: columnIdToApiStatus(form.status),
 				priority: form.priority,
 				assigned_to: form.assigneeId || undefined,
@@ -144,7 +161,9 @@ export function NewTaskDialog({
 			setErrors({});
 			onClose();
 		} catch {
-			toast.error("Failed to create task", { description: "Please try again." });
+			toast.error("Failed to create task", {
+				description: "Please try again.",
+			});
 		} finally {
 			setSubmitting(false);
 		}
@@ -165,7 +184,9 @@ export function NewTaskDialog({
 			<DialogContent className="max-w-[520px]">
 				<DialogHeader>
 					<DialogTitle>New Task</DialogTitle>
-					<DialogDescription>Fill in the details to create a new task.</DialogDescription>
+					<DialogDescription>
+						Fill in the details to create a new task.
+					</DialogDescription>
 				</DialogHeader>
 
 				<div className="space-y-5">
@@ -173,20 +194,32 @@ export function NewTaskDialog({
 					<div className="grid grid-cols-2 gap-4">
 						<div>
 							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
-								Select Project <span className="text-danger">*</span>
+								Select Project{" "}
+								<span className="text-danger">*</span>
 							</label>
-							<Select value={form.projectId} onValueChange={handleProjectChange}>
-								<SelectTrigger className={errors.projectId ? "border-danger" : ""}>
+							<Select
+								value={form.projectId}
+								onValueChange={handleProjectChange}
+							>
+								<SelectTrigger
+									className={
+										errors.projectId ? "border-danger" : ""
+									}
+								>
 									<SelectValue placeholder="Select project" />
 								</SelectTrigger>
 								<SelectContent>
 									{projects.map((p) => (
-										<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+										<SelectItem key={p.id} value={p.id}>
+											{p.name}
+										</SelectItem>
 									))}
 								</SelectContent>
 							</Select>
 							{errors.projectId && (
-								<p className="text-xs text-danger mt-1">{errors.projectId}</p>
+								<p className="text-xs text-danger mt-1">
+									{errors.projectId}
+								</p>
 							)}
 						</div>
 
@@ -205,16 +238,32 @@ export function NewTaskDialog({
 								)}
 								<Select
 									value={form.sprintId || NO_SPRINT_VALUE}
-									onValueChange={(v) => set("sprintId", v === NO_SPRINT_VALUE ? "" : v)}
+									onValueChange={(v) =>
+										set(
+											"sprintId",
+											v === NO_SPRINT_VALUE ? "" : v,
+										)
+									}
 									disabled={sprintsLoading}
 								>
 									<SelectTrigger>
-										<SelectValue placeholder={sprintsLoading ? "Loading..." : "Select sprint"} />
+										<SelectValue
+											placeholder={
+												sprintsLoading
+													? "Loading..."
+													: "Select sprint"
+											}
+										/>
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value={NO_SPRINT_VALUE}>No sprint</SelectItem>
+										<SelectItem value={NO_SPRINT_VALUE}>
+											No sprint
+										</SelectItem>
 										{sprints.map((sprint) => (
-											<SelectItem key={sprint.id} value={sprint.id}>
+											<SelectItem
+												key={sprint.id}
+												value={sprint.id}
+											>
 												{sprint.name}
 											</SelectItem>
 										))}
@@ -233,10 +282,16 @@ export function NewTaskDialog({
 							placeholder="e.g. Refactor authentication middleware"
 							value={form.title}
 							onChange={(e) => set("title", e.target.value)}
-							className={errors.title ? "border-danger focus:ring-danger" : ""}
+							className={
+								errors.title
+									? "border-danger focus:ring-danger"
+									: ""
+							}
 						/>
 						{errors.title && (
-							<p className="text-xs text-danger mt-1">{errors.title}</p>
+							<p className="text-xs text-danger mt-1">
+								{errors.title}
+							</p>
 						)}
 					</div>
 
@@ -260,13 +315,21 @@ export function NewTaskDialog({
 							</label>
 							<Select
 								value={form.priority}
-								onValueChange={(v) => set("priority", v as ApiTaskPriority)}
+								onValueChange={(v) =>
+									set("priority", v as ApiTaskPriority)
+								}
 							>
-								<SelectTrigger><SelectValue /></SelectTrigger>
+								<SelectTrigger>
+									<SelectValue />
+								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="urgent">Urgent</SelectItem>
+									<SelectItem value="urgent">
+										Urgent
+									</SelectItem>
 									<SelectItem value="high">High</SelectItem>
-									<SelectItem value="medium">Medium</SelectItem>
+									<SelectItem value="medium">
+										Medium
+									</SelectItem>
 									<SelectItem value="low">Low</SelectItem>
 								</SelectContent>
 							</Select>
@@ -278,12 +341,18 @@ export function NewTaskDialog({
 							</label>
 							<Select
 								value={form.status}
-								onValueChange={(v) => set("status", v as ColumnId)}
+								onValueChange={(v) =>
+									set("status", v as ColumnId)
+								}
 							>
-								<SelectTrigger><SelectValue /></SelectTrigger>
+								<SelectTrigger>
+									<SelectValue />
+								</SelectTrigger>
 								<SelectContent>
 									<SelectItem value="todo">To Do</SelectItem>
-									<SelectItem value="in-progress">In Progress</SelectItem>
+									<SelectItem value="in-progress">
+										In Progress
+									</SelectItem>
 									<SelectItem value="review">QA</SelectItem>
 									<SelectItem value="done">Done</SelectItem>
 								</SelectContent>
@@ -292,7 +361,10 @@ export function NewTaskDialog({
 					</div>
 
 					{/* Estimated Time */}
-					<EstimatedTimeField value={estimatedTime} onChange={(v) => setEstimatedTime(v)} />
+					<EstimatedTimeField
+						value={estimatedTime}
+						onChange={(v) => setEstimatedTime(v)}
+					/>
 
 					{/* Due Date */}
 					<div>
@@ -311,16 +383,29 @@ export function NewTaskDialog({
 						<label className="text-sm font-medium text-muted-foreground mb-2 block">
 							Assignee
 						</label>
-						<div className="flex flex-wrap gap-2">
+						<div className="flex flex-col gap-2">
 							<MantineSelect
-								label="Select User"
 								value={form.assigneeId}
-								onChange={(value: string | null) => set("assigneeId", value ?? "")}
+								onChange={(value: string | null) =>
+									set("assigneeId", value ?? "")
+								}
 								data={profiles.map((p) => ({
 									value: p.id,
-									label: p.full_name || p.email,
+									label: p.full_name + " email:" + p.email,
 									description: p.role,
-									image: p.avatar_url || `https://i.pravatar.cc/100?u=${p.email}`,
+									image: () => {
+										return (
+											<Avatar className="h-5 w-5 shrink-0">
+												<AvatarFallback
+													className={`text-[9px] text-white `}
+												>
+													{getInitials(
+														p.full_name ?? p.email,
+													)}
+												</AvatarFallback>
+											</Avatar>
+										);
+									},
 								}))}
 							/>
 						</div>
@@ -330,7 +415,12 @@ export function NewTaskDialog({
 									key={profile.id}
 									type="button"
 									onClick={() =>
-										set("assigneeId", form.assigneeId === profile.id ? "" : profile.id)
+										set(
+											"assigneeId",
+											form.assigneeId === profile.id
+												? ""
+												: profile.id,
+										)
 									}
 									className={cn(
 										"flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors",
@@ -343,7 +433,10 @@ export function NewTaskDialog({
 										<AvatarFallback
 											className={`text-[9px] text-white ${AVATAR_COLORS[idx % AVATAR_COLORS.length]}`}
 										>
-											{getInitials(profile.full_name ?? profile.email)}
+											{getInitials(
+												profile.full_name ??
+													profile.email,
+											)}
 										</AvatarFallback>
 									</Avatar>
 									{profile.full_name ?? profile.email}
@@ -354,7 +447,8 @@ export function NewTaskDialog({
 							<p className="text-xs text-muted mt-2">
 								Assigned to{" "}
 								<span className="font-medium text-foreground">
-									{selectedAssignee.full_name ?? selectedAssignee.email}
+									{selectedAssignee.full_name ??
+										selectedAssignee.email}
 								</span>
 							</p>
 						)}
@@ -369,11 +463,24 @@ export function NewTaskDialog({
 							<Input
 								placeholder="Add tag..."
 								value={form.tagInput}
-								onChange={(e) => set("tagInput", e.target.value)}
-								onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
+								onChange={(e) =>
+									set("tagInput", e.target.value)
+								}
+								onKeyDown={(e) => {
+									if (e.key === "Enter") {
+										e.preventDefault();
+										addTag();
+									}
+								}}
 								className="flex-1"
 							/>
-							<Button type="button" variant="outline" size="sm" onClick={addTag} className="shrink-0">
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={addTag}
+								className="shrink-0"
+							>
 								Add
 							</Button>
 						</div>
@@ -401,10 +508,14 @@ export function NewTaskDialog({
 
 				<DialogFooter>
 					<DialogClose asChild>
-						<Button variant="outline" disabled={submitting}>Cancel</Button>
+						<Button variant="outline" disabled={submitting}>
+							Cancel
+						</Button>
 					</DialogClose>
 					<Button onClick={handleSubmit} disabled={submitting}>
-						{submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+						{submitting && (
+							<Loader2 className="h-4 w-4 animate-spin mr-2" />
+						)}
 						Create Task
 					</Button>
 				</DialogFooter>

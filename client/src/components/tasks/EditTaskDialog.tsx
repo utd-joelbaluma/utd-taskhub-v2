@@ -25,6 +25,7 @@ import {
 	type UpdateTaskPayload,
 } from "@/services/task.service";
 import { type Profile } from "@/services/profile.service";
+import { listSprints, type Sprint } from "@/services/sprint.service";
 import {
 	ProjectDescriptionEditor,
 } from "@/components/projects/project-description";
@@ -39,10 +40,13 @@ import {
 	getInitials,
 } from "./types";
 
+const NO_SPRINT_VALUE = "__no_sprint__";
+
 const EMPTY_EDIT_FORM = {
 	title: "",
 	description: "",
 	assigneeId: "",
+	sprintId: "",
 	status: "todo" as ColumnId,
 	priority: "medium" as ApiTaskPriority,
 	dueDate: "",
@@ -55,6 +59,7 @@ function taskToEditForm(task: UiTask): typeof EMPTY_EDIT_FORM {
 		title: task.title,
 		description: task.description ?? "",
 		assigneeId: task.assigned_to?.id ?? "",
+		sprintId: task.sprint?.id ?? "",
 		status: task.columnId,
 		priority: task.priority,
 		dueDate: task.due_date ? task.due_date.slice(0, 10) : "",
@@ -78,6 +83,8 @@ export function EditTaskDialog({
 	const [errors, setErrors] = useState<{ title?: string }>({});
 	const [submitting, setSubmitting] = useState(false);
 	const [estimatedTime, setEstimatedTime] = useState(0);
+	const [sprints, setSprints] = useState<Sprint[]>([]);
+	const [sprintsLoading, setSprintsLoading] = useState(false);
 
 	useEffect(() => {
 		if (task) {
@@ -88,6 +95,24 @@ export function EditTaskDialog({
 			setEstimatedTime(0);
 		}
 		setErrors({});
+	}, [task]);
+
+	useEffect(() => {
+		if (!task) return;
+		let active = true;
+		setSprintsLoading(true);
+		listSprints()
+			.then((data) => {
+				if (!active) return;
+				setSprints(data);
+				if (!task.sprint) {
+					const activeSprint = data.find((s) => s.status === "active");
+					if (activeSprint) setForm((prev) => ({ ...prev, sprintId: activeSprint.id }));
+				}
+			})
+			.catch(() => { if (active) setSprints([]); })
+			.finally(() => { if (active) setSprintsLoading(false); });
+		return () => { active = false; };
 	}, [task]);
 
 	function set<K extends keyof typeof EMPTY_EDIT_FORM>(
@@ -127,6 +152,7 @@ export function EditTaskDialog({
 				priority: form.priority,
 				assigned_to: form.assigneeId || undefined,
 				due_date: form.dueDate || undefined,
+				sprint_id: form.sprintId || undefined,
 				tags: form.tags,
 				estimated_time: estimatedTime,
 			});
@@ -166,6 +192,44 @@ export function EditTaskDialog({
 						{errors.title && (
 							<p className="text-xs text-danger mt-1">{errors.title}</p>
 						)}
+					</div>
+
+					{/* Sprint */}
+					<div>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+							Sprint
+						</label>
+						<div className="relative">
+							{sprintsLoading && (
+								<>
+									<div className="h-full w-full absolute rounded-2xl bg-white/20 backdrop-blur-xs top-0 left-0 pointer-events-none" />
+									<div className="bg-white/50 backdrop-blur-xs h-full w-full absolute rounded-2xl text-slate-600 flex items-center px-2 text-xs justify-center z-10 border border-border pointer-events-none">
+										loading...
+									</div>
+								</>
+							)}
+							<Select
+								value={form.sprintId || NO_SPRINT_VALUE}
+								onValueChange={(v) =>
+									set("sprintId", v === NO_SPRINT_VALUE ? "" : v)
+								}
+								disabled={sprintsLoading}
+							>
+								<SelectTrigger>
+									<SelectValue
+										placeholder={sprintsLoading ? "Loading..." : "Select sprint"}
+									/>
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value={NO_SPRINT_VALUE}>No sprint</SelectItem>
+									{sprints.map((sprint) => (
+										<SelectItem key={sprint.id} value={sprint.id}>
+											{sprint.name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
 					</div>
 
 					{/* Description */}

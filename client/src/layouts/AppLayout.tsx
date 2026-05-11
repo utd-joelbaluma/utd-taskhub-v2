@@ -20,6 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { usePermission } from "@/hooks/usePermission";
+import SprintCapacity from "@/components/users/SprintCapacity";
 
 const navLinks = [
 	{ to: "/", label: "Dashboard", end: true, feature: null },
@@ -246,13 +247,23 @@ export default function AppLayout() {
 								</button>
 							</DropdownMenuTrigger>
 							<DropdownMenuContent align="end" className="w-48">
-								<DropdownMenuLabel className="px-3 py-2">
-									<p className="text-sm font-medium text-foreground">
+								<DropdownMenuLabel className="px-3 py-2 flex flex-col items-center justify-center">
+									<div className="my-2">
+										<Avatar className="h-10 w-10">
+											<AvatarFallback className="text-[10px]">
+												{initials}
+											</AvatarFallback>
+										</Avatar>
+									</div>
+									<p className="text-sm font-bold	text-primary">
 										{displayName}
 									</p>
-									<p className="text-xs text-muted-foreground truncate">
-										{user?.email ?? "alex@taskhub.io"}
-									</p>
+									<div>
+										<p className="text-xs font-light text-muted-foreground break-after-all break-all text-center">
+											{user?.email ?? "alex@taskhub.io"}
+										</p>
+									</div>
+									<SprintCapacity userId={user?.id} />
 								</DropdownMenuLabel>
 								<DropdownMenuSeparator />
 								<DropdownMenuItem

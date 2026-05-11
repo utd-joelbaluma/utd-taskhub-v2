@@ -71,15 +71,6 @@ export default function MantineSelect({
 
 				return (
 					<Group gap="sm">
-						{typedOption.image && (
-							<Image
-								src={typedOption.image}
-								w={36}
-								h={36}
-								radius="xl"
-							/>
-						)}
-
 						<div>
 							<Text size="sm">{typedOption.label}</Text>
 
