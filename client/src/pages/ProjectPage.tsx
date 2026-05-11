@@ -111,7 +111,7 @@ const AVATAR_COLORS = [
 	"bg-danger",
 ];
 
-const TABS = ["Overview", "Tasks", "Activity"] as const;
+const TABS = ["Overview", "Tasks", "Teams", "Activity"] as const;
 type Tab = (typeof TABS)[number];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -1022,6 +1022,117 @@ function NewTaskDialog({
 	);
 }
 
+// ── Add Member Dialog ─────────────────────────────────────────────────────────
+
+function AddMemberDialog({
+	open,
+	onClose,
+	projectId,
+	createdBy,
+	currentMemberIds,
+	profiles,
+	onAdded,
+}: {
+	open: boolean;
+	onClose: () => void;
+	projectId: string;
+	createdBy: string;
+	currentMemberIds: string[];
+	profiles: Profile[];
+	onAdded: (userId: string) => void;
+}) {
+	const [selectedId, setSelectedId] = useState("");
+	const [submitting, setSubmitting] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+
+	const available = profiles.filter((p) => !currentMemberIds.includes(p.id));
+
+	async function handleSubmit() {
+		if (!selectedId) return;
+		setSubmitting(true);
+		setError(null);
+		try {
+			await addMember(projectId, selectedId);
+			onAdded(selectedId);
+			setSelectedId("");
+			onClose();
+			toast.success("Member added");
+		} catch {
+			setError("Failed to add member. Please try again.");
+		} finally {
+			setSubmitting(false);
+		}
+	}
+
+	function handleOpenChange(isOpen: boolean) {
+		if (!isOpen) { setSelectedId(""); setError(null); }
+		if (!isOpen) onClose();
+	}
+
+	return (
+		<Dialog open={open} onOpenChange={handleOpenChange}>
+			<DialogContent className="max-w-[420px]">
+				<DialogHeader>
+					<DialogTitle>Add Team Member</DialogTitle>
+					<DialogDescription>Select a user to add to this project.</DialogDescription>
+				</DialogHeader>
+
+				<div className="space-y-4">
+					{available.length === 0 ? (
+						<p className="text-sm text-muted text-center py-4">All users are already members.</p>
+					) : (
+						<div className="space-y-2 max-h-64 overflow-y-auto">
+							{available.map((p, i) => (
+								<label
+									key={p.id}
+									className={cn(
+										"flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors",
+										selectedId === p.id
+											? "border-primary bg-primary-subtle"
+											: "border-border hover:bg-muted-subtle",
+									)}
+								>
+									<input
+										type="radio"
+										name="member"
+										value={p.id}
+										checked={selectedId === p.id}
+										onChange={() => setSelectedId(p.id)}
+										className="sr-only"
+									/>
+									<Avatar className="h-8 w-8 shrink-0">
+										<AvatarFallback className={`text-[10px] text-white ${avatarColor(i)}`}>
+											{getInitials(p.full_name)}
+										</AvatarFallback>
+									</Avatar>
+									<div className="flex-1 min-w-0">
+										<p className="text-sm font-medium text-foreground truncate">
+											{p.full_name ?? p.email}
+										</p>
+										<p className="text-xs text-muted truncate">{p.email}</p>
+									</div>
+								</label>
+							))}
+						</div>
+					)}
+
+					{error && <p className="text-xs text-danger">{error}</p>}
+				</div>
+
+				<DialogFooter>
+					<DialogClose asChild>
+						<Button variant="outline" disabled={submitting}>Cancel</Button>
+					</DialogClose>
+					<Button onClick={handleSubmit} disabled={submitting || !selectedId || available.length === 0}>
+						{submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+						Add Member
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function ProjectPage() {
@@ -1039,6 +1150,7 @@ export default function ProjectPage() {
 	const [error, setError] = useState(false);
 	const [editOpen, setEditOpen] = useState(false);
 	const [newTaskOpen, setNewTaskOpen] = useState(false);
+	const [addUserOpen, setAddUserOpen] = useState(false);
 	const [assigningSprintId, setAssigningSprintId] = useState(false);
 
 	useEffect(() => {
@@ -1466,6 +1578,104 @@ export default function ProjectPage() {
 				</Card>
 			)}
 
+			{/* ── TEAMS TAB ────────────────────────────────────────── */}
+			{activeTab === "Teams" && (
+				<div className="space-y-4">
+					<div className="flex items-center justify-between">
+						<p className="text-sm text-muted">{members.length} member{members.length !== 1 ? "s" : ""}</p>
+						<Button className="flex items-center gap-2" onClick={() => setAddUserOpen(true)}>
+							<Plus className="h-4 w-4" />
+							Add Member
+						</Button>
+					</div>
+
+					<Card className="p-0 overflow-hidden">
+						<table className="w-full text-sm">
+							<thead>
+								<tr className="border-b border-border bg-muted-subtle/40">
+									{["Member", "Email", "Role", "Joined"].map((h) => (
+										<th key={h} className="px-5 py-3 text-xs font-medium text-muted text-left">{h}</th>
+									))}
+									<th className="px-5 py-3" />
+								</tr>
+							</thead>
+							<tbody>
+								{members.length === 0 ? (
+									<tr>
+										<td colSpan={5} className="px-5 py-10 text-center text-sm text-muted">
+											No members yet.
+										</td>
+									</tr>
+								) : (
+									members.map((m, i) => {
+										const isOwner = m.user_id === project.created_by;
+										return (
+											<tr key={m.user_id} className="border-b border-border last:border-0 hover:bg-muted-subtle transition-colors">
+												<td className="px-5 py-4">
+													<div className="flex items-center gap-3">
+														<Avatar className="h-8 w-8 shrink-0">
+															<AvatarFallback className={`text-[10px] text-white ${avatarColor(i)}`}>
+																{getInitials(m.profiles?.full_name ?? null)}
+															</AvatarFallback>
+														</Avatar>
+														<div>
+															<p className="text-sm font-medium text-foreground">
+																{m.profiles?.full_name ?? "Unknown"}
+															</p>
+															{isOwner && (
+																<span className="text-[10px] text-muted">Owner</span>
+															)}
+														</div>
+													</div>
+												</td>
+												<td className="px-5 py-4 text-sm text-muted">
+													{m.profiles?.email ?? "—"}
+												</td>
+												<td className="px-5 py-4">
+													<span className="capitalize text-sm text-foreground">{m.role}</span>
+												</td>
+												<td className="px-5 py-4 text-sm text-muted whitespace-nowrap">
+													{formatDate(m.joined_at)}
+												</td>
+												<td className="px-5 py-4 text-right">
+													{!isOwner && (
+														<Button
+															variant="outline"
+															size="sm"
+															className="text-danger border-danger/30 hover:bg-danger/5"
+															onClick={async () => {
+																try {
+																	await removeMember(project.id, m.user_id);
+																	setProject((prev) =>
+																		prev
+																			? {
+																					...prev,
+																					project_members: prev.project_members.filter(
+																						(pm) => pm.user_id !== m.user_id,
+																					),
+																				}
+																			: prev,
+																	);
+																	toast.success("Member removed");
+																} catch {
+																	toast.error("Failed to remove member");
+																}
+															}}
+														>
+															Remove
+														</Button>
+													)}
+												</td>
+											</tr>
+										);
+									})
+								)}
+							</tbody>
+						</table>
+					</Card>
+				</div>
+			)}
+
 			{/* ── ACTIVITY TAB ─────────────────────────────────────── */}
 			{activeTab === "Activity" && (
 				<Card className="p-5 max-w-2xl">
@@ -1476,6 +1686,18 @@ export default function ProjectPage() {
 			)}
 
 			{/* ── Dialogs ──────────────────────────────────────────── */}
+			<AddMemberDialog
+				open={addUserOpen}
+				onClose={() => setAddUserOpen(false)}
+				projectId={project.id}
+				createdBy={project.created_by}
+				currentMemberIds={members.map((m) => m.user_id)}
+				profiles={profiles}
+				onAdded={async () => {
+					const refreshed = await getProject(project.id);
+					setProject(refreshed);
+				}}
+			/>
 			<EditProjectDialog
 				open={editOpen}
 				onClose={() => setEditOpen(false)}

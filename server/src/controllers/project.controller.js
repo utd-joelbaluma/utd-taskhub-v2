@@ -11,7 +11,7 @@ export async function getProjects(req, res, next) {
 		let query = supabase
 			.from("projects")
 			.select(
-				"*, project_members(user_id, role, profiles(id, full_name, avatar_url)), tasks(id, status), sprint:sprints!projects_sprint_id_fkey(id, name, start_date, end_date, status)",
+				"*, project_members(user_id, role, joined_at, profiles(id, full_name, email, avatar_url)), tasks(id, status), sprint:sprints!projects_sprint_id_fkey(id, name, start_date, end_date, status)",
 			)
 			.order("created_at", { ascending: false });
 
@@ -53,7 +53,7 @@ export async function getProjectById(req, res, next) {
 		const { data, error } = await supabase
 			.from("projects")
 			.select(
-				"*, project_members(user_id, role, profiles(id, full_name, avatar_url)), sprint:sprints!projects_sprint_id_fkey(id, name, start_date, end_date, status)",
+				"*, project_members(user_id, role, joined_at, profiles(id, full_name, email, avatar_url)), sprint:sprints!projects_sprint_id_fkey(id, name, start_date, end_date, status)",
 			)
 			.eq("id", id)
 			.maybeSingle();

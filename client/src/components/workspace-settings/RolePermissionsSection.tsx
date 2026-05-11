@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { SectionBlock } from "./SectionBlock";
+import { PermissionGate } from "@/components/PermissionGate";
 import {
 	PERMISSION_GROUPS,
 	ROLE_COLUMNS,
@@ -221,12 +222,14 @@ export function RolePermissionsSection() {
 			</div>
 
 			<div className="mt-5 flex justify-end">
-				<Button
-					size="sm"
-					onClick={() => toast.success("Permissions saved.")}
-				>
-					Save Changes
-				</Button>
+				<PermissionGate feature="Manage role permissions">
+					<Button
+						size="sm"
+						onClick={() => toast.success("Permissions saved.")}
+					>
+						Save Changes
+					</Button>
+				</PermissionGate>
 			</div>
 		</SectionBlock>
 	);

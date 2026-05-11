@@ -84,6 +84,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import MantineSelect from "@/components/ui/mantine-select";
+import { PermissionGate } from "@/components/PermissionGate";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -2145,13 +2146,15 @@ export default function TasksPage() {
 						tasks across all projects
 					</p>
 				</div>
-				<Button
-					className="flex items-center gap-2"
-					onClick={() => setDialogOpen(true)}
-				>
-					<Plus className="h-4 w-4" />
-					New Task
-				</Button>
+				<PermissionGate feature="Create & edit tasks">
+					<Button
+						className="flex items-center gap-2"
+						onClick={() => setDialogOpen(true)}
+					>
+						<Plus className="h-4 w-4" />
+						New Task
+					</Button>
+				</PermissionGate>
 			</div>
 
 			{/* Filter bar */}

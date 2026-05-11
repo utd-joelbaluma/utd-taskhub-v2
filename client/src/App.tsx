@@ -3,6 +3,7 @@ import { Toaster } from 'sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import AppLayout from '@/layouts/AppLayout'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import RoleGuard from '@/components/RoleGuard'
 import DesignSystemPage from '@/pages/DesignSystemPage'
 import DashboardPage from '@/pages/DashboardPage'
 import ProjectsPage from '@/pages/ProjectsPage'
@@ -40,12 +41,18 @@ function App() {
             <Route path="/projects/:id" element={<ProjectPage />} />
             <Route path="/tasks" element={<TasksPage />} />
             <Route path="/tickets" element={<TicketsPage />} />
-            <Route path="/sprints" element={<SprintsPage />} />
+            <Route element={<RoleGuard feature="View sprints" />}>
+              <Route path="/sprints" element={<SprintsPage />} />
+            </Route>
             <Route path="/kanban" element={<div className="p-6 text-[#191b23]">Kanban Board (coming soon)</div>} />
             <Route path="/analytics" element={<div className="p-6 text-[#191b23]">Analytics (coming soon)</div>} />
-            <Route path="/users" element={<UsersPage />} />
+            <Route element={<RoleGuard feature="View users" />}>
+              <Route path="/users" element={<UsersPage />} />
+            </Route>
             <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+            <Route element={<RoleGuard feature="Workspace settings" />}>
+              <Route path="/settings" element={<SettingsPage />} />
+            </Route>
             <Route path="/design-system" element={<DesignSystemPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>

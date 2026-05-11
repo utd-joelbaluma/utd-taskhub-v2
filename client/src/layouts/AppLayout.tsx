@@ -19,15 +19,16 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
+import { usePermission } from "@/hooks/usePermission";
 
 const navLinks = [
-	{ to: "/", label: "Dashboard", end: true },
-	{ to: "/projects", label: "Projects" },
-	{ to: "/tasks", label: "Tasks" },
-	{ to: "/tickets", label: "Tickets" },
-	{ to: "/sprints", label: "Sprints" },
-	{ to: "/users", label: "Users" },
-	{ to: "/settings", label: "Settings" },
+	{ to: "/", label: "Dashboard", end: true, feature: null },
+	{ to: "/projects", label: "Projects", feature: null },
+	{ to: "/tasks", label: "Tasks", feature: null },
+	{ to: "/tickets", label: "Tickets", feature: null },
+	{ to: "/sprints", label: "Sprints", feature: "View sprints" },
+	{ to: "/users", label: "Users", feature: "View users" },
+	{ to: "/settings", label: "Settings", feature: "Workspace settings" },
 ];
 
 const SAMPLE_NOTIFICATIONS = [
@@ -72,8 +73,11 @@ const unreadCount = SAMPLE_NOTIFICATIONS.filter((n) => n.unread).length;
 
 export default function AppLayout() {
 	const { user, logout } = useAuth();
+	const { can } = usePermission();
 	const navigate = useNavigate();
 	const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+	const visibleNavLinks = navLinks.filter((l) => !l.feature || can(l.feature));
 	const [notificationsDialogOpen, setNotificationsDialogOpen] =
 		useState(false);
 
@@ -121,7 +125,7 @@ export default function AppLayout() {
 					</Link>
 
 					<nav className="hidden items-center gap-1 md:flex">
-						{navLinks.map((link) => (
+						{visibleNavLinks.map((link) => (
 							<NavLink
 								key={link.to}
 								to={link.to}
@@ -281,7 +285,7 @@ export default function AppLayout() {
 						aria-label="Mobile navigation"
 					>
 						<div className="mx-auto flex max-w-[1280px] flex-col gap-1">
-							{navLinks.map((link) => (
+							{visibleNavLinks.map((link) => (
 								<NavLink
 									key={link.to}
 									to={link.to}

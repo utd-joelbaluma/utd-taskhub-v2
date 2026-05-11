@@ -50,7 +50,7 @@ import {
 } from "@/components/projects/project-icon-options";
 import { ProjectIcon } from "@/components/projects/project-icon-picker";
 import { toast } from "sonner";
-import { useAuth } from "@/context/AuthContext";
+import { usePermission } from "@/hooks/usePermission";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -648,10 +648,8 @@ function NewProjectDialog({
 
 export default function ProjectsPage() {
 	const navigate = useNavigate();
-	const { user } = useAuth();
-	const canCreateProject =
-		user?.global_role?.key === "admin" ||
-		user?.global_role?.key === "manager";
+	const { can } = usePermission();
+	const canCreateProject = can("Create projects");
 	const [projects, setProjects] = useState<Project[]>([]);
 	const [profiles, setProfiles] = useState<Profile[]>([]);
 	const [sprints, setSprints] = useState<Sprint[]>([]);

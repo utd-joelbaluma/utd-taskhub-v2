@@ -40,6 +40,7 @@ import { listRoles, type Role } from "@/services/role.service";
 import { toast } from "sonner";
 import { SectionBlock } from "./SectionBlock";
 import { getPermissionsForRole, ROLE_COLUMNS, type RoleKey } from "./rolePermissionsData";
+import { PermissionGate } from "@/components/PermissionGate";
 
 function getInitials(name: string | null): string {
 	if (!name) return "?";
@@ -255,10 +256,12 @@ export function MembersSection() {
 			>
 				<div className="flex items-center justify-between mb-4">
 					<div />
-					<Button size="sm">
-						<Plus className="h-3.5 w-3.5" />
-						Invite Member
-					</Button>
+					<PermissionGate feature="Invite users">
+						<Button size="sm">
+							<Plus className="h-3.5 w-3.5" />
+							Invite Member
+						</Button>
+					</PermissionGate>
 				</div>
 				<div className="rounded-lg border border-border overflow-hidden">
 					<table className="w-full text-sm">
@@ -346,13 +349,15 @@ export function MembersSection() {
 												</button>
 											</DropdownMenuTrigger>
 											<DropdownMenuContent align="end">
-												<DropdownMenuItem
-													className="flex items-center gap-2"
-													onSelect={() => setRoleDialogUser(m)}
-												>
-													<ShieldCheck className="h-3.5 w-3.5" />
-													Manage Roles
-												</DropdownMenuItem>
+												<PermissionGate feature="Manage role permissions">
+													<DropdownMenuItem
+														className="flex items-center gap-2"
+														onSelect={() => setRoleDialogUser(m)}
+													>
+														<ShieldCheck className="h-3.5 w-3.5" />
+														Manage Roles
+													</DropdownMenuItem>
+												</PermissionGate>
 											</DropdownMenuContent>
 										</DropdownMenu>
 									</td>

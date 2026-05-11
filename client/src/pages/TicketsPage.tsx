@@ -1,5 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Loader2, Ticket as TicketIcon, MoreHorizontal, ArrowRightCircle, Pencil, Trash2 } from "lucide-react";
+import {
+	Plus,
+	Loader2,
+	Ticket as TicketIcon,
+	MoreHorizontal,
+	ArrowRightCircle,
+	Pencil,
+	Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +54,9 @@ import {
 } from "@/services/ticket.service";
 import { ProjectDescriptionEditor } from "@/components/projects/project-description";
 import { projectDescriptionText } from "@/components/projects/project-description-utils";
+import { PermissionGate } from "@/components/PermissionGate";
+import { useAuth } from "@/context/AuthContext";
+import { usePermission } from "@/hooks/usePermission";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -127,10 +138,29 @@ function statusLabel(s: TicketStatus): string {
 	return map[s];
 }
 
-const TICKET_TYPES: TicketType[] = ["bug", "feature_request", "issue", "support", "other"];
-const TICKET_STATUSES: TicketStatus[] = ["open", "in_review", "resolved", "closed", "cancelled"];
+const TICKET_TYPES: TicketType[] = [
+	"bug",
+	"feature_request",
+	"issue",
+	"support",
+	"other",
+];
+const TICKET_STATUSES: TicketStatus[] = [
+	"open",
+	"in_review",
+	"resolved",
+	"closed",
+	"cancelled",
+];
 const TICKET_PRIORITIES: TicketPriority[] = ["low", "medium", "high", "urgent"];
-const TASK_STATUSES = ["backlog", "todo", "in_progress", "review", "done", "cancelled"] as const;
+const TASK_STATUSES = [
+	"backlog",
+	"todo",
+	"in_progress",
+	"review",
+	"done",
+	"cancelled",
+] as const;
 
 // ── TicketDialog (create / edit) ──────────────────────────────────────────────
 
@@ -143,7 +173,14 @@ interface TicketDialogProps {
 	onSaved: () => void;
 }
 
-function TicketDialog({ open, mode, ticket, projectId, onClose, onSaved }: TicketDialogProps) {
+function TicketDialog({
+	open,
+	mode,
+	ticket,
+	projectId,
+	onClose,
+	onSaved,
+}: TicketDialogProps) {
 	const [title, setTitle] = useState("");
 	const [description, setDescription] = useState("");
 	const [type, setType] = useState<TicketType>("bug");
@@ -188,7 +225,8 @@ function TicketDialog({ open, mode, ticket, projectId, onClose, onSaved }: Ticke
 			if (mode === "create") {
 				const payload: CreateTicketPayload = {
 					title: title.trim(),
-					description: projectDescriptionText(description) || undefined,
+					description:
+						projectDescriptionText(description) || undefined,
 					type,
 					priority,
 					status,
@@ -200,7 +238,8 @@ function TicketDialog({ open, mode, ticket, projectId, onClose, onSaved }: Ticke
 			} else if (ticket) {
 				const payload: UpdateTicketPayload = {
 					title: title.trim(),
-					description: projectDescriptionText(description) || undefined,
+					description:
+						projectDescriptionText(description) || undefined,
 					type,
 					priority,
 					status,
@@ -213,7 +252,8 @@ function TicketDialog({ open, mode, ticket, projectId, onClose, onSaved }: Ticke
 			onSaved();
 			onClose();
 		} catch (err: unknown) {
-			const msg = err instanceof Error ? err.message : "Something went wrong.";
+			const msg =
+				err instanceof Error ? err.message : "Something went wrong.";
 			toast.error(msg);
 		} finally {
 			setSubmitting(false);
@@ -221,12 +261,21 @@ function TicketDialog({ open, mode, ticket, projectId, onClose, onSaved }: Ticke
 	}
 
 	return (
-		<Dialog open={open} onOpenChange={(val) => { if (!val) onClose(); }}>
+		<Dialog
+			open={open}
+			onOpenChange={(val) => {
+				if (!val) onClose();
+			}}
+		>
 			<DialogContent className="max-w-[520px]">
 				<DialogHeader>
-					<DialogTitle>{mode === "create" ? "New Ticket" : "Edit Ticket"}</DialogTitle>
+					<DialogTitle>
+						{mode === "create" ? "New Ticket" : "Edit Ticket"}
+					</DialogTitle>
 					<DialogDescription>
-						{mode === "create" ? "Create a new ticket for this project." : "Update ticket details."}
+						{mode === "create"
+							? "Create a new ticket for this project."
+							: "Update ticket details."}
 					</DialogDescription>
 				</DialogHeader>
 
@@ -238,10 +287,21 @@ function TicketDialog({ open, mode, ticket, projectId, onClose, onSaved }: Ticke
 						<Input
 							placeholder="Describe the issue..."
 							value={title}
-							onChange={(e) => { setTitle(e.target.value); setTitleError(""); }}
-							className={titleError ? "border-danger focus:ring-danger" : ""}
+							onChange={(e) => {
+								setTitle(e.target.value);
+								setTitleError("");
+							}}
+							className={
+								titleError
+									? "border-danger focus:ring-danger"
+									: ""
+							}
 						/>
-						{titleError && <p className="text-xs text-danger mt-1">{titleError}</p>}
+						{titleError && (
+							<p className="text-xs text-danger mt-1">
+								{titleError}
+							</p>
+						)}
 					</div>
 
 					<div>
@@ -257,24 +317,48 @@ function TicketDialog({ open, mode, ticket, projectId, onClose, onSaved }: Ticke
 
 					<div className="grid grid-cols-2 gap-3">
 						<div>
-							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Type</label>
-							<Select value={type} onValueChange={(v) => setType(v as TicketType)}>
-								<SelectTrigger><SelectValue /></SelectTrigger>
+							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+								Type
+							</label>
+							<Select
+								value={type}
+								onValueChange={(v) => setType(v as TicketType)}
+							>
+								<SelectTrigger>
+									<SelectValue />
+								</SelectTrigger>
 								<SelectContent>
 									{TICKET_TYPES.map((t) => (
-										<SelectItem key={t} value={t}>{typeLabel(t)}</SelectItem>
+										<SelectItem key={t} value={t}>
+											{typeLabel(t)}
+										</SelectItem>
 									))}
 								</SelectContent>
 							</Select>
 						</div>
 
 						<div>
-							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Priority</label>
-							<Select value={priority} onValueChange={(v) => setPriority(v as TicketPriority)}>
-								<SelectTrigger><SelectValue /></SelectTrigger>
+							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+								Priority
+							</label>
+							<Select
+								value={priority}
+								onValueChange={(v) =>
+									setPriority(v as TicketPriority)
+								}
+							>
+								<SelectTrigger>
+									<SelectValue />
+								</SelectTrigger>
 								<SelectContent>
 									{TICKET_PRIORITIES.map((p) => (
-										<SelectItem key={p} value={p} className="capitalize">{p}</SelectItem>
+										<SelectItem
+											key={p}
+											value={p}
+											className="capitalize"
+										>
+											{p}
+										</SelectItem>
 									))}
 								</SelectContent>
 							</Select>
@@ -283,19 +367,32 @@ function TicketDialog({ open, mode, ticket, projectId, onClose, onSaved }: Ticke
 
 					<div className="grid grid-cols-2 gap-3">
 						<div>
-							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Status</label>
-							<Select value={status} onValueChange={(v) => setStatus(v as TicketStatus)}>
-								<SelectTrigger><SelectValue /></SelectTrigger>
+							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+								Status
+							</label>
+							<Select
+								value={status}
+								onValueChange={(v) =>
+									setStatus(v as TicketStatus)
+								}
+							>
+								<SelectTrigger>
+									<SelectValue />
+								</SelectTrigger>
 								<SelectContent>
 									{TICKET_STATUSES.map((s) => (
-										<SelectItem key={s} value={s}>{statusLabel(s)}</SelectItem>
+										<SelectItem key={s} value={s}>
+											{statusLabel(s)}
+										</SelectItem>
 									))}
 								</SelectContent>
 							</Select>
 						</div>
 
 						<div>
-							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Due Date</label>
+							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+								Due Date
+							</label>
 							<Input
 								type="date"
 								value={dueDate}
@@ -318,10 +415,14 @@ function TicketDialog({ open, mode, ticket, projectId, onClose, onSaved }: Ticke
 
 				<DialogFooter>
 					<DialogClose asChild>
-						<Button variant="outline" disabled={submitting}>Cancel</Button>
+						<Button variant="outline" disabled={submitting}>
+							Cancel
+						</Button>
 					</DialogClose>
 					<Button onClick={handleSubmit} disabled={submitting}>
-						{submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+						{submitting && (
+							<Loader2 className="h-4 w-4 animate-spin mr-2" />
+						)}
 						{mode === "create" ? "Create Ticket" : "Save Changes"}
 					</Button>
 				</DialogFooter>
@@ -340,7 +441,13 @@ interface ConvertDialogProps {
 	onConverted: () => void;
 }
 
-function ConvertDialog({ open, ticket, projectId, onClose, onConverted }: ConvertDialogProps) {
+function ConvertDialog({
+	open,
+	ticket,
+	projectId,
+	onClose,
+	onConverted,
+}: ConvertDialogProps) {
 	const [title, setTitle] = useState("");
 	const [description, setDescription] = useState("");
 	const [priority, setPriority] = useState("medium");
@@ -382,7 +489,12 @@ function ConvertDialog({ open, ticket, projectId, onClose, onConverted }: Conver
 				status: taskStatus || undefined,
 				assigned_to: assignedTo.trim() || undefined,
 				due_date: dueDate || undefined,
-				tags: tags.trim() ? tags.split(",").map((t) => t.trim()).filter(Boolean) : undefined,
+				tags: tags.trim()
+					? tags
+							.split(",")
+							.map((t) => t.trim())
+							.filter(Boolean)
+					: undefined,
 				board_column_id: boardColumnId.trim() || undefined,
 			};
 			await convertTicketToTask(projectId, ticket.id, payload);
@@ -390,7 +502,8 @@ function ConvertDialog({ open, ticket, projectId, onClose, onConverted }: Conver
 			onConverted();
 			onClose();
 		} catch (err: unknown) {
-			const msg = err instanceof Error ? err.message : "Conversion failed.";
+			const msg =
+				err instanceof Error ? err.message : "Conversion failed.";
 			toast.error(msg);
 		} finally {
 			setSubmitting(false);
@@ -398,11 +511,18 @@ function ConvertDialog({ open, ticket, projectId, onClose, onConverted }: Conver
 	}
 
 	return (
-		<Dialog open={open} onOpenChange={(val) => { if (!val) onClose(); }}>
+		<Dialog
+			open={open}
+			onOpenChange={(val) => {
+				if (!val) onClose();
+			}}
+		>
 			<DialogContent className="max-w-[520px]">
 				<DialogHeader>
 					<DialogTitle>Convert to Task</DialogTitle>
-					<DialogDescription>Review and adjust the task details before converting.</DialogDescription>
+					<DialogDescription>
+						Review and adjust the task details before converting.
+					</DialogDescription>
 				</DialogHeader>
 
 				<div className="space-y-4">
@@ -412,14 +532,27 @@ function ConvertDialog({ open, ticket, projectId, onClose, onConverted }: Conver
 						</label>
 						<Input
 							value={title}
-							onChange={(e) => { setTitle(e.target.value); setTitleError(""); }}
-							className={titleError ? "border-danger focus:ring-danger" : ""}
+							onChange={(e) => {
+								setTitle(e.target.value);
+								setTitleError("");
+							}}
+							className={
+								titleError
+									? "border-danger focus:ring-danger"
+									: ""
+							}
 						/>
-						{titleError && <p className="text-xs text-danger mt-1">{titleError}</p>}
+						{titleError && (
+							<p className="text-xs text-danger mt-1">
+								{titleError}
+							</p>
+						)}
 					</div>
 
 					<div>
-						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Description</label>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+							Description
+						</label>
 						<ProjectDescriptionEditor
 							placeholder="Additional details..."
 							value={description}
@@ -429,24 +562,50 @@ function ConvertDialog({ open, ticket, projectId, onClose, onConverted }: Conver
 
 					<div className="grid grid-cols-2 gap-3">
 						<div>
-							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Priority</label>
-							<Select value={priority} onValueChange={setPriority}>
-								<SelectTrigger><SelectValue /></SelectTrigger>
+							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+								Priority
+							</label>
+							<Select
+								value={priority}
+								onValueChange={setPriority}
+							>
+								<SelectTrigger>
+									<SelectValue />
+								</SelectTrigger>
 								<SelectContent>
 									{TICKET_PRIORITIES.map((p) => (
-										<SelectItem key={p} value={p} className="capitalize">{p}</SelectItem>
+										<SelectItem
+											key={p}
+											value={p}
+											className="capitalize"
+										>
+											{p}
+										</SelectItem>
 									))}
 								</SelectContent>
 							</Select>
 						</div>
 
 						<div>
-							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Status</label>
-							<Select value={taskStatus} onValueChange={setTaskStatus}>
-								<SelectTrigger><SelectValue /></SelectTrigger>
+							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+								Status
+							</label>
+							<Select
+								value={taskStatus}
+								onValueChange={setTaskStatus}
+							>
+								<SelectTrigger>
+									<SelectValue />
+								</SelectTrigger>
 								<SelectContent>
 									{TASK_STATUSES.map((s) => (
-										<SelectItem key={s} value={s} className="capitalize">{s.replace("_", " ")}</SelectItem>
+										<SelectItem
+											key={s}
+											value={s}
+											className="capitalize"
+										>
+											{s.replace("_", " ")}
+										</SelectItem>
 									))}
 								</SelectContent>
 							</Select>
@@ -455,7 +614,9 @@ function ConvertDialog({ open, ticket, projectId, onClose, onConverted }: Conver
 
 					<div className="grid grid-cols-2 gap-3">
 						<div>
-							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Assigned To (UUID)</label>
+							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+								Assigned To (UUID)
+							</label>
 							<Input
 								placeholder="User UUID (optional)"
 								value={assignedTo}
@@ -464,7 +625,9 @@ function ConvertDialog({ open, ticket, projectId, onClose, onConverted }: Conver
 						</div>
 
 						<div>
-							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Due Date</label>
+							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+								Due Date
+							</label>
 							<Input
 								type="date"
 								value={dueDate}
@@ -474,7 +637,9 @@ function ConvertDialog({ open, ticket, projectId, onClose, onConverted }: Conver
 					</div>
 
 					<div>
-						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Tags (comma-separated)</label>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+							Tags (comma-separated)
+						</label>
 						<Input
 							placeholder="e.g. auth, ui, critical"
 							value={tags}
@@ -483,7 +648,9 @@ function ConvertDialog({ open, ticket, projectId, onClose, onConverted }: Conver
 					</div>
 
 					<div>
-						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">Board Column ID (UUID)</label>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+							Board Column ID (UUID)
+						</label>
 						<Input
 							placeholder="Column UUID (optional)"
 							value={boardColumnId}
@@ -494,10 +661,14 @@ function ConvertDialog({ open, ticket, projectId, onClose, onConverted }: Conver
 
 				<DialogFooter>
 					<DialogClose asChild>
-						<Button variant="outline" disabled={submitting}>Cancel</Button>
+						<Button variant="outline" disabled={submitting}>
+							Cancel
+						</Button>
 					</DialogClose>
 					<Button onClick={handleSubmit} disabled={submitting}>
-						{submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+						{submitting && (
+							<Loader2 className="h-4 w-4 animate-spin mr-2" />
+						)}
 						Convert to Task
 					</Button>
 				</DialogFooter>
@@ -511,35 +682,60 @@ function ConvertDialog({ open, ticket, projectId, onClose, onConverted }: Conver
 interface TicketRowProps {
 	ticket: Ticket;
 	deleting: boolean;
+	canEdit: boolean;
+	canDelete: boolean;
+	canConvert: boolean;
 	onEdit: (t: Ticket) => void;
 	onConvert: (t: Ticket) => void;
 	onDelete: (t: Ticket) => void;
 }
 
-function TicketRow({ ticket, deleting, onEdit, onConvert, onDelete }: TicketRowProps) {
+function TicketRow({
+	ticket,
+	deleting,
+	canEdit,
+	canDelete,
+	canConvert,
+	onEdit,
+	onConvert,
+	onDelete,
+}: TicketRowProps) {
 	return (
 		<tr className="border-b border-border last:border-0 hover:bg-muted-subtle transition-colors">
 			{/* Title */}
 			<td className="px-5 py-3.5 max-w-[240px]">
-				<p className="text-sm font-semibold text-foreground truncate">{ticket.title}</p>
+				<p className="text-sm font-semibold text-foreground truncate">
+					{ticket.title}
+				</p>
 				{ticket.description && (
-					<p className="text-xs text-muted truncate mt-0.5">{ticket.description}</p>
+					<p className="text-xs text-muted truncate mt-0.5">
+						{ticket.description}
+					</p>
 				)}
 			</td>
 
 			{/* Type */}
 			<td className="px-4 py-3.5">
-				<Badge variant={typeVariant(ticket.type)}>{typeLabel(ticket.type)}</Badge>
+				<Badge variant={typeVariant(ticket.type)}>
+					{typeLabel(ticket.type)}
+				</Badge>
 			</td>
 
 			{/* Priority */}
 			<td className="px-4 py-3.5">
-				<Badge variant={priorityVariant(ticket.priority)} className="capitalize">{ticket.priority}</Badge>
+				<Badge
+					variant={priorityVariant(ticket.priority)}
+					className="capitalize"
+				>
+					{ticket.priority}
+				</Badge>
 			</td>
 
 			{/* Status */}
 			<td className="px-4 py-3.5">
-				<Badge variant={statusVariant(ticket.status)}>{statusLabel(ticket.status)}</Badge>
+				<Badge variant={statusVariant(ticket.status)}>
+					{statusLabel(ticket.status)}
+				</Badge>
 			</td>
 
 			{/* Assigned To */}
@@ -552,7 +748,8 @@ function TicketRow({ ticket, deleting, onEdit, onConvert, onDelete }: TicketRowP
 							</AvatarFallback>
 						</Avatar>
 						<span className="text-xs text-foreground">
-							{ticket.assigned_to.full_name ?? ticket.assigned_to.email}
+							{ticket.assigned_to.full_name ??
+								ticket.assigned_to.email}
 						</span>
 					</div>
 				) : (
@@ -569,48 +766,61 @@ function TicketRow({ ticket, deleting, onEdit, onConvert, onDelete }: TicketRowP
 			<td className="px-4 py-3.5">
 				<div className="flex items-center gap-2 justify-end">
 					{ticket.converted_task_id !== null ? (
-						<Badge variant="done" className="text-[10px]">Converted</Badge>
+						<Badge variant="done" className="text-[10px]">
+							Converted
+						</Badge>
 					) : null}
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<button
-								className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted-subtle hover:text-foreground transition-colors focus:outline-none"
-								disabled={deleting}
-							>
-								{deleting ? (
-									<Loader2 className="h-4 w-4 animate-spin" />
-								) : (
-									<MoreHorizontal className="h-4 w-4" />
-								)}
-							</button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end" className="w-44">
-							{ticket.converted_task_id === null && (
-								<DropdownMenuItem
-									className="gap-2 text-sm"
-									onSelect={() => onConvert(ticket)}
+					{(canEdit || canDelete || canConvert) && (
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<button
+									className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted-subtle hover:text-foreground transition-colors focus:outline-none"
+									disabled={deleting}
 								>
-									<ArrowRightCircle className="h-4 w-4 text-muted-foreground" />
-									Make Task
-								</DropdownMenuItem>
-							)}
-							<DropdownMenuItem
-								className="gap-2 text-sm"
-								onSelect={() => onEdit(ticket)}
-							>
-								<Pencil className="h-4 w-4 text-muted-foreground" />
-								Edit
-							</DropdownMenuItem>
-							{ticket.converted_task_id === null && <DropdownMenuSeparator />}
-							<DropdownMenuItem
-								className="gap-2 text-sm text-danger focus:text-danger focus:bg-danger/10"
-								onSelect={() => onDelete(ticket)}
-							>
-								<Trash2 className="h-4 w-4" />
-								Delete
-							</DropdownMenuItem>
-						</DropdownMenuContent>
-					</DropdownMenu>
+									{deleting ? (
+										<Loader2 className="h-4 w-4 animate-spin" />
+									) : (
+										<MoreHorizontal className="h-4 w-4" />
+									)}
+								</button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent align="end" className="w-44">
+								{canConvert &&
+									ticket.converted_task_id === null && (
+										<DropdownMenuItem
+											className="gap-2 text-sm"
+											onSelect={() => onConvert(ticket)}
+										>
+											<ArrowRightCircle className="h-4 w-4 text-muted-foreground" />
+											Make Task
+										</DropdownMenuItem>
+									)}
+								{canEdit && (
+									<DropdownMenuItem
+										className="gap-2 text-sm"
+										onSelect={() => onEdit(ticket)}
+									>
+										<Pencil className="h-4 w-4 text-muted-foreground" />
+										Edit
+									</DropdownMenuItem>
+								)}
+								{canDelete &&
+									canConvert &&
+									ticket.converted_task_id === null && (
+										<DropdownMenuSeparator />
+									)}
+								{canDelete && (
+									<DropdownMenuItem
+										className="gap-2 text-sm text-danger focus:text-danger focus:bg-danger/10"
+										onSelect={() => onDelete(ticket)}
+									>
+										<Trash2 className="h-4 w-4" />
+										Delete
+									</DropdownMenuItem>
+								)}
+							</DropdownMenuContent>
+						</DropdownMenu>
+					)}
 				</div>
 			</td>
 		</tr>
@@ -626,6 +836,21 @@ interface Filters {
 }
 
 export default function TicketsPage() {
+	const { user } = useAuth();
+	const { can, roleKey } = usePermission();
+
+	function canEditTicket(ticket: Ticket): boolean {
+		if (roleKey === "user") return ticket.created_by.id === user?.id;
+		return can("Edit tickets");
+	}
+
+	function canDeleteTicket(ticket: Ticket): boolean {
+		if (roleKey === "user") return ticket.created_by.id === user?.id;
+		return can("Delete tickets");
+	}
+
+	const canConvert = can("Create & edit tasks");
+
 	const [projects, setProjects] = useState<Project[]>([]);
 	const [projectsLoading, setProjectsLoading] = useState(true);
 	const [selectedProjectId, setSelectedProjectId] = useState<string>("");
@@ -634,7 +859,11 @@ export default function TicketsPage() {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	const [filters, setFilters] = useState<Filters>({ status: "", type: "", priority: "" });
+	const [filters, setFilters] = useState<Filters>({
+		status: "",
+		type: "",
+		priority: "",
+	});
 
 	const [createOpen, setCreateOpen] = useState(false);
 	const [editTicket, setEditTicket] = useState<Ticket | null>(null);
@@ -663,10 +892,14 @@ export default function TicketsPage() {
 				type: filters.type || undefined,
 				priority: filters.priority || undefined,
 			};
-			const data = await listTickets(selectedProjectId, params as Parameters<typeof listTickets>[1]);
+			const data = await listTickets(
+				selectedProjectId,
+				params as Parameters<typeof listTickets>[1],
+			);
 			setTickets(data);
 		} catch (err: unknown) {
-			const msg = err instanceof Error ? err.message : "Failed to load tickets.";
+			const msg =
+				err instanceof Error ? err.message : "Failed to load tickets.";
 			setError(msg);
 		} finally {
 			setLoading(false);
@@ -679,14 +912,16 @@ export default function TicketsPage() {
 	}, [selectedProjectId, fetchTickets]);
 
 	async function handleDelete(ticket: Ticket) {
-		if (!window.confirm(`Delete "${ticket.title}"? This cannot be undone.`)) return;
+		if (!window.confirm(`Delete "${ticket.title}"? This cannot be undone.`))
+			return;
 		setDeletingId(ticket.id);
 		try {
 			await deleteTicket(selectedProjectId, ticket.id);
 			toast.success("Ticket deleted.");
 			fetchTickets();
 		} catch (err: unknown) {
-			const msg = err instanceof Error ? err.message : "Failed to delete ticket.";
+			const msg =
+				err instanceof Error ? err.message : "Failed to delete ticket.";
 			toast.error(msg);
 		} finally {
 			setDeletingId(null);
@@ -704,21 +939,25 @@ export default function TicketsPage() {
 			{/* Header */}
 			<div className="flex items-center justify-between mb-8">
 				<div>
-					<h1 className="text-3xl font-semibold text-foreground tracking-tight">Tickets</h1>
+					<h1 className="text-3xl font-semibold text-foreground tracking-tight">
+						Tickets
+					</h1>
 					<p className="text-sm text-muted mt-1">
 						{selectedProjectId
 							? `${tickets.length} ticket${tickets.length !== 1 ? "s" : ""}`
 							: "Select a project to view tickets"}
 					</p>
 				</div>
-				<Button
-					className="flex items-center gap-2"
-					disabled={!selectedProjectId}
-					onClick={() => setCreateOpen(true)}
-				>
-					<Plus className="h-4 w-4" />
-					New Ticket
-				</Button>
+				<PermissionGate feature="Create tickets">
+					<Button
+						className="flex items-center gap-2"
+						disabled={!selectedProjectId}
+						onClick={() => setCreateOpen(true)}
+					>
+						<Plus className="h-4 w-4" />
+						New Ticket
+					</Button>
+				</PermissionGate>
 			</div>
 
 			{/* Project selector + Filters */}
@@ -737,7 +976,9 @@ export default function TicketsPage() {
 							</SelectTrigger>
 							<SelectContent>
 								{projects.map((p) => (
-									<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+									<SelectItem key={p.id} value={p.id}>
+										{p.name}
+									</SelectItem>
 								))}
 							</SelectContent>
 						</Select>
@@ -749,7 +990,12 @@ export default function TicketsPage() {
 				{/* Status filter */}
 				<Select
 					value={filters.status || "all"}
-					onValueChange={(v) => setFilter("status", v === "all" ? "" : v as TicketStatus)}
+					onValueChange={(v) =>
+						setFilter(
+							"status",
+							v === "all" ? "" : (v as TicketStatus),
+						)
+					}
 				>
 					<SelectTrigger className="h-9 w-[140px]">
 						<SelectValue placeholder="Status" />
@@ -757,7 +1003,9 @@ export default function TicketsPage() {
 					<SelectContent>
 						<SelectItem value="all">All statuses</SelectItem>
 						{TICKET_STATUSES.map((s) => (
-							<SelectItem key={s} value={s}>{statusLabel(s)}</SelectItem>
+							<SelectItem key={s} value={s}>
+								{statusLabel(s)}
+							</SelectItem>
 						))}
 					</SelectContent>
 				</Select>
@@ -765,7 +1013,9 @@ export default function TicketsPage() {
 				{/* Type filter */}
 				<Select
 					value={filters.type || "all"}
-					onValueChange={(v) => setFilter("type", v === "all" ? "" : v as TicketType)}
+					onValueChange={(v) =>
+						setFilter("type", v === "all" ? "" : (v as TicketType))
+					}
 				>
 					<SelectTrigger className="h-9 w-[160px]">
 						<SelectValue placeholder="Type" />
@@ -773,7 +1023,9 @@ export default function TicketsPage() {
 					<SelectContent>
 						<SelectItem value="all">All types</SelectItem>
 						{TICKET_TYPES.map((t) => (
-							<SelectItem key={t} value={t}>{typeLabel(t)}</SelectItem>
+							<SelectItem key={t} value={t}>
+								{typeLabel(t)}
+							</SelectItem>
 						))}
 					</SelectContent>
 				</Select>
@@ -781,7 +1033,12 @@ export default function TicketsPage() {
 				{/* Priority filter */}
 				<Select
 					value={filters.priority || "all"}
-					onValueChange={(v) => setFilter("priority", v === "all" ? "" : v as TicketPriority)}
+					onValueChange={(v) =>
+						setFilter(
+							"priority",
+							v === "all" ? "" : (v as TicketPriority),
+						)
+					}
 				>
 					<SelectTrigger className="h-9 w-[140px]">
 						<SelectValue placeholder="Priority" />
@@ -789,14 +1046,22 @@ export default function TicketsPage() {
 					<SelectContent>
 						<SelectItem value="all">All priorities</SelectItem>
 						{TICKET_PRIORITIES.map((p) => (
-							<SelectItem key={p} value={p} className="capitalize">{p}</SelectItem>
+							<SelectItem
+								key={p}
+								value={p}
+								className="capitalize"
+							>
+								{p}
+							</SelectItem>
 						))}
 					</SelectContent>
 				</Select>
 
 				{hasFilters && (
 					<button
-						onClick={() => setFilters({ status: "", type: "", priority: "" })}
+						onClick={() =>
+							setFilters({ status: "", type: "", priority: "" })
+						}
 						className="text-xs text-muted hover:text-foreground transition-colors underline underline-offset-2"
 					>
 						Clear filters
@@ -815,9 +1080,13 @@ export default function TicketsPage() {
 			{/* Error */}
 			{!loading && error && (
 				<div className="flex flex-col items-center justify-center py-24 text-center">
-					<p className="text-base font-medium text-foreground mb-1">Something went wrong</p>
+					<p className="text-base font-medium text-foreground mb-1">
+						Something went wrong
+					</p>
 					<p className="text-sm text-muted mb-4">{error}</p>
-					<Button variant="outline" onClick={fetchTickets}>Retry</Button>
+					<Button variant="outline" onClick={fetchTickets}>
+						Retry
+					</Button>
 				</div>
 			)}
 
@@ -825,21 +1094,32 @@ export default function TicketsPage() {
 			{!loading && !error && !selectedProjectId && (
 				<div className="flex flex-col items-center justify-center py-24 text-center">
 					<TicketIcon className="h-10 w-10 text-border-strong mb-4" />
-					<p className="text-base font-medium text-foreground mb-1">No project selected</p>
-					<p className="text-sm text-muted">Choose a project above to view its tickets.</p>
+					<p className="text-base font-medium text-foreground mb-1">
+						No project selected
+					</p>
+					<p className="text-sm text-muted">
+						Choose a project above to view its tickets.
+					</p>
 				</div>
 			)}
 
 			{/* Empty */}
-			{!loading && !error && selectedProjectId && tickets.length === 0 && (
-				<div className="flex flex-col items-center justify-center py-24 text-center">
-					<TicketIcon className="h-10 w-10 text-border-strong mb-4" />
-					<p className="text-base font-medium text-foreground mb-1">No tickets found</p>
-					<p className="text-sm text-muted">
-						{hasFilters ? "Try adjusting your filters." : "Create the first ticket for this project."}
-					</p>
-				</div>
-			)}
+			{!loading &&
+				!error &&
+				selectedProjectId &&
+				tickets.length === 0 && (
+					<div className="flex flex-col items-center justify-center py-24 text-center">
+						<TicketIcon className="h-10 w-10 text-border-strong mb-4" />
+						<p className="text-base font-medium text-foreground mb-1">
+							No tickets found
+						</p>
+						<p className="text-sm text-muted">
+							{hasFilters
+								? "Try adjusting your filters."
+								: "Create the first ticket for this project."}
+						</p>
+					</div>
+				)}
 
 			{/* Table */}
 			{!loading && !error && selectedProjectId && tickets.length > 0 && (
@@ -848,7 +1128,15 @@ export default function TicketsPage() {
 						<table className="w-full text-sm">
 							<thead>
 								<tr className="border-b border-border bg-muted-subtle">
-									{["Title", "Type", "Priority", "Status", "Assigned To", "Created", ""].map((h, i) => (
+									{[
+										"Title",
+										"Type",
+										"Priority",
+										"Status",
+										"Assigned To",
+										"Created",
+										"",
+									].map((h, i) => (
 										<th
 											key={i}
 											className={`px-4 py-3 text-[10px] font-medium uppercase tracking-wider text-muted text-left ${i === 0 ? "pl-5" : ""}`}
@@ -864,6 +1152,9 @@ export default function TicketsPage() {
 										key={t.id}
 										ticket={t}
 										deleting={deletingId === t.id}
+										canEdit={canEditTicket(t)}
+										canDelete={canDeleteTicket(t)}
+										canConvert={canConvert}
 										onEdit={setEditTicket}
 										onConvert={setConvertTicket}
 										onDelete={handleDelete}
