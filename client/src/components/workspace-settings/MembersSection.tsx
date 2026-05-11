@@ -39,6 +39,7 @@ import {
 import { listRoles, type Role } from "@/services/role.service";
 import { toast } from "sonner";
 import { SectionBlock } from "./SectionBlock";
+import { getPermissionsForRole, ROLE_COLUMNS, type RoleKey } from "./rolePermissionsData";
 
 function getInitials(name: string | null): string {
 	if (!name) return "?";
@@ -145,38 +146,63 @@ function ManageRoleDialog({
 						)}
 					</div>
 
-					{selectedRole && (
-						<div>
-							<div className="flex items-center gap-1.5 mb-2">
-								<ShieldCheck className="h-3.5 w-3.5 text-muted" />
-								<label className="text-sm font-medium text-muted-foreground">
-									Permissions ({selectedRole.permissions.length})
-								</label>
-							</div>
-							{selectedRole.permissions.length === 0 ? (
-								<p className="text-xs text-muted">No permissions assigned to this role.</p>
-							) : (
-								<div className="border border-border rounded-md max-h-[180px] overflow-y-auto divide-y divide-border">
-									{selectedRole.permissions.map((p) => (
-										<div key={p.key} className="flex items-center gap-2.5 px-3 py-2">
-											<input
-												type="checkbox"
-												checked
-												readOnly
-												className="h-3.5 w-3.5 accent-primary cursor-default"
-											/>
-											<span className="text-xs font-mono text-foreground">{p.key}</span>
-											{p.description && (
-												<span className="text-xs text-muted ml-auto truncate max-w-[180px]">
-													{p.description}
-												</span>
-											)}
-										</div>
-									))}
+					{selectedRoleKey && (() => {
+						const roleCol = ROLE_COLUMNS.find((c) => c.key === selectedRoleKey);
+						const permGroups = getPermissionsForRole(selectedRoleKey as RoleKey);
+						const totalCount = permGroups.reduce((n, g) => n + g.features.length, 0);
+						return (
+							<div>
+								<div className="flex items-center gap-1.5 mb-2">
+									<ShieldCheck className="h-3.5 w-3.5 text-muted" />
+									<label className="text-sm font-medium text-muted-foreground">
+										Permissions ({totalCount})
+									</label>
+									{roleCol && (
+										<Badge
+											variant={roleCol.variant as Parameters<typeof Badge>[0]["variant"]}
+											className="ml-auto text-[11px] font-medium"
+										>
+											{roleCol.label}
+										</Badge>
+									)}
 								</div>
-							)}
-						</div>
-					)}
+								{totalCount === 0 ? (
+									<p className="text-xs text-muted">No permissions assigned to this role.</p>
+								) : (
+									<div className="border border-border rounded-md max-h-[220px] overflow-y-auto">
+										{permGroups.map((group) => (
+											<div key={group.module}>
+												<div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted-subtle/60 border-b border-border sticky top-0">
+													<group.icon className="h-3 w-3 text-primary shrink-0" />
+													<span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+														{group.module}
+													</span>
+												</div>
+												{group.features.map(({ feature, level }) => (
+													<div
+														key={feature}
+														className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border last:border-0"
+													>
+														<span className="text-xs text-foreground">{feature}</span>
+														{level.type === "full" ? (
+															<span className="inline-flex items-center gap-1 text-[11px] font-medium text-secondary shrink-0">
+																<ShieldCheck className="h-3 w-3" />
+																Full
+															</span>
+														) : (
+															<span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-warning-subtle text-warning border border-warning/20 shrink-0 whitespace-nowrap">
+																{level.label}
+															</span>
+														)}
+													</div>
+												))}
+											</div>
+										))}
+									</div>
+								)}
+							</div>
+						);
+					})()}
 				</div>
 
 				<DialogFooter>

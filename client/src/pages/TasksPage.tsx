@@ -83,6 +83,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import MantineSelect from "@/components/ui/mantine-select";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -650,6 +651,25 @@ function NewTaskDialog({
 						<label className="text-sm font-medium text-muted-foreground mb-2 block">
 							Assignee
 						</label>
+						<div className="flex flex-wrap gap-2">
+							<MantineSelect
+								label="Select User"
+								value={form.assigneeId}
+								onChange={(value: string | null) => {
+									set("assigneeId", value ?? "");
+								}}
+								data={
+									profiles?.map((p) => ({
+										value: p.id,
+										label: p.full_name || p.email,
+										description: p.role,
+										image:
+											p.avatar_url ||
+											`https://i.pravatar.cc/100?u=${p.email}`,
+									})) || []
+								}
+							/>
+						</div>
 						<div className="flex flex-wrap gap-2">
 							{profiles.map((profile, idx) => (
 								<button
@@ -1822,10 +1842,7 @@ export default function TasksPage() {
 				const activeSprint = data.find(
 					(sprint) => sprint.status === "active",
 				);
-				if (
-					activeSprint &&
-					!didApplyDefaultSprintFilterRef.current
-				) {
+				if (activeSprint && !didApplyDefaultSprintFilterRef.current) {
 					setFilterSprint((current) => {
 						didApplyDefaultSprintFilterRef.current = true;
 						return current === "all" ? activeSprint.id : current;

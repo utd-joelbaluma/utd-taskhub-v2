@@ -8,18 +8,26 @@ export interface UserProfile {
 	role: string;
 	status: string;
 	created_at: string;
-	global_role: { id: string; key: string; name: string; scope: string } | null;
+	global_role: {
+		id: string;
+		key: string;
+		name: string;
+		scope: string;
+	} | null;
 }
 
 export interface UserInvitation {
 	id: string;
 	email: string;
+	role: string;
 	invited_at: string;
 	invite_cancelled_at: string | null;
 }
 
 export async function listUsers(): Promise<UserProfile[]> {
-	const res = await api.get<{ success: boolean; data: UserProfile[] }>("/users");
+	const res = await api.get<{ success: boolean; data: UserProfile[] }>(
+		"/users",
+	);
 	return res.data;
 }
 
@@ -28,11 +36,11 @@ export async function inviteUser(email: string, role: string): Promise<void> {
 }
 
 export async function listUserInvitations(
-	status?: "pending" | "cancelled"
+	status?: "pending" | "cancelled",
 ): Promise<UserInvitation[]> {
 	const params = status ? `?status=${status}` : "";
 	const res = await api.get<{ success: boolean; data: UserInvitation[] }>(
-		`/users/invitations${params}`
+		`/users/invitations${params}`,
 	);
 	return res.data;
 }
@@ -41,7 +49,10 @@ export async function cancelUserInvitation(userId: string): Promise<void> {
 	await api.delete(`/users/invitations/${userId}`);
 }
 
-export async function updateUserRole(userId: string, roleKey: string): Promise<void> {
+export async function updateUserRole(
+	userId: string,
+	roleKey: string,
+): Promise<void> {
 	await api.patch(`/users/${userId}/role`, { role_key: roleKey });
 }
 

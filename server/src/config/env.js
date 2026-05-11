@@ -14,4 +14,8 @@ export const env = {
 	supabaseSecretKey: process.env.SUPABASE_SECRET_KEY,
 	supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
 	supabaseAvatarBucket: process.env.SUPABASE_AVATAR_BUCKET || "avatars",
+
+	GMAIL_USER: process.env.GMAIL_USER,
+	GMAIL_APP_PASSWORD: process.env.GMAIL_APP_PASSWORD,
+	MAIL_SENDER_NAME: process.env.MAIL_SENDER_NAME,
 };

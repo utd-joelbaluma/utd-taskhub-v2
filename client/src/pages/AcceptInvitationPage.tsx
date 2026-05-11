@@ -15,7 +15,11 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { clearStoredAuth, storeAuthTokens } from "@/lib/auth-storage";
 import { acceptInvitation } from "@/services/invitation.service";
-import { registerUser, loginWithEmail, completeInvite } from "@/services/auth.service";
+import {
+	registerUser,
+	loginWithEmail,
+	completeInvite,
+} from "@/services/auth.service";
 import { useAuth } from "@/context/AuthContext";
 
 const passwordRules = [
@@ -24,7 +28,12 @@ const passwordRules = [
 	{ label: "One number", test: (v: string) => /[0-9]/.test(v) },
 ];
 
-type PageState = "loading" | "requires_registration" | "complete_account" | "success" | "error";
+type PageState =
+	| "loading"
+	| "requires_registration"
+	| "complete_account"
+	| "success"
+	| "error";
 
 export default function AcceptInvitationPage() {
 	const [searchParams] = useSearchParams();
@@ -48,8 +57,15 @@ export default function AcceptInvitationPage() {
 	const [loginLoading, setLoginLoading] = useState(false);
 	const [loginError, setLoginError] = useState("");
 
-	const [inviteSession, setInviteSession] = useState<{ access_token: string; refresh_token: string } | null>(null);
-	const [completeForm, setCompleteForm] = useState({ name: "", password: "", confirm: "" });
+	const [inviteSession, setInviteSession] = useState<{
+		access_token: string;
+		refresh_token: string;
+	} | null>(null);
+	const [completeForm, setCompleteForm] = useState({
+		name: "",
+		password: "",
+		confirm: "",
+	});
 	const [showCompletePassword, setShowCompletePassword] = useState(false);
 	const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
 	const [completeLoading, setCompleteLoading] = useState(false);
@@ -86,7 +102,10 @@ export default function AcceptInvitationPage() {
 		const hashRefreshToken = hash.get("refresh_token");
 
 		if (hashType === "invite" && hashAccessToken && hashRefreshToken) {
-			setInviteSession({ access_token: hashAccessToken, refresh_token: hashRefreshToken });
+			setInviteSession({
+				access_token: hashAccessToken,
+				refresh_token: hashRefreshToken,
+			});
 		}
 
 		acceptInvitation(token)
@@ -149,7 +168,11 @@ export default function AcceptInvitationPage() {
 		e.preventDefault();
 		setCompleteError("");
 
-		if (!completeForm.name || !completeForm.password || !completeForm.confirm) {
+		if (
+			!completeForm.name ||
+			!completeForm.password ||
+			!completeForm.confirm
+		) {
 			setCompleteError("Please fill in all fields.");
 			return;
 		}
@@ -157,22 +180,33 @@ export default function AcceptInvitationPage() {
 			setCompleteError("Passwords do not match.");
 			return;
 		}
-		const strength = passwordRules.filter((r) => r.test(completeForm.password)).length;
+		const strength = passwordRules.filter((r) =>
+			r.test(completeForm.password),
+		).length;
 		if (strength < 3) {
 			setCompleteError("Password does not meet the requirements.");
 			return;
 		}
 		if (!inviteSession) {
-			setCompleteError("Invite session expired. Please request a new invitation.");
+			setCompleteError(
+				"Invite session expired. Please request a new invitation.",
+			);
 			return;
 		}
 
 		setCompleteLoading(true);
 		try {
 			storeAuthTokens(inviteSession, { remember: false });
-			await completeInvite(completeForm.name.trim(), completeForm.password);
+			await completeInvite(
+				completeForm.name.trim(),
+				completeForm.password,
+			);
 			clearStoredAuth();
-			navigate("/login", { state: { toast: "Account set up! Sign in to access your workspace." } });
+			navigate("/login", {
+				state: {
+					toast: "Account set up! Sign in to access your workspace.",
+				},
+			});
 		} catch (err) {
 			setCompleteError(
 				err instanceof Error ? err.message : "Something went wrong.",
@@ -193,12 +227,17 @@ export default function AcceptInvitationPage() {
 
 		setLoginLoading(true);
 		try {
-			const session = await loginWithEmail(loginForm.email, loginForm.password);
+			const session = await loginWithEmail(
+				loginForm.email,
+				loginForm.password,
+			);
 			storeAuthTokens(session, { remember: false });
 			navigate("/");
 		} catch (err) {
 			setLoginError(
-				err instanceof Error ? err.message : "Invalid email or password.",
+				err instanceof Error
+					? err.message
+					: "Invalid email or password.",
 			);
 		} finally {
 			setLoginLoading(false);
@@ -215,9 +254,9 @@ export default function AcceptInvitationPage() {
 
 	// If already logged in and not requiring registration, go to dashboard
 	useEffect(() => {
-		if (isAuthenticated && pageState === "success") {
-			navigate("/");
-		}
+		// if (isAuthenticated && pageState === "success") {
+		// 	navigate("/");
+		// }
 	}, [isAuthenticated, pageState, navigate]);
 
 	return (
@@ -269,7 +308,9 @@ export default function AcceptInvitationPage() {
 					<div className="rounded-xl border border-border bg-surface p-8 shadow-sm">
 						<div className="mb-6 flex items-center gap-2 rounded-lg bg-primary/8 px-3 py-2 text-sm text-primary">
 							<MailCheck className="h-4 w-4 shrink-0" />
-							<span>Invitation accepted — set up your account</span>
+							<span>
+								Invitation accepted — set up your account
+							</span>
 						</div>
 
 						<h1 className="mb-1 text-xl font-semibold tracking-tight text-foreground">
@@ -279,7 +320,11 @@ export default function AcceptInvitationPage() {
 							Set your name and a password to finish joining.
 						</p>
 
-						<form onSubmit={handleCompleteSubmit} noValidate className="space-y-4">
+						<form
+							onSubmit={handleCompleteSubmit}
+							noValidate
+							className="space-y-4"
+						>
 							{completeError && (
 								<div className="rounded-lg border border-danger/20 bg-danger-subtle px-4 py-3 text-sm text-danger">
 									{completeError}
@@ -303,7 +348,9 @@ export default function AcceptInvitationPage() {
 									autoComplete="name"
 									autoFocus
 									className={cn(
-										completeError && !completeForm.name && "border-danger focus-visible:ring-danger",
+										completeError &&
+											!completeForm.name &&
+											"border-danger focus-visible:ring-danger",
 									)}
 								/>
 							</div>
@@ -319,21 +366,33 @@ export default function AcceptInvitationPage() {
 								<div className="relative">
 									<Input
 										id="complete-password"
-										type={showCompletePassword ? "text" : "password"}
+										type={
+											showCompletePassword
+												? "text"
+												: "password"
+										}
 										placeholder="••••••••"
 										value={completeForm.password}
 										onChange={setComplete("password")}
 										autoComplete="new-password"
 										className={cn(
 											"pr-10",
-											completeError && !completeForm.password && "border-danger focus-visible:ring-danger",
+											completeError &&
+												!completeForm.password &&
+												"border-danger focus-visible:ring-danger",
 										)}
 									/>
 									<button
 										type="button"
-										onClick={() => setShowCompletePassword((v) => !v)}
+										onClick={() =>
+											setShowCompletePassword((v) => !v)
+										}
 										className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-muted-foreground transition-colors focus:outline-none"
-										aria-label={showCompletePassword ? "Hide password" : "Show password"}
+										aria-label={
+											showCompletePassword
+												? "Hide password"
+												: "Show password"
+										}
 									>
 										{showCompletePassword ? (
 											<EyeOff className="h-4 w-4" />
@@ -351,8 +410,26 @@ export default function AcceptInvitationPage() {
 													key={i}
 													className={cn(
 														"h-1 flex-1 rounded-full transition-colors",
-														i < passwordRules.filter((r) => r.test(completeForm.password)).length
-															? ["", "bg-danger", "bg-warning", "bg-secondary"][passwordRules.filter((r) => r.test(completeForm.password)).length]
+														i <
+															passwordRules.filter(
+																(r) =>
+																	r.test(
+																		completeForm.password,
+																	),
+															).length
+															? [
+																	"",
+																	"bg-danger",
+																	"bg-warning",
+																	"bg-secondary",
+																][
+																	passwordRules.filter(
+																		(r) =>
+																			r.test(
+																				completeForm.password,
+																			),
+																	).length
+																]
 															: "bg-border",
 													)}
 												/>
@@ -365,19 +442,52 @@ export default function AcceptInvitationPage() {
 														key={rule.label}
 														className={cn(
 															"flex items-center gap-1 text-[10px] transition-colors",
-															rule.test(completeForm.password) ? "text-secondary" : "text-muted",
+															rule.test(
+																completeForm.password,
+															)
+																? "text-secondary"
+																: "text-muted",
 														)}
 													>
-														<Check className={cn("h-2.5 w-2.5", rule.test(completeForm.password) ? "opacity-100" : "opacity-0")} />
+														<Check
+															className={cn(
+																"h-2.5 w-2.5",
+																rule.test(
+																	completeForm.password,
+																)
+																	? "opacity-100"
+																	: "opacity-0",
+															)}
+														/>
 														{rule.label}
 													</span>
 												))}
 											</div>
 											{(() => {
-												const s = passwordRules.filter((r) => r.test(completeForm.password)).length;
-												const label = ["", "Weak", "Fair", "Strong"][s];
+												const s = passwordRules.filter(
+													(r) =>
+														r.test(
+															completeForm.password,
+														),
+												).length;
+												const label = [
+													"",
+													"Weak",
+													"Fair",
+													"Strong",
+												][s];
 												return label ? (
-													<span className={cn("shrink-0 text-[10px] font-medium", s === 1 && "text-danger", s === 2 && "text-warning", s === 3 && "text-secondary")}>
+													<span
+														className={cn(
+															"shrink-0 text-[10px] font-medium",
+															s === 1 &&
+																"text-danger",
+															s === 2 &&
+																"text-warning",
+															s === 3 &&
+																"text-secondary",
+														)}
+													>
 														{label}
 													</span>
 												) : null;
@@ -398,21 +508,35 @@ export default function AcceptInvitationPage() {
 								<div className="relative">
 									<Input
 										id="complete-confirm"
-										type={showCompleteConfirm ? "text" : "password"}
+										type={
+											showCompleteConfirm
+												? "text"
+												: "password"
+										}
 										placeholder="••••••••"
 										value={completeForm.confirm}
 										onChange={setComplete("confirm")}
 										autoComplete="new-password"
 										className={cn(
 											"pr-10",
-											completeError && completeForm.password !== completeForm.confirm && completeForm.confirm && "border-danger focus-visible:ring-danger",
+											completeError &&
+												completeForm.password !==
+													completeForm.confirm &&
+												completeForm.confirm &&
+												"border-danger focus-visible:ring-danger",
 										)}
 									/>
 									<button
 										type="button"
-										onClick={() => setShowCompleteConfirm((v) => !v)}
+										onClick={() =>
+											setShowCompleteConfirm((v) => !v)
+										}
 										className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-muted-foreground transition-colors focus:outline-none"
-										aria-label={showCompleteConfirm ? "Hide password" : "Show password"}
+										aria-label={
+											showCompleteConfirm
+												? "Hide password"
+												: "Show password"
+										}
 									>
 										{showCompleteConfirm ? (
 											<EyeOff className="h-4 w-4" />
@@ -421,12 +545,20 @@ export default function AcceptInvitationPage() {
 										)}
 									</button>
 								</div>
-								{completeForm.confirm && completeForm.password !== completeForm.confirm && (
-									<p className="text-[11px] text-danger mt-1">Passwords do not match.</p>
-								)}
+								{completeForm.confirm &&
+									completeForm.password !==
+										completeForm.confirm && (
+										<p className="text-[11px] text-danger mt-1">
+											Passwords do not match.
+										</p>
+									)}
 							</div>
 
-							<Button type="submit" className="w-full" disabled={completeLoading}>
+							<Button
+								type="submit"
+								className="w-full"
+								disabled={completeLoading}
+							>
 								{completeLoading ? (
 									<span className="flex items-center gap-2">
 										<span className="h-4 w-4 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />
@@ -434,7 +566,8 @@ export default function AcceptInvitationPage() {
 									</span>
 								) : (
 									<span className="flex items-center gap-2">
-										Finish setup <ArrowRight className="h-4 w-4" />
+										Finish setup{" "}
+										<ArrowRight className="h-4 w-4" />
 									</span>
 								)}
 							</Button>
@@ -454,10 +587,15 @@ export default function AcceptInvitationPage() {
 							Sign in to continue
 						</h1>
 						<p className="mb-6 text-sm text-muted">
-							Your invitation has been accepted. Sign in to access your workspace.
+							Your invitation has been accepted. Sign in to access
+							your workspace.
 						</p>
 
-						<form onSubmit={handleLoginSubmit} noValidate className="space-y-4">
+						<form
+							onSubmit={handleLoginSubmit}
+							noValidate
+							className="space-y-4"
+						>
 							{loginError && (
 								<div className="rounded-lg border border-danger/20 bg-danger-subtle px-4 py-3 text-sm text-danger">
 									{loginError}
@@ -481,7 +619,9 @@ export default function AcceptInvitationPage() {
 									autoComplete="email"
 									autoFocus
 									className={cn(
-										loginError && !loginForm.email && "border-danger focus-visible:ring-danger",
+										loginError &&
+											!loginForm.email &&
+											"border-danger focus-visible:ring-danger",
 									)}
 								/>
 							</div>
@@ -497,21 +637,33 @@ export default function AcceptInvitationPage() {
 								<div className="relative">
 									<Input
 										id="login-password"
-										type={showLoginPassword ? "text" : "password"}
+										type={
+											showLoginPassword
+												? "text"
+												: "password"
+										}
 										placeholder="••••••••"
 										value={loginForm.password}
 										onChange={setLogin("password")}
 										autoComplete="current-password"
 										className={cn(
 											"pr-10",
-											loginError && !loginForm.password && "border-danger focus-visible:ring-danger",
+											loginError &&
+												!loginForm.password &&
+												"border-danger focus-visible:ring-danger",
 										)}
 									/>
 									<button
 										type="button"
-										onClick={() => setShowLoginPassword((v) => !v)}
+										onClick={() =>
+											setShowLoginPassword((v) => !v)
+										}
 										className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-muted-foreground transition-colors focus:outline-none"
-										aria-label={showLoginPassword ? "Hide password" : "Show password"}
+										aria-label={
+											showLoginPassword
+												? "Hide password"
+												: "Show password"
+										}
 									>
 										{showLoginPassword ? (
 											<EyeOff className="h-4 w-4" />
@@ -522,7 +674,11 @@ export default function AcceptInvitationPage() {
 								</div>
 							</div>
 
-							<Button type="submit" className="w-full" disabled={loginLoading}>
+							<Button
+								type="submit"
+								className="w-full"
+								disabled={loginLoading}
+							>
 								{loginLoading ? (
 									<span className="flex items-center gap-2">
 										<span className="h-4 w-4 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />
@@ -530,7 +686,8 @@ export default function AcceptInvitationPage() {
 									</span>
 								) : (
 									<span className="flex items-center gap-2">
-										Sign in <ArrowRight className="h-4 w-4" />
+										Sign in{" "}
+										<ArrowRight className="h-4 w-4" />
 									</span>
 								)}
 							</Button>

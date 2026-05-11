@@ -1,233 +1,17 @@
 import { useState } from "react";
-import {
-	LayoutDashboard,
-	Ticket,
-	Users,
-	Shield,
-	CheckCircle2,
-	Timer,
-	Check,
-	Minus,
-	type LucideIcon,
-} from "lucide-react";
+import { Check, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { SectionBlock } from "./SectionBlock";
-
-type AccessLevel =
-	| { type: "full" }
-	| { type: "none" }
-	| { type: "partial"; label: string };
-
-const FULL: AccessLevel = { type: "full" };
-const NONE: AccessLevel = { type: "none" };
-const partial = (label: string): AccessLevel => ({ type: "partial", label });
-
-interface PermRow {
-	feature: string;
-	admin: AccessLevel;
-	manager: AccessLevel;
-	developer: AccessLevel;
-	user: AccessLevel;
-}
-
-interface PermGroup {
-	module: string;
-	icon: LucideIcon;
-	rows: PermRow[];
-}
-
-const PERMISSION_GROUPS: PermGroup[] = [
-	{
-		module: "Projects",
-		icon: LayoutDashboard,
-		rows: [
-			{
-				feature: "View projects",
-				admin: FULL,
-				manager: partial("Assigned"),
-				developer: FULL,
-				user: FULL,
-			},
-			{
-				feature: "Create projects",
-				admin: FULL,
-				manager: FULL,
-				developer: NONE,
-				user: NONE,
-			},
-			{
-				feature: "Manage project settings",
-				admin: FULL,
-				manager: partial("Assigned"),
-				developer: NONE,
-				user: NONE,
-			},
-			{
-				feature: "Delete projects",
-				admin: FULL,
-				manager: NONE,
-				developer: NONE,
-				user: NONE,
-			},
-		],
-	},
-	{
-		module: "Tasks",
-		icon: CheckCircle2,
-		rows: [
-			{
-				feature: "View tasks",
-				admin: FULL,
-				manager: FULL,
-				developer: FULL,
-				user: FULL,
-			},
-			{
-				feature: "Create & edit tasks",
-				admin: FULL,
-				manager: FULL,
-				developer: FULL,
-				user: NONE,
-			},
-			{
-				feature: "Delete tasks",
-				admin: FULL,
-				manager: FULL,
-				developer: NONE,
-				user: NONE,
-			},
-		],
-	},
-	{
-		module: "Tickets",
-		icon: Ticket,
-		rows: [
-			{
-				feature: "View tickets",
-				admin: FULL,
-				manager: FULL,
-				developer: FULL,
-				user: FULL,
-			},
-			{
-				feature: "Create tickets",
-				admin: FULL,
-				manager: FULL,
-				developer: FULL,
-				user: FULL,
-			},
-			{
-				feature: "Edit tickets",
-				admin: FULL,
-				manager: FULL,
-				developer: FULL,
-				user: partial("Own only"),
-			},
-			{
-				feature: "Delete tickets",
-				admin: FULL,
-				manager: FULL,
-				developer: NONE,
-				user: partial("Own only"),
-			},
-		],
-	},
-	{
-		module: "Sprints",
-		icon: Timer,
-		rows: [
-			{
-				feature: "View sprints",
-				admin: FULL,
-				manager: FULL,
-				developer: FULL,
-				user: NONE,
-			},
-			{
-				feature: "Create & manage sprints",
-				admin: FULL,
-				manager: FULL,
-				developer: NONE,
-				user: NONE,
-			},
-			{
-				feature: "Delete sprints",
-				admin: FULL,
-				manager: NONE,
-				developer: NONE,
-				user: NONE,
-			},
-		],
-	},
-	{
-		module: "Users",
-		icon: Users,
-		rows: [
-			{
-				feature: "View users",
-				admin: FULL,
-				manager: FULL,
-				developer: NONE,
-				user: NONE,
-			},
-			{
-				feature: "Invite users",
-				admin: FULL,
-				manager: FULL,
-				developer: NONE,
-				user: NONE,
-			},
-			{
-				feature: "Delete users",
-				admin: FULL,
-				manager: FULL,
-				developer: NONE,
-				user: NONE,
-			},
-		],
-	},
-	{
-		module: "Roles & Settings",
-		icon: Shield,
-		rows: [
-			{
-				feature: "Manage role permissions",
-				admin: FULL,
-				manager: NONE,
-				developer: NONE,
-				user: NONE,
-			},
-			{
-				feature: "Workspace settings",
-				admin: FULL,
-				manager: NONE,
-				developer: NONE,
-				user: NONE,
-			},
-			{
-				feature: "View system logs",
-				admin: FULL,
-				manager: NONE,
-				developer: NONE,
-				user: NONE,
-			},
-		],
-	},
-];
-
-const ROLE_COLUMNS: {
-	key: keyof Omit<PermRow, "feature">;
-	label: string;
-	variant: string;
-}[] = [
-	{ key: "admin", label: "Admin", variant: "primary" },
-	{ key: "manager", label: "Manager", variant: "review" },
-	{ key: "developer", label: "Developer", variant: "done" },
-	{ key: "user", label: "User (Client)", variant: "important" },
-];
+import {
+	PERMISSION_GROUPS,
+	ROLE_COLUMNS,
+	NONE,
+	type AccessLevel,
+	type PermRow,
+} from "./rolePermissionsData";
 
 function AccessCell({
 	level,
@@ -287,8 +71,7 @@ export function RolePermissionsSection() {
 		PERMISSION_GROUPS.forEach((group, gi) => {
 			group.rows.forEach((row, ri) => {
 				ROLE_COLUMNS.forEach((col) => {
-					init[`${gi}-${ri}-${col.key}`] =
-						row[col.key as keyof Omit<PermRow, "feature">];
+					init[`${gi}-${ri}-${col.key}`] = row[col.key as keyof Omit<PermRow, "feature">];
 				});
 			});
 		});
@@ -299,14 +82,8 @@ export function RolePermissionsSection() {
 		const key = `${gi}-${ri}-${roleKey}`;
 		setMatrix((prev) => {
 			const current = prev[key];
-			const original =
-				PERMISSION_GROUPS[gi].rows[ri][
-					roleKey as keyof Omit<PermRow, "feature">
-				];
-			return {
-				...prev,
-				[key]: current.type === "none" ? original : NONE,
-			};
+			const original = PERMISSION_GROUPS[gi].rows[ri][roleKey as keyof Omit<PermRow, "feature">];
+			return { ...prev, [key]: current.type === "none" ? original : NONE };
 		});
 	}
 
@@ -320,11 +97,7 @@ export function RolePermissionsSection() {
 				{ROLE_COLUMNS.map((col) => (
 					<Badge
 						key={col.key}
-						variant={
-							col.variant as Parameters<
-								typeof Badge
-							>[0]["variant"]
-						}
+						variant={col.variant as Parameters<typeof Badge>[0]["variant"]}
 						className="font-medium"
 					>
 						{col.label}
@@ -363,11 +136,7 @@ export function RolePermissionsSection() {
 									className="px-4 py-2.5 text-center text-xs font-medium text-muted min-w-28"
 								>
 									<Badge
-										variant={
-											col.variant as Parameters<
-												typeof Badge
-											>[0]["variant"]
-										}
+										variant={col.variant as Parameters<typeof Badge>[0]["variant"]}
 										className="font-medium"
 									>
 										{col.label}
@@ -379,10 +148,7 @@ export function RolePermissionsSection() {
 					<tbody>
 						{PERMISSION_GROUPS.map((group, gi) => (
 							<>
-								<tr
-									key={`group-${group.module}`}
-									className="bg-muted-subtle/60 border-b border-border"
-								>
+								<tr key={`group-${group.module}`} className="bg-muted-subtle/60 border-b border-border">
 									<td
 										colSpan={ROLE_COLUMNS.length + 1}
 										className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide"
@@ -398,33 +164,20 @@ export function RolePermissionsSection() {
 										key={`${group.module}-${row.feature}`}
 										className={cn(
 											"border-b border-border last:border-0 transition-colors hover:bg-muted-subtle/60",
-											ri % 2 === 1 &&
-												"bg-muted-subtle/30",
+											ri % 2 === 1 && "bg-muted-subtle/30",
 										)}
 									>
 										<td className="px-4 py-3 text-sm text-foreground">
 											{row.feature}
 										</td>
 										{ROLE_COLUMNS.map((col) => (
-											<td
-												key={col.key}
-												className="px-4 py-3"
-											>
+											<td key={col.key} className="px-4 py-3">
 												<AccessCell
 													level={
-														matrix[
-															`${gi}-${ri}-${col.key}`
-														] ??
-														row[
-															col.key as keyof Omit<
-																PermRow,
-																"feature"
-															>
-														]
+														matrix[`${gi}-${ri}-${col.key}`] ??
+														row[col.key as keyof Omit<PermRow, "feature">]
 													}
-													onChange={() =>
-														toggle(gi, ri, col.key)
-													}
+													onChange={() => toggle(gi, ri, col.key)}
 												/>
 											</td>
 										))}
@@ -437,10 +190,7 @@ export function RolePermissionsSection() {
 			</div>
 
 			<div className="mt-5 flex justify-end">
-				<Button
-					size="sm"
-					onClick={() => toast.success("Permissions saved.")}
-				>
+				<Button size="sm" onClick={() => toast.success("Permissions saved.")}>
 					Save Changes
 				</Button>
 			</div>

@@ -433,6 +433,7 @@ function InvitationsDialog({
 	const [invitations, setInvitations] = useState<UserInvitation[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [cancelling, setCancelling] = useState<string | null>(null);
+	const [resending, setResending] = useState<boolean>(false);
 
 	const fetchInvitations = useCallback(async () => {
 		setLoading(true);
@@ -449,6 +450,25 @@ function InvitationsDialog({
 	useEffect(() => {
 		if (open) fetchInvitations();
 	}, [open, fetchInvitations]);
+
+	async function handleResend(inv: { email: string; role: string }) {
+		setResending(true);
+		try {
+			await inviteUser(inv.email, inv.role);
+			toast.success("Invitation resent", {
+				description: inv.email,
+			});
+			fetchInvitations();
+		} catch (err: unknown) {
+			const msg =
+				err instanceof Error
+					? err.message
+					: "Failed to resend invitation.";
+			toast.error(msg);
+		} finally {
+			setResending(false);
+		}
+	}
 
 	async function handleCancel(userId: string) {
 		setCancelling(userId);
@@ -483,13 +503,13 @@ function InvitationsDialog({
 				</DialogHeader>
 
 				{/* Tabs */}
-				<div className="flex items-center gap-1 border border-border rounded-lg p-1 bg-surface w-fit">
+				<div className="flex items-center gap-1 border border-border rounded-xl px-2 py-1 bg-surface w-fit">
 					{(["pending", "cancelled"] as const).map((t) => (
 						<button
 							key={t}
 							onClick={() => setTab(t)}
 							className={cn(
-								"px-3 py-1.5 text-sm rounded-md transition-colors capitalize",
+								"px-3 py-1 text-xs rounded-xl transition-colors capitalize",
 								tab === t
 									? "bg-primary text-primary-foreground font-medium"
 									: "text-muted-foreground hover:text-foreground hover:bg-muted-subtle",
@@ -500,7 +520,7 @@ function InvitationsDialog({
 					))}
 				</div>
 
-				<div className="min-h-[200px]">
+				<div className="min-h-[200px] mt-4">
 					{loading && (
 						<div className="flex items-center justify-center py-12 gap-2 text-muted">
 							<Loader2 className="h-4 w-4 animate-spin" />
@@ -552,25 +572,41 @@ function InvitationsDialog({
 												)}
 											</td>
 											{tab === "pending" && (
-												<td className="px-4 py-3 text-right">
-													<button
-														onClick={() =>
-															handleCancel(inv.id)
-														}
-														disabled={
-															cancelling ===
-															inv.id
-														}
-														className="inline-flex items-center gap-1 text-xs text-danger hover:text-danger/80 transition-colors disabled:opacity-50"
-													>
-														{cancelling ===
-														inv.id ? (
-															<Loader2 className="h-3 w-3 animate-spin" />
-														) : (
-															<X className="h-3 w-3" />
-														)}
-														Cancel
-													</button>
+												<td className="px-4 py-3 text-right ">
+													<div className="flex items-center justify-center gap-3">
+														<Button
+															onClick={() =>
+																handleResend({
+																	email: inv.email,
+																	role: inv.role,
+																})
+															}
+															size="sm"
+															disabled={resending}
+														>
+															Resend
+														</Button>
+														<button
+															onClick={() =>
+																handleCancel(
+																	inv.id,
+																)
+															}
+															disabled={
+																cancelling ===
+																inv.id
+															}
+															className="inline-flex items-center gap-1 text-xs text-danger hover:text-danger/80 transition-colors disabled:opacity-50"
+														>
+															{cancelling ===
+															inv.id ? (
+																<Loader2 className="h-3 w-3 animate-spin" />
+															) : (
+																<X className="h-3 w-3" />
+															)}
+															Cancel
+														</button>
+													</div>
 												</td>
 											)}
 										</tr>

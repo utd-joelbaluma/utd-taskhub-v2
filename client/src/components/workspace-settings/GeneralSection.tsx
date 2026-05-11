@@ -41,7 +41,8 @@ const EMPTY_FORM: Required<UpdateWorkspaceSettingsPayload> = {
 
 export function GeneralSection() {
 	const [settings, setSettings] = useState<WorkspaceSettings | null>(null);
-	const [form, setForm] = useState<Required<UpdateWorkspaceSettingsPayload>>(EMPTY_FORM);
+	const [form, setForm] =
+		useState<Required<UpdateWorkspaceSettingsPayload>>(EMPTY_FORM);
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 
@@ -58,7 +59,10 @@ export function GeneralSection() {
 				});
 			})
 			.catch((err: Error) => {
-				if (!cancelled) toast.error(err.message || "Failed to load workspace settings.");
+				if (!cancelled)
+					toast.error(
+						err.message || "Failed to load workspace settings.",
+					);
 			})
 			.finally(() => {
 				if (!cancelled) setLoading(false);
@@ -72,7 +76,8 @@ export function GeneralSection() {
 		if (!settings) return {};
 		const diff: UpdateWorkspaceSettingsPayload = {};
 		const trimmedName = form.workspace_name.trim();
-		if (trimmedName !== settings.workspace_name) diff.workspace_name = trimmedName;
+		if (trimmedName !== settings.workspace_name)
+			diff.workspace_name = trimmedName;
 		if (form.workspace_timezone !== settings.workspace_timezone)
 			diff.workspace_timezone = form.workspace_timezone;
 		if (form.workspace_language !== settings.workspace_language)
@@ -87,7 +92,10 @@ export function GeneralSection() {
 			toast.message("No changes to save.");
 			return;
 		}
-		if (diff.workspace_name !== undefined && diff.workspace_name.length === 0) {
+		if (
+			diff.workspace_name !== undefined &&
+			diff.workspace_name.length === 0
+		) {
 			toast.error("Workspace name is required.");
 			return;
 		}
@@ -102,7 +110,9 @@ export function GeneralSection() {
 			});
 			toast.success("Workspace settings saved.");
 		} catch (err) {
-			toast.error((err as Error).message || "Failed to save workspace settings.");
+			toast.error(
+				(err as Error).message || "Failed to save workspace settings.",
+			);
 		} finally {
 			setSaving(false);
 		}
@@ -121,12 +131,15 @@ export function GeneralSection() {
 					<Input
 						value={form.workspace_name}
 						onChange={(e) =>
-							setForm((f) => ({ ...f, workspace_name: e.target.value }))
+							setForm((f) => ({
+								...f,
+								workspace_name: e.target.value,
+							}))
 						}
 						disabled={loading || saving}
 					/>
 				</div>
-				<div>
+				{/* <div>
 					<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
 						Workspace URL
 					</label>
@@ -136,7 +149,7 @@ export function GeneralSection() {
 						</span>
 						<Input defaultValue="hq" className="rounded-l-none" />
 					</div>
-				</div>
+				</div> */}
 				<div>
 					<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
 						Time Zone
@@ -144,7 +157,10 @@ export function GeneralSection() {
 					<Select
 						value={form.workspace_timezone}
 						onValueChange={(value) =>
-							setForm((f) => ({ ...f, workspace_timezone: value }))
+							setForm((f) => ({
+								...f,
+								workspace_timezone: value,
+							}))
 						}
 						disabled={loading || saving}
 					>
@@ -167,7 +183,10 @@ export function GeneralSection() {
 					<Select
 						value={form.workspace_language}
 						onValueChange={(value) =>
-							setForm((f) => ({ ...f, workspace_language: value }))
+							setForm((f) => ({
+								...f,
+								workspace_language: value,
+							}))
 						}
 						disabled={loading || saving}
 					>
@@ -185,7 +204,11 @@ export function GeneralSection() {
 				</div>
 			</div>
 			<div className="mt-5 flex justify-end">
-				<Button size="sm" onClick={handleSave} disabled={loading || saving}>
+				<Button
+					size="sm"
+					onClick={handleSave}
+					disabled={loading || saving}
+				>
 					{saving ? "Saving..." : "Save Changes"}
 				</Button>
 			</div>

@@ -1,12 +1,13 @@
 import { supabase, supabaseAdmin } from "../config/supabase.js";
 import { env } from "../config/env.js";
-import { sendInvitationEmail } from "../services/mailer.service.js";
 
 export async function listUsers(req, res, next) {
 	try {
-			const { data, error } = await supabase
-				.from("profiles")
-				.select("id, full_name, email, avatar_url, role, role_id, status, created_at, global_role:roles!profiles_role_id_fkey(id, key, name, scope)")
+		const { data, error } = await supabase
+			.from("profiles")
+			.select(
+				"id, full_name, email, avatar_url, role, role_id, status, created_at, global_role:roles!profiles_role_id_fkey(id, key, name, scope)",
+			)
 			.order("created_at", { ascending: false });
 
 		if (error) throw error;
@@ -21,88 +22,15 @@ export async function listUsers(req, res, next) {
 	}
 }
 
-export async function inviteUser(req, res, next) {
-	try {
-		const { email, role = "user" } = req.body;
-
-		if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-			return res.status(400).json({
-				success: false,
-				message: "A valid email is required.",
-			});
-		}
-
-		const normalizedEmail = email.trim().toLowerCase();
-
-		const { data: existing } = await supabase
-			.from("profiles")
-			.select("id, status")
-			.eq("email", normalizedEmail)
-			.maybeSingle();
-
-		if (existing?.status === "active") {
-			return res.status(409).json({
-				success: false,
-				message: "A user with this email already exists.",
-			});
-		}
-
-		const { data: existingInvite } = await supabase
-			.from("invitations")
-			.select("id")
-			.is("project_id", null)
-			.eq("email", normalizedEmail)
-			.eq("status", "pending")
-			.gt("expires_at", new Date().toISOString())
-			.maybeSingle();
-
-		if (existingInvite) {
-			return res.status(409).json({
-				success: false,
-				message: "A pending invitation for this email already exists.",
-			});
-		}
-
-		const { data: invitation, error: inviteError } = await supabase
-			.from("invitations")
-			.insert({
-				project_id: null,
-				invited_by: req.profile.id,
-				email: normalizedEmail,
-				role,
-			})
-			.select()
-			.single();
-
-		if (inviteError) throw inviteError;
-
-		const inviteUrl = `${env.appUrl}/invitations/accept?token=${invitation.token}`;
-
-		await sendInvitationEmail({
-			to: normalizedEmail,
-			invitedByName: req.profile.full_name || req.profile.email,
-			projectName: env.appName,
-			role,
-			inviteUrl,
-		});
-
-		res.status(201).json({
-			success: true,
-			message: `Invitation sent to ${normalizedEmail}.`,
-			data: { invitation },
-		});
-	} catch (error) {
-		next(error);
-	}
-}
-
 export async function listUserInvitations(req, res, next) {
 	try {
 		const { status } = req.query;
 
 		let query = supabase
 			.from("invitations")
-			.select("id, email, role, status, created_at, cancelled_at, expires_at")
+			.select(
+				"id, email, role, status, created_at, cancelled_at, expires_at",
+			)
 			.is("project_id", null)
 			.order("created_at", { ascending: false });
 
@@ -162,7 +90,9 @@ export async function updateUserRole(req, res, next) {
 			.from("profiles")
 			.update({ role: role.key, role_id: role.id })
 			.eq("id", userId)
-			.select("id, full_name, email, avatar_url, role, role_id, status, created_at, global_role:roles!profiles_role_id_fkey(id, key, name, scope)")
+			.select(
+				"id, full_name, email, avatar_url, role, role_id, status, created_at, global_role:roles!profiles_role_id_fkey(id, key, name, scope)",
+			)
 			.maybeSingle();
 
 		if (updateError) throw updateError;
@@ -247,7 +177,10 @@ export async function cancelUserInvitation(req, res, next) {
 
 		const { error: updateError } = await supabase
 			.from("invitations")
-			.update({ status: "cancelled", cancelled_at: new Date().toISOString() })
+			.update({
+				status: "cancelled",
+				cancelled_at: new Date().toISOString(),
+			})
 			.eq("id", userId);
 
 		if (updateError) throw updateError;
