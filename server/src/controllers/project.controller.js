@@ -10,14 +10,17 @@ export async function getProjects(req, res, next) {
 
 		let query = supabase
 			.from("projects")
-			.select("*, project_members(user_id, role, profiles(id, full_name, avatar_url)), tasks(id, status), sprint:sprints!projects_sprint_id_fkey(id, name, start_date, end_date, status)")
+			.select(
+				"*, project_members(user_id, role, profiles(id, full_name, avatar_url)), tasks(id, status), sprint:sprints!projects_sprint_id_fkey(id, name, start_date, end_date, status)",
+			)
 			.order("created_at", { ascending: false });
 
-		if (req.profile.global_role.key !== "admin") {
-			const { data: memberships, error: memberError } = await req.supabaseAdmin
-				.from("project_members")
-				.select("project_id")
-				.eq("user_id", req.profile.id);
+		if (req.profile?.global_role?.key !== "admin") {
+			const { data: memberships, error: memberError } =
+				await req.supabaseAdmin
+					.from("project_members")
+					.select("project_id")
+					.eq("user_id", req.profile.id);
 
 			if (memberError) throw memberError;
 
@@ -49,7 +52,9 @@ export async function getProjectById(req, res, next) {
 
 		const { data, error } = await supabase
 			.from("projects")
-			.select("*, project_members(user_id, role, profiles(id, full_name, avatar_url)), sprint:sprints!projects_sprint_id_fkey(id, name, start_date, end_date, status)")
+			.select(
+				"*, project_members(user_id, role, profiles(id, full_name, avatar_url)), sprint:sprints!projects_sprint_id_fkey(id, name, start_date, end_date, status)",
+			)
 			.eq("id", id)
 			.maybeSingle();
 
@@ -83,7 +88,17 @@ export async function createProject(req, res, next) {
 			});
 		}
 
-		const { name, description, status, icon_type, icon_value, sprint_name, sprint_end_date, sprint_id, tags } = req.body;
+		const {
+			name,
+			description,
+			status,
+			icon_type,
+			icon_value,
+			sprint_name,
+			sprint_end_date,
+			sprint_id,
+			tags,
+		} = req.body;
 
 		const { data, error } = await supabase
 			.from("projects")
@@ -106,7 +121,11 @@ export async function createProject(req, res, next) {
 
 		const { error: memberError } = await supabase
 			.from("project_members")
-			.insert({ project_id: data.id, user_id: req.profile.id, role: "owner" });
+			.insert({
+				project_id: data.id,
+				user_id: req.profile.id,
+				role: "owner",
+			});
 
 		if (memberError) throw memberError;
 
