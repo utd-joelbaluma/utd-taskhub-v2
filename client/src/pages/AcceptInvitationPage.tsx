@@ -152,7 +152,12 @@ export default function AcceptInvitationPage() {
 
 		setLoading(true);
 		try {
-			await registerUser(invitedEmail, form.password, form.name.trim());
+			await registerUser(
+				invitedEmail,
+				form.password,
+				form.name.trim(),
+				invitedRole,
+			);
 			await acceptInvitation(token);
 			const session = await loginWithEmail(invitedEmail, form.password);
 			storeAuthTokens(session, { remember: false });
