@@ -6,6 +6,10 @@ import {
 	updateUserRole,
 	deleteUser,
 } from "../controllers/user.controller.js";
+import {
+	getMySprintCapacity,
+	getTeamSprintCapacity,
+} from "../controllers/sprintCapacity.controller.js";
 import { requireAuth } from "../middlewares/auth.middleware.js";
 import { requirePermission } from "../middlewares/permission.middleware.js";
 import { inviteUser } from "../services/invitation.service.js";
@@ -13,6 +17,10 @@ import { inviteUser } from "../services/invitation.service.js";
 const router = express.Router();
 
 router.get("/", requireAuth, requirePermission("users.read"), listUsers);
+
+// Literal routes before param routes to avoid conflict
+router.get("/sprint-capacity", requireAuth, requirePermission("users.read"), getTeamSprintCapacity);
+router.get("/:userId/sprint-capacity", requireAuth, getMySprintCapacity);
 router.post(
 	"/invite",
 	requireAuth,

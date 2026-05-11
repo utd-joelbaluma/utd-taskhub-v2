@@ -1,9 +1,10 @@
-import { supabase } from "../config/supabase.js";
+import { supabase, supabaseAdmin } from "../config/supabase.js";
 import {
 	validateCreateTask,
 	validateUpdateTask,
 	validateMoveTask,
 } from "../utils/task.validator.js";
+import { refreshUserCapacity } from "../services/sprintCapacity.service.js";
 
 const TASK_SELECT = `
 	id,
@@ -168,6 +169,15 @@ export async function createTask(req, res, next) {
 
 		if (error) throw error;
 
+		// assigned_to is the joined profile object {id,...} due to TASK_SELECT
+		if (data.sprint_id && data.assigned_to?.id) {
+			try {
+				await refreshUserCapacity(supabaseAdmin, data.assigned_to.id, data.sprint_id);
+			} catch (e) {
+				console.error("[capacity] createTask:", e.message);
+			}
+		}
+
 		res.status(201).json({
 			success: true,
 			message: "Task created successfully.",
@@ -239,6 +249,14 @@ export async function updateTask(req, res, next) {
 			});
 		}
 
+		// Pre-fetch existing task so we can compute affected capacity pairs
+		const { data: existing } = await supabase
+			.from("tasks")
+			.select("id, sprint_id, assigned_to, estimated_time")
+			.eq("id", taskId)
+			.eq("project_id", projectId)
+			.maybeSingle();
+
 		const { data, error } = await supabase
 			.from("tasks")
 			.update(updateData)
@@ -253,6 +271,48 @@ export async function updateTask(req, res, next) {
 			return res
 				.status(404)
 				.json({ success: false, message: "Task not found." });
+		}
+
+		// Recalculate capacity for all affected (userId, sprintId) pairs
+		if (existing) {
+			const oldAssignee = existing.assigned_to;
+			const newAssignee =
+				updateData.assigned_to !== undefined ? updateData.assigned_to : oldAssignee;
+			const oldSprint = existing.sprint_id;
+			const newSprint =
+				updateData.sprint_id !== undefined ? updateData.sprint_id : oldSprint;
+
+			const pairs = new Set();
+
+			if (
+				"assigned_to" in updateData &&
+				updateData.assigned_to !== oldAssignee
+			) {
+				if (oldAssignee && newSprint) pairs.add(`${oldAssignee}:${newSprint}`);
+				if (newAssignee && newSprint) pairs.add(`${newAssignee}:${newSprint}`);
+			}
+
+			if ("sprint_id" in updateData && updateData.sprint_id !== oldSprint) {
+				if (newAssignee && oldSprint) pairs.add(`${newAssignee}:${oldSprint}`);
+				if (newAssignee && newSprint) pairs.add(`${newAssignee}:${newSprint}`);
+			}
+
+			if ("estimated_time" in updateData && newAssignee && newSprint) {
+				pairs.add(`${newAssignee}:${newSprint}`);
+			}
+
+			if (pairs.size > 0) {
+				try {
+					await Promise.all(
+						[...pairs].map((pair) => {
+							const [uid, sid] = pair.split(":");
+							return refreshUserCapacity(supabaseAdmin, uid, sid);
+						}),
+					);
+				} catch (e) {
+					console.error("[capacity] updateTask:", e.message);
+				}
+			}
 		}
 
 		res.status(200).json({
@@ -271,7 +331,7 @@ export async function deleteTask(req, res, next) {
 
 		const { data: existing, error: findError } = await supabase
 			.from("tasks")
-			.select("id")
+			.select("id, sprint_id, assigned_to")
 			.eq("id", taskId)
 			.eq("project_id", projectId)
 			.maybeSingle();
@@ -289,6 +349,14 @@ export async function deleteTask(req, res, next) {
 			.delete()
 			.eq("id", taskId);
 		if (error) throw error;
+
+		if (existing.sprint_id && existing.assigned_to) {
+			try {
+				await refreshUserCapacity(supabaseAdmin, existing.assigned_to, existing.sprint_id);
+			} catch (e) {
+				console.error("[capacity] deleteTask:", e.message);
+			}
+		}
 
 		res.status(200).json({
 			success: true,
