@@ -88,7 +88,7 @@ import { PermissionGate } from "@/components/PermissionGate";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type ColumnId = "todo" | "in-progress" | "review" | "done";
+type ColumnId = "backlog" | "todo" | "in-progress" | "review" | "done";
 type Columns = Record<ColumnId, UiTask[]>;
 
 interface UiTask {
@@ -109,9 +109,10 @@ interface UiTask {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const COLUMN_IDS: ColumnId[] = ["todo", "in-progress", "review", "done"];
+const COLUMN_IDS: ColumnId[] = ["backlog", "todo", "in-progress", "review", "done"];
 
 const COLUMN_LABELS: Record<ColumnId, string> = {
+	backlog: "Backlog",
 	todo: "To Do",
 	"in-progress": "In Progress",
 	review: "QA",
@@ -120,8 +121,9 @@ const COLUMN_LABELS: Record<ColumnId, string> = {
 
 const COLUMN_BADGE: Record<
 	ColumnId,
-	{ variant: "todo" | "in-progress" | "review" | "done"; dot: string }
+	{ variant: "backlog" | "todo" | "in-progress" | "review" | "done"; dot: string }
 > = {
+	backlog: { variant: "backlog", dot: "bg-muted" },
 	todo: { variant: "todo", dot: "bg-muted" },
 	"in-progress": { variant: "in-progress", dot: "bg-primary" },
 	review: { variant: "review", dot: "bg-secondary" },
@@ -147,9 +149,9 @@ const PRIORITY_BADGE_VARIANT: Record<
 
 const STATUS_BADGE: Record<
 	ApiTaskStatus,
-	{ variant: "todo" | "in-progress" | "review" | "done"; label: string }
+	{ variant: "backlog" | "todo" | "in-progress" | "review" | "done"; label: string }
 > = {
-	backlog: { variant: "todo", label: "Backlog" },
+	backlog: { variant: "backlog", label: "Backlog" },
 	todo: { variant: "todo", label: "To Do" },
 	in_progress: { variant: "in-progress", label: "In Progress" },
 	review: { variant: "review", label: "QA" },
@@ -186,7 +188,7 @@ const NO_SPRINT_VALUE = "__no_sprint__";
 function apiStatusToColumnId(status: ApiTaskStatus): ColumnId | null {
 	switch (status) {
 		case "backlog":
-			return "todo";
+			return "backlog";
 		case "todo":
 			return "todo";
 		case "in_progress":
@@ -202,6 +204,8 @@ function apiStatusToColumnId(status: ApiTaskStatus): ColumnId | null {
 
 function columnIdToApiStatus(colId: ColumnId): ApiTaskStatus {
 	switch (colId) {
+		case "backlog":
+			return "backlog";
 		case "todo":
 			return "todo";
 		case "in-progress":

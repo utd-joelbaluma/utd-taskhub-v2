@@ -77,7 +77,9 @@ export default function AppLayout() {
 	const navigate = useNavigate();
 	const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-	const visibleNavLinks = navLinks.filter((l) => !l.feature || can(l.feature));
+	const visibleNavLinks = navLinks.filter(
+		(l) => !l.feature || can(l.feature),
+	);
 	const [notificationsDialogOpen, setNotificationsDialogOpen] =
 		useState(false);
 
@@ -212,7 +214,9 @@ export default function AppLayout() {
 								<DropdownMenuSeparator />
 								<DropdownMenuItem
 									className="justify-center text-xs text-primary font-medium py-2"
-									onSelect={() => setNotificationsDialogOpen(true)}
+									onSelect={() =>
+										setNotificationsDialogOpen(true)
+									}
 								>
 									View all notifications
 								</DropdownMenuItem>
@@ -258,13 +262,13 @@ export default function AppLayout() {
 									<User className="h-4 w-4 text-muted-foreground" />
 									Profile
 								</DropdownMenuItem>
-								<DropdownMenuItem
+								{/* <DropdownMenuItem
 									className="gap-2 px-3"
 									onSelect={() => navigate("/settings")}
 								>
 									<Settings className="h-4 w-4 text-muted-foreground" />
 									Settings
-								</DropdownMenuItem>
+								</DropdownMenuItem> */}
 								<DropdownMenuSeparator />
 								<DropdownMenuItem
 									className="gap-2 px-3 text-danger focus:text-danger focus:bg-danger/10"
@@ -360,7 +364,8 @@ export default function AppLayout() {
 					<DialogHeader className="mb-3 pb-0">
 						<DialogTitle>Notifications</DialogTitle>
 						<DialogDescription>
-							Review your recent workspace activity and task updates.
+							Review your recent workspace activity and task
+							updates.
 						</DialogDescription>
 					</DialogHeader>
 
@@ -387,7 +392,9 @@ export default function AppLayout() {
 								<span
 									className={cn(
 										"mt-2 h-2 w-2 shrink-0 rounded-full",
-										notif.unread ? "bg-primary" : "bg-transparent",
+										notif.unread
+											? "bg-primary"
+											: "bg-transparent",
 									)}
 									aria-hidden="true"
 								/>

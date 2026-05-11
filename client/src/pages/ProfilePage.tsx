@@ -57,7 +57,9 @@ export default function ProfilePage() {
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 	const [avatarFile, setAvatarFile] = useState<File | null>(null);
-	const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+	const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(
+		null,
+	);
 	const [avatarMarkedForRemoval, setAvatarMarkedForRemoval] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const [form, setForm] = useState<UpdateProfilePayload>({
@@ -126,8 +128,14 @@ export default function ProfilePage() {
 			const payload: UpdateProfilePayload = {};
 			const trimmedName = form.full_name?.trim();
 			const trimmedAvatar = form.avatar_url?.trim();
-			if (trimmedName !== (profile.full_name ?? "")) payload.full_name = trimmedName || null;
-			if (!avatarFile && (avatarMarkedForRemoval || trimmedAvatar !== (profile.avatar_url ?? ""))) payload.avatar_url = trimmedAvatar || null;
+			if (trimmedName !== (profile.full_name ?? ""))
+				payload.full_name = trimmedName || null;
+			if (
+				!avatarFile &&
+				(avatarMarkedForRemoval ||
+					trimmedAvatar !== (profile.avatar_url ?? ""))
+			)
+				payload.avatar_url = trimmedAvatar || null;
 
 			if (Object.keys(payload).length === 0 && !avatarFile) {
 				toast.info("No changes to save.");
@@ -191,12 +199,16 @@ export default function ProfilePage() {
 
 	const initials = getInitials(profile.full_name, profile.email);
 	const displayName = profile.full_name ?? profile.email.split("@")[0];
-	const avatarSrc = avatarPreviewUrl ?? (avatarMarkedForRemoval ? null : profile.avatar_url);
+	const avatarSrc =
+		avatarPreviewUrl ??
+		(avatarMarkedForRemoval ? null : profile.avatar_url);
 
 	return (
 		<div className="mx-auto max-w-[1280px] px-4 py-8 sm:px-5 md:px-6">
 			<div className="mb-6">
-				<h1 className="text-xl font-semibold text-foreground">Profile</h1>
+				<h1 className="text-xl font-semibold text-foreground">
+					Profile
+				</h1>
 				<p className="mt-0.5 text-sm text-muted-foreground">
 					Manage your personal information
 				</p>
@@ -209,7 +221,9 @@ export default function ProfilePage() {
 						{avatarSrc && (
 							<AvatarImage src={avatarSrc} alt={displayName} />
 						)}
-						<AvatarFallback className="text-lg">{initials}</AvatarFallback>
+						<AvatarFallback className="text-lg">
+							{initials}
+						</AvatarFallback>
 					</Avatar>
 
 					<div>
@@ -264,7 +278,10 @@ export default function ProfilePage() {
 								placeholder="Your full name"
 								value={form.full_name ?? ""}
 								onChange={(e) =>
-									setForm((f) => ({ ...f, full_name: e.target.value }))
+									setForm((f) => ({
+										...f,
+										full_name: e.target.value,
+									}))
 								}
 							/>
 						</div>
@@ -277,37 +294,47 @@ export default function ProfilePage() {
 								Avatar
 							</label>
 							<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-								<label className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border border-border-strong bg-surface px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted-subtle">
-									<Upload className="h-4 w-4" />
-									Choose image
-									<input
-										ref={fileInputRef}
-										id="avatar_upload"
-										type="file"
-										accept="image/jpeg,image/png,image/webp,image/gif"
-										className="sr-only"
-										onChange={(e) => handleAvatarChange(e.target.files?.[0])}
-									/>
-								</label>
-								{avatarFile && (
-									<span className="truncate text-sm text-muted-foreground">
+								{avatarFile ? (
+									<span className="truncate font-bold text-sm text-primary py-3">
 										{avatarFile.name}
 									</span>
+								) : (
+									<label className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border border-border-strong bg-surface px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted-subtle">
+										<Upload className="h-4 w-4" />
+										Choose image
+										<input
+											ref={fileInputRef}
+											id="avatar_upload"
+											type="file"
+											accept="image/jpeg,image/png,image/webp,image/gif"
+											className="sr-only"
+											onChange={(e) =>
+												handleAvatarChange(
+													e.target.files?.[0],
+												)
+											}
+										/>
+									</label>
 								)}
-								{(avatarFile || (!avatarMarkedForRemoval && profile.avatar_url)) && (
+								{(avatarFile ||
+									(!avatarMarkedForRemoval &&
+										profile.avatar_url)) && (
 									<Button
 										type="button"
-										variant="outline"
-										size="sm"
+										variant="destructive"
+										size="xs"
 										onClick={handleRemoveAvatar}
 									>
-										<X className="mr-2 h-3.5 w-3.5" />
-										Remove
+										<X className="-mr-1 h-3 w-3" />
+										<small className="text-[9px]">
+											Remove
+										</small>
 									</Button>
 								)}
 							</div>
 							<p className="text-xs text-muted-foreground">
-								Upload a JPG, PNG, WebP, or GIF image up to 2 MB.
+								Upload a JPG, PNG, WebP, or GIF image up to 2
+								MB.
 							</p>
 						</div>
 
@@ -315,7 +342,11 @@ export default function ProfilePage() {
 							<label className="text-xs font-medium text-muted-foreground">
 								Email
 							</label>
-							<Input value={profile.email} disabled className="opacity-60" />
+							<Input
+								value={profile.email}
+								disabled
+								className="opacity-60"
+							/>
 							<p className="text-xs text-muted-foreground">
 								Email cannot be changed here.
 							</p>
