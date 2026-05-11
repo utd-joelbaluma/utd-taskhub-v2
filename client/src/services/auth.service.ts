@@ -33,7 +33,7 @@ export async function registerUser(
 	email: string,
 	password: string,
 	full_name: string,
-	role: string | user,
+	role: string | "user",
 ): Promise<RegisterResponse> {
 	const res = await api.post<{ data: RegisterResponse }>("/auth/register", {
 		email,
