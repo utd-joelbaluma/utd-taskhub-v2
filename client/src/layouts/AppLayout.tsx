@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Bell, User, LogOut, Menu } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -232,6 +232,12 @@ export default function AppLayout() {
 									aria-label="Open account menu"
 								>
 									<Avatar className="h-7 w-7">
+										{user?.avatar_url && (
+											<AvatarImage
+												src={user?.avatar_url}
+												alt={displayName}
+											/>
+										)}
 										<AvatarFallback className="text-[10px]">
 											{initials}
 										</AvatarFallback>
@@ -250,6 +256,12 @@ export default function AppLayout() {
 								<DropdownMenuLabel className="px-3 py-2 flex flex-col items-center justify-center">
 									<div className="my-2">
 										<Avatar className="h-10 w-10">
+											{user?.avatar_url && (
+												<AvatarImage
+													src={user?.avatar_url}
+													alt={displayName}
+												/>
+											)}
 											<AvatarFallback className="text-[10px]">
 												{initials}
 											</AvatarFallback>

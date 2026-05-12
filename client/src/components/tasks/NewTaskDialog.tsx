@@ -195,7 +195,7 @@ export function NewTaskDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
-			<DialogContent className="max-w-[520px]">
+			<DialogContent className="w-[600px] max-w-full">
 				<DialogHeader>
 					<DialogTitle>New Task</DialogTitle>
 					<DialogDescription>
@@ -398,7 +398,7 @@ export function NewTaskDialog({
 							Assignee
 						</label>
 
-						<div className="flex flex-wrap gap-2">
+						<div className="grid grid-cols-2 gap-2">
 							{profiles.map((profile, idx) => {
 								const cap = capacityMap.get(profile.id);
 								const assignedPct = cap
@@ -445,7 +445,7 @@ export function NewTaskDialog({
 												<span className="font-bold text-primary text-sm">
 													{profile.full_name}
 												</span>
-												<small className="text-xs font-light">
+												<small className="text-[8px] font-light">
 													{profile.email}
 												</small>
 											</div>
@@ -457,8 +457,11 @@ export function NewTaskDialog({
 														<div
 															className={cn(
 																"h-full rounded-full transition-all",
-																cap.isOverbooked
-																	? "bg-danger"
+																cap.assignedHours >=
+																	30
+																	? cap.isOverbooked
+																		? "bg-danger"
+																		: "bg-orange-600"
 																	: "bg-primary",
 															)}
 															style={{
@@ -469,8 +472,11 @@ export function NewTaskDialog({
 													<span
 														className={cn(
 															"text-[9px]",
-															cap.isOverbooked
-																? "text-danger"
+															cap.assignedHours >=
+																75
+																? cap.isOverbooked
+																	? "text-danger"
+																	: "text-orange-500"
 																: "text-muted-foreground",
 														)}
 													>
@@ -499,7 +505,7 @@ export function NewTaskDialog({
 						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
 							Tags
 						</label>
-						<div className="flex gap-2">
+						<div className="flex items-center gap-2">
 							<Input
 								placeholder="Add tag..."
 								value={form.tagInput}
@@ -516,10 +522,10 @@ export function NewTaskDialog({
 							/>
 							<Button
 								type="button"
-								variant="outline"
+								variant="accent"
 								size="sm"
 								onClick={addTag}
-								className="shrink-0"
+								className="shrink-0 !text-xs"
 							>
 								Add
 							</Button>

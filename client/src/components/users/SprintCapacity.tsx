@@ -93,7 +93,7 @@ const SprintCapacity = ({ userId }: SprintCapacityProps) => {
 							data.isOverbooked ? "text-danger" : "text-primary"
 						}
 					>
-						{data.assignedHours}
+						{data.assignedHours}h
 					</b>
 					<span className="text-muted-foreground">
 						{" "}

@@ -14,7 +14,7 @@ import {
 	Pencil,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	Tooltip,
 	TooltipContent,
@@ -60,7 +60,8 @@ function TaskCardContentBase({
 		>
 			<div className="flex items-start justify-between gap-2">
 				<Badge variant={task.priority} className="text-[10px]">
-					{task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+					{task.priority.charAt(0).toUpperCase() +
+						task.priority.slice(1)}
 				</Badge>
 				{task.tags[0] && (
 					<span className="text-[10px] bg-muted-subtle text-muted-foreground px-1.5 py-0.5 rounded font-medium leading-none">
@@ -86,6 +87,12 @@ function TaskCardContentBase({
 			<div className="flex items-center justify-between pt-1 border-t border-border">
 				{assignee ? (
 					<Avatar className="h-5 w-5">
+						{assignee?.avatar_url && (
+							<AvatarImage
+								src={assignee?.avatar_url}
+								alt={assignee.full_name ?? ""}
+							/>
+						)}
 						<AvatarFallback
 							className={`text-[9px] text-white ${profileColorClass(assignee.id)}`}
 						>
@@ -97,7 +104,9 @@ function TaskCardContentBase({
 				)}
 				<div className="flex items-center gap-1 text-[11px] text-muted">
 					<Calendar className="h-3 w-3" />
-					{task.due_date ? formatDate(task.due_date.slice(0, 10)) : "—"}
+					{task.due_date
+						? formatDate(task.due_date.slice(0, 10))
+						: "—"}
 				</div>
 			</div>
 		</div>
@@ -156,7 +165,9 @@ function SortableTaskCardBase({
 					<TooltipTrigger asChild>
 						<GripVertical className="h-5 w-5" />
 					</TooltipTrigger>
-					<TooltipContent side="left">Click and drag to move task</TooltipContent>
+					<TooltipContent side="left">
+						Click and drag to move task
+					</TooltipContent>
 				</Tooltip>
 			</div>
 			<div
@@ -173,7 +184,9 @@ function SortableTaskCardBase({
 							<Pencil className="h-3.5 w-3.5" />
 						</button>
 					</TooltipTrigger>
-					<TooltipContent side="left">Click to edit task</TooltipContent>
+					<TooltipContent side="left">
+						Click to edit task
+					</TooltipContent>
 				</Tooltip>
 			</div>
 			<div
@@ -207,13 +220,17 @@ function SortableTaskCardBase({
 							onClick={() => setConfirming((prev) => !prev)}
 							className={cn(
 								"p-0.5 rounded transition-colors",
-								confirming ? "text-danger" : "text-muted hover:text-danger",
+								confirming
+									? "text-danger"
+									: "text-muted hover:text-danger",
 							)}
 						>
 							<Trash2 className="h-3.5 w-3.5" />
 						</button>
 					</TooltipTrigger>
-					<TooltipContent side="left">Click to delete task</TooltipContent>
+					<TooltipContent side="left">
+						Click to delete task
+					</TooltipContent>
 				</Tooltip>
 			</div>
 
