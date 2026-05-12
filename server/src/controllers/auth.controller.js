@@ -51,7 +51,7 @@ export async function register(req, res, next) {
 			.update({ full_name: full_name?.trim() || null, role: role })
 			.eq("id", authData.user.id)
 			.select()
-			.single();
+			.maybeSingle();
 
 		if (profileError) {
 			await supabaseAdmin.auth.admin.deleteUser(authData.user.id);

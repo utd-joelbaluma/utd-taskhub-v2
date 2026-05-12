@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import PublicPageLayout from "@/pages/PublicPageLayout";
 
-const supportEmail = import.meta.env.VITE_SUPPORT_EMAIL ?? "support@taskhub.app";
+const supportEmail =
+	import.meta.env.VITE_SUPPORT_EMAIL ?? "joel.baluma@uptodatewebdesign.com";
 
 const contactOptions = [
 	{

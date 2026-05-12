@@ -18,6 +18,11 @@ export default function LoginPage() {
 		const message = (location.state as { toast?: string } | null)?.toast;
 		if (message) toast.success(message);
 	}, []);
+
+	useEffect(() => {
+		if (isAuthenticated) navigate("/");
+	}, [isAuthenticated]);
+
 	const [showPassword, setShowPassword] = useState(false);
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -26,7 +31,6 @@ export default function LoginPage() {
 	const [error, setError] = useState("");
 
 	if (isAuthenticated) return <Navigate to="/" replace />;
-
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
 		setError("");
