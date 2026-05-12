@@ -535,6 +535,11 @@ async function resetAll() {
 		return;
 	}
 
+	const userIds = profiles.map((p) => p.id);
+
+	await supabase.from("system_logs").delete().in("changed_by", userIds);
+	log("RESET", `  Deleted system_logs`);
+
 	const arProfile = profiles.find(
 		(p) => p.email === "alex.rivera@taskhub.dev",
 	);
@@ -548,20 +553,27 @@ async function resetAll() {
 
 		const projectIds = (projects ?? []).map((p) => p.id);
 
-		if (projectIds.length > 0) {
-			await supabase.from("tasks").delete().in("project_id", projectIds);
-			log("RESET", `  Deleted tasks`);
+		await supabase.from("tasks").delete().in("project_id", projectIds);
+		log("RESET", `  Deleted tasks`);
 
-			await supabase
-				.from("project_members")
-				.delete()
-				.in("project_id", projectIds);
-			log("RESET", `  Deleted project members`);
+		await supabase.from("sprints").delete().in("project_id", projectIds);
+		log("RESET", `  Deleted sprints`);
 
-			await supabase.from("projects").delete().in("id", projectIds);
-			log("RESET", `  Deleted ${projectIds.length} projects`);
-		}
+		await supabase.from("invitations").delete().in("project_id", projectIds);
+		log("RESET", `  Deleted invitations`);
+
+		await supabase
+			.from("project_members")
+			.delete()
+			.in("project_id", projectIds);
+		log("RESET", `  Deleted project members`);
+
+		await supabase.from("projects").delete().in("id", projectIds);
+		log("RESET", `  Deleted ${projectIds.length} projects`);
 	}
+
+	await supabase.from("profiles").delete().in("id", userIds);
+	log("RESET", `  Deleted profiles`);
 
 	for (const profile of profiles) {
 		const { error } = await supabase.auth.admin.deleteUser(profile.id);
