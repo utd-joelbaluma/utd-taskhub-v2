@@ -274,6 +274,7 @@ export async function acceptInvitation(req, res, next) {
 				message: "Please create an account to accept this invitation.",
 				data: {
 					email: invitation.email,
+					role: invitation.role,
 					token,
 				},
 			});

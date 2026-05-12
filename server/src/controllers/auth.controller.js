@@ -29,7 +29,6 @@ export async function register(req, res, next) {
 					role: role,
 				},
 			});
-
 		if (authError) {
 			if (
 				authError.message.toLowerCase().includes("already registered")
@@ -46,8 +45,8 @@ export async function register(req, res, next) {
 			}
 		}
 
-		// Trigger has already inserted the profile row; update full_name if provided
-		const { data: profile, error: profileError } = await supabase
+		// Trigger has already inserted the profile row; update full_name and role
+		const { data: profile, error: profileError } = await supabaseAdmin
 			.from("profiles")
 			.update({ full_name: full_name?.trim() || null, role: role })
 			.eq("id", authData.user.id)
@@ -226,7 +225,7 @@ export async function me(req, res, next) {
 
 export async function completeInvite(req, res, next) {
 	try {
-		const { full_name, password } = req.body;
+		const { full_name, password, role } = req.body;
 
 		if (!password || password.length < 8) {
 			return res.status(400).json({
@@ -241,10 +240,14 @@ export async function completeInvite(req, res, next) {
 			});
 		if (updateError) throw updateError;
 
-		if (full_name?.trim()) {
-			await supabase
+		const profileUpdate = {};
+		if (full_name?.trim()) profileUpdate.full_name = full_name.trim();
+		if (role) profileUpdate.role = role;
+
+		if (Object.keys(profileUpdate).length > 0) {
+			await supabaseAdmin
 				.from("profiles")
-				.update({ full_name: full_name.trim() })
+				.update(profileUpdate)
 				.eq("id", req.profile.id);
 		}
 

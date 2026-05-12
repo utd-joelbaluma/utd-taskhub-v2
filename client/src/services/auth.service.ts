@@ -47,8 +47,9 @@ export async function registerUser(
 export async function completeInvite(
 	fullName: string,
 	password: string,
+	role?: string,
 ): Promise<void> {
-	await api.post("/auth/complete-invite", { full_name: fullName, password });
+	await api.post("/auth/complete-invite", { full_name: fullName, password, role });
 }
 
 export async function logout(): Promise<void> {

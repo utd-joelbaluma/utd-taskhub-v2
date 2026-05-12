@@ -207,6 +207,7 @@ export default function AcceptInvitationPage() {
 			await completeInvite(
 				completeForm.name.trim(),
 				completeForm.password,
+				invitedRole || undefined,
 			);
 			clearStoredAuth();
 			navigate("/login", {
@@ -261,9 +262,9 @@ export default function AcceptInvitationPage() {
 
 	// If already logged in and not requiring registration, go to dashboard
 	useEffect(() => {
-		// if (isAuthenticated && pageState === "success") {
-		// 	navigate("/");
-		// }
+		if (isAuthenticated && pageState === "success") {
+			navigate("/");
+		}
 	}, [isAuthenticated, pageState, navigate]);
 
 	return (
