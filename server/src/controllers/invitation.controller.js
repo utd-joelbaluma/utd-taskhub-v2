@@ -5,6 +5,7 @@ import {
 	validateSendInvitation,
 	validateAcceptInvitation,
 } from "../utils/invitation.validator.js";
+import { updateUserRole } from "./user.controller.js";
 
 export async function sendInvitation(req, res, next) {
 	try {
@@ -87,7 +88,7 @@ export async function sendInvitation(req, res, next) {
 				role,
 			})
 			.select()
-			.single();
+			.maybeSingle();
 
 		if (inviteError) throw inviteError;
 
@@ -316,6 +317,29 @@ export async function acceptInvitation(req, res, next) {
 
 		if (acceptError) throw acceptError;
 
+		// Get Role ID
+		const { data: roleData, error: roleError } = await supabase
+			.from("roles")
+			.select("id, key")
+			.eq("scope", "global")
+			.eq("key", invitation.role)
+			.maybeSingle();
+
+		if (roleError) throw roleError;
+
+		if (!roleData) {
+			return res.status(400).json({
+				success: false,
+				message: `Unknown global role: ${invitation.role}.`,
+			});
+		}
+
+		const { data: updated, error: updateError } = await supabase
+			.from("profiles")
+			.update({ role: roleData.key, role_id: roleData.id })
+			.eq("email", invitation.email)
+			.maybeSingle();
+
 		// Add to project only for project-scoped invitations
 		if (invitation.project_id) {
 			const { error: memberError } = await supabase
@@ -327,7 +351,6 @@ export async function acceptInvitation(req, res, next) {
 				});
 			if (memberError) throw memberError;
 		}
-
 		res.status(200).json({
 			success: true,
 			message: invitation.project_id

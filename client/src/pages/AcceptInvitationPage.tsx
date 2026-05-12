@@ -204,15 +204,16 @@ export default function AcceptInvitationPage() {
 		setCompleteLoading(true);
 		try {
 			storeAuthTokens(inviteSession, { remember: false });
+			console.log("invitedRole", invitedRole);
 			await completeInvite(
 				completeForm.name.trim(),
 				completeForm.password,
 				invitedRole || undefined,
 			);
 			clearStoredAuth();
-			navigate("/login", {
+			navigate("/", {
 				state: {
-					toast: "Account set up! Sign in to access your workspace.",
+					toast: "Welcome! Account successfully set up!",
 				},
 			});
 		} catch (err) {
