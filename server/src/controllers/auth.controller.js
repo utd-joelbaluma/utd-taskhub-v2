@@ -310,12 +310,6 @@ export async function startGoogleSignIn(req, res, next) {
 			codeChallenge: challenge,
 		});
 
-		console.log("[google-oauth] start", {
-			redirectTo,
-			verifierLength: verifier.length,
-			challengeLength: challenge.length,
-		});
-
 		res.cookie(PKCE_COOKIE_NAME, verifier, pkceCookieOptions());
 		return res.redirect(url);
 	} catch (error) {
@@ -336,16 +330,6 @@ export async function googleSignInCallback(req, res, next) {
 		const clearCookie = () =>
 			res.clearCookie(PKCE_COOKIE_NAME, { path: "/" });
 
-		console.log("[google-oauth] callback received", {
-			hasCode: !!code,
-			hasVerifierCookie: !!verifier,
-			cookieKeys: Object.keys(req.cookies || {}),
-			signedCookieKeys: Object.keys(req.signedCookies || {}),
-			providerError: providerError || null,
-			providerErrorCode: providerErrorCode || null,
-			providerErrorDescription: providerErrorDescription || null,
-		});
-
 		if (providerError) {
 			console.error("[google-oauth] provider returned error", {
 				providerError,
@@ -365,9 +349,6 @@ export async function googleSignInCallback(req, res, next) {
 		if (!verifier) {
 			console.error(
 				"[google-oauth] missing PKCE verifier cookie on callback",
-				{
-					rawCookieHeader: req.headers.cookie || null,
-				},
 			);
 			clearCookie();
 			return clientRedirect(res, { error: "oauth_failed" });
@@ -414,8 +395,6 @@ export async function googleSignInCallback(req, res, next) {
 			clearCookie();
 			return clientRedirect(res, { error: "account_disabled" });
 		}
-
-		console.log("[google-oauth] success", { userId: data.user.id });
 
 		clearCookie();
 		return clientRedirectWithSession(res, {

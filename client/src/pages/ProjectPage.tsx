@@ -1172,11 +1172,31 @@ export default function ProjectPage() {
 			listProfiles(),
 			listSprints(),
 		])
-			.then(([proj, taskList, profileList, sprintList]) => {
-				setProject(proj);
-				setTasks(taskList);
+			.then(async ([proj, taskList, profileList, sprintList]) => {
 				setProfiles(profileList);
 				setAllSprints(sprintList);
+				setTasks(taskList);
+
+				if (!proj.sprint_id) {
+					const active = sprintList.find((s) => s.status === "active");
+					if (active) {
+						try {
+							const updated = await updateProject(proj.id, {
+								sprint_id: active.id,
+							});
+							setProject({
+								...proj,
+								sprint_id: updated.sprint_id,
+								sprint: updated.sprint,
+							});
+							return;
+						} catch {
+							// fall through to set unassigned project
+						}
+					}
+				}
+
+				setProject(proj);
 			})
 			.catch(() => setError(true))
 			.finally(() => {

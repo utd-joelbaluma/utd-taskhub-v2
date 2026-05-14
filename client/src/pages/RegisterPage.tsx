@@ -1,11 +1,16 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, Navigate, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { Eye, EyeOff, ArrowRight, Check } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { registerUser } from "@/services/auth.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+
+const DEFAULT_ROLE = "user";
 
 const passwordRules = [
 	{ label: "At least 8 characters", test: (v: string) => v.length >= 8 },
@@ -14,6 +19,9 @@ const passwordRules = [
 ];
 
 export default function RegisterPage() {
+	const { login, isAuthenticated } = useAuth();
+	const navigate = useNavigate();
+
 	const [showPassword, setShowPassword] = useState(false);
 	const [showConfirm, setShowConfirm] = useState(false);
 	const [form, setForm] = useState({
@@ -26,15 +34,33 @@ export default function RegisterPage() {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
 
+	useEffect(() => {
+		if (isAuthenticated) navigate("/", { replace: true });
+	}, [isAuthenticated, navigate]);
+
+	if (isAuthenticated) return <Navigate to="/" replace />;
+
 	function set(field: keyof typeof form) {
 		return (e: React.ChangeEvent<HTMLInputElement>) =>
 			setForm((prev) => ({ ...prev, [field]: e.target.value }));
 	}
 
-	function handleSubmit(e: React.FormEvent) {
+	function handleGoogleSignIn() {
+		const apiUrl =
+			import.meta.env.VITE_API_URL ?? "http://localhost:5050/api/v1";
+		window.location.href = `${apiUrl}/auth/google`;
+	}
+
+	function getPasswordStrengthCount(value: string) {
+		return passwordRules.filter((r) => r.test(value)).length;
+	}
+
+	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
 		setError("");
-		if (!form.name || !form.email || !form.password || !form.confirm) {
+		const name = form.name.trim();
+		const email = form.email.trim().toLowerCase();
+		if (!name || !email || !form.password || !form.confirm) {
 			setError("Please fill in all fields.");
 			return;
 		}
@@ -42,12 +68,28 @@ export default function RegisterPage() {
 			setError("Passwords do not match.");
 			return;
 		}
+		if (getPasswordStrengthCount(form.password) < passwordRules.length) {
+			setError("Password does not meet all requirements.");
+			return;
+		}
 		if (!agreed) {
 			setError("You must agree to the terms to continue.");
 			return;
 		}
+
 		setLoading(true);
-		setTimeout(() => setLoading(false), 1500);
+		try {
+			await registerUser(email, form.password, name, DEFAULT_ROLE);
+			await login(email, form.password, false);
+			toast.success("Account created. Welcome!");
+			navigate("/", { replace: true });
+		} catch (err) {
+			const message =
+				err instanceof Error ? err.message : "Registration failed.";
+			setError(message);
+		} finally {
+			setLoading(false);
+		}
 	}
 
 	const passwordStrength = passwordRules.filter((r) =>
@@ -197,6 +239,7 @@ export default function RegisterPage() {
 						variant="outline"
 						className="w-full mb-4 gap-2"
 						type="button"
+						onClick={handleGoogleSignIn}
 					>
 						<svg
 							viewBox="0 0 24 24"
