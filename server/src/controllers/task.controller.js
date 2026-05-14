@@ -230,6 +230,7 @@ export async function updateTask(req, res, next) {
 			"tags",
 			"estimated_time",
 			"sprint_id",
+			"project_id",
 		];
 		const updateData = {};
 

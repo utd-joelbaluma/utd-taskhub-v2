@@ -545,6 +545,7 @@ export default function TasksPage() {
 				task={editTask}
 				onClose={() => setEditTask(null)}
 				onSave={handleEditTask}
+				projects={projects}
 				profiles={profiles}
 			/>
 

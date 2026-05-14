@@ -24,6 +24,7 @@ import {
 	type ApiTaskPriority,
 	type UpdateTaskPayload,
 } from "@/services/task.service";
+import { type Project } from "@/services/project.service";
 import { type Profile } from "@/services/profile.service";
 import { listSprints, type Sprint } from "@/services/sprint.service";
 import { getTeamSprintCapacity } from "@/services/capacity.service";
@@ -47,6 +48,7 @@ const NO_SPRINT_VALUE = "__no_sprint__";
 const EMPTY_EDIT_FORM = {
 	title: "",
 	description: "",
+	projectId: "",
 	assigneeId: "",
 	sprintId: "",
 	status: "todo" as ColumnId,
@@ -60,6 +62,7 @@ function taskToEditForm(task: UiTask): typeof EMPTY_EDIT_FORM {
 	return {
 		title: task.title,
 		description: task.description ?? "",
+		projectId: task.project_id,
 		assigneeId: task.assigned_to?.id ?? "",
 		sprintId: task.sprint?.id ?? "",
 		status: task.columnId,
@@ -74,15 +77,17 @@ export function EditTaskDialog({
 	task,
 	onClose,
 	onSave,
+	projects,
 	profiles,
 }: {
 	task: UiTask | null;
 	onClose: () => void;
 	onSave: (task: UiTask, payload: UpdateTaskPayload) => Promise<void>;
+	projects: Project[];
 	profiles: Profile[];
 }) {
 	const [form, setForm] = useState(EMPTY_EDIT_FORM);
-	const [errors, setErrors] = useState<{ title?: string }>({});
+	const [errors, setErrors] = useState<{ title?: string; projectId?: string }>({});
 	const [submitting, setSubmitting] = useState(false);
 	const [estimatedTime, setEstimatedTime] = useState(0);
 	const [sprints, setSprints] = useState<Sprint[]>([]);
@@ -131,7 +136,8 @@ export function EditTaskDialog({
 		value: (typeof EMPTY_EDIT_FORM)[K],
 	) {
 		setForm((prev) => ({ ...prev, [key]: value }));
-		if (key === "title") setErrors((e) => ({ ...e, title: undefined }));
+		if (key === "title" || key === "projectId")
+			setErrors((e) => ({ ...e, [key]: undefined }));
 	}
 
 	function addTag() {
@@ -148,6 +154,7 @@ export function EditTaskDialog({
 	function validate() {
 		const e: typeof errors = {};
 		if (!form.title.trim()) e.title = "Task title is required.";
+		if (!form.projectId) e.projectId = "Please select a project.";
 		setErrors(e);
 		return Object.keys(e).length === 0;
 	}
@@ -163,6 +170,7 @@ export function EditTaskDialog({
 				priority: form.priority,
 				assigned_to: form.assigneeId || undefined,
 				due_date: form.dueDate || undefined,
+				project_id: form.projectId,
 				sprint_id: form.sprintId || undefined,
 				tags: form.tags,
 				estimated_time: estimatedTime,
@@ -205,41 +213,69 @@ export function EditTaskDialog({
 						)}
 					</div>
 
-					{/* Sprint */}
-					<div>
-						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
-							Sprint
-						</label>
-						<div className="relative">
-							{sprintsLoading && (
-								<>
-									<div className="h-full w-full absolute rounded-2xl bg-white/20 backdrop-blur-xs top-0 left-0 pointer-events-none" />
-									<div className="bg-white/50 backdrop-blur-xs h-full w-full absolute rounded-2xl text-slate-600 flex items-center px-2 text-xs justify-center z-10 border border-border pointer-events-none">
-										loading...
-									</div>
-								</>
-							)}
+					{/* Project + Sprint */}
+					<div className="grid grid-cols-2 gap-4">
+						<div>
+							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+								Project <span className="text-danger">*</span>
+							</label>
 							<Select
-								value={form.sprintId || NO_SPRINT_VALUE}
-								onValueChange={(v) =>
-									set("sprintId", v === NO_SPRINT_VALUE ? "" : v)
-								}
-								disabled={sprintsLoading}
+								value={form.projectId}
+								onValueChange={(v) => set("projectId", v)}
 							>
-								<SelectTrigger>
-									<SelectValue
-										placeholder={sprintsLoading ? "Loading..." : "Select sprint"}
-									/>
+								<SelectTrigger
+									className={errors.projectId ? "border-danger" : ""}
+								>
+									<SelectValue placeholder="Select project" />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value={NO_SPRINT_VALUE}>No sprint</SelectItem>
-									{sprints.map((sprint) => (
-										<SelectItem key={sprint.id} value={sprint.id}>
-											{sprint.name}
+									{projects.map((p) => (
+										<SelectItem key={p.id} value={p.id}>
+											{p.name}
 										</SelectItem>
 									))}
 								</SelectContent>
 							</Select>
+							{errors.projectId && (
+								<p className="text-xs text-danger mt-1">{errors.projectId}</p>
+							)}
+						</div>
+
+						<div>
+							<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+								Sprint
+							</label>
+							<div className="relative">
+								{sprintsLoading && (
+									<>
+										<div className="h-full w-full absolute rounded-2xl bg-white/20 backdrop-blur-xs top-0 left-0 pointer-events-none" />
+										<div className="bg-white/50 backdrop-blur-xs h-full w-full absolute rounded-2xl text-slate-600 flex items-center px-2 text-xs justify-center z-10 border border-border pointer-events-none">
+											loading...
+										</div>
+									</>
+								)}
+								<Select
+									value={form.sprintId || NO_SPRINT_VALUE}
+									onValueChange={(v) =>
+										set("sprintId", v === NO_SPRINT_VALUE ? "" : v)
+									}
+									disabled={sprintsLoading}
+								>
+									<SelectTrigger>
+										<SelectValue
+											placeholder={sprintsLoading ? "Loading..." : "Select sprint"}
+										/>
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value={NO_SPRINT_VALUE}>No sprint</SelectItem>
+										{sprints.map((sprint) => (
+											<SelectItem key={sprint.id} value={sprint.id}>
+												{sprint.name}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
 						</div>
 					</div>
 

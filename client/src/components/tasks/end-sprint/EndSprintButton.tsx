@@ -3,7 +3,10 @@ import { Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { UiTask } from "@/components/tasks/types";
 import type { Sprint, EndSprintResponse } from "@/services/sprint.service";
+import { usePermission } from "@/hooks/usePermission";
 import { EndSprintModal } from "./EndSprintModal";
+
+const ALLOWED_ROLES = new Set(["admin", "manager"]);
 
 interface Props {
 	activeSprint: Sprint | null;
@@ -17,7 +20,9 @@ export function EndSprintButton({
 	onEnded,
 }: Props) {
 	const [open, setOpen] = useState(false);
+	const { roleKey } = usePermission();
 	if (!activeSprint) return null;
+	if (!roleKey || !ALLOWED_ROLES.has(roleKey)) return null;
 
 	return (
 		<>

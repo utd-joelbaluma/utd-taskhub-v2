@@ -110,6 +110,18 @@ export function validateUpdateTask(payload) {
 		}
 	}
 
+	if (payload.project_id !== undefined && payload.project_id !== null) {
+		if (typeof payload.project_id !== "string" || !UUID_REGEX.test(payload.project_id)) {
+			errors.push("project_id must be a valid UUID.");
+		}
+	}
+
+	if (payload.sprint_id !== undefined && payload.sprint_id !== null) {
+		if (typeof payload.sprint_id !== "string" || !UUID_REGEX.test(payload.sprint_id)) {
+			errors.push("sprint_id must be a valid UUID.");
+		}
+	}
+
 	return errors;
 }
 
