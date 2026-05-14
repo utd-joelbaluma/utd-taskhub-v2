@@ -2,7 +2,7 @@ import { useState } from "react";
 import { DayPicker, type DateRange } from "react-day-picker";
 import {
   startOfWeek,
-  endOfWeek,
+  addDays,
   format,
   isSameWeek,
 } from "date-fns";
@@ -22,9 +22,10 @@ interface WeekPickerProps {
 }
 
 function getWeekRange(day: Date): WeekRange {
+  const start = startOfWeek(day, { weekStartsOn: 1 });
   return {
-    start: startOfWeek(day, { weekStartsOn: 1 }),
-    end: endOfWeek(day, { weekStartsOn: 1 }),
+    start,
+    end: addDays(start, 4),
   };
 }
 
@@ -87,11 +88,19 @@ export function WeekPicker({ value, onChange, placeholder = "Pick a week" }: Wee
             mode="range"
             selected={displayRange}
             onSelect={handleSelect}
-            onDayMouseEnter={(day) => setHovered(day)}
+            onDayMouseEnter={(day) => {
+              const dow = day.getDay();
+              if (dow === 0 || dow === 6) {
+                setHovered(null);
+                return;
+              }
+              setHovered(day);
+            }}
             onDayMouseLeave={() => setHovered(null)}
             defaultMonth={value?.start ?? new Date()}
             weekStartsOn={1}
             showOutsideDays
+            disabled={{ dayOfWeek: [0, 6] }}
             modifiersClassNames={{
               today: "font-bold",
             }}

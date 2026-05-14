@@ -31,6 +31,12 @@ export default function LoginPage() {
 	const [error, setError] = useState("");
 
 	if (isAuthenticated) return <Navigate to="/" replace />;
+
+	function handleGoogleSignIn() {
+		const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:5050/api/v1";
+		window.location.href = `${apiUrl}/auth/google`;
+	}
+
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
 		setError("");
@@ -253,6 +259,7 @@ export default function LoginPage() {
 						variant="outline"
 						className="w-full mb-4 gap-2"
 						type="button"
+						onClick={handleGoogleSignIn}
 					>
 						<svg
 							viewBox="0 0 24 24"

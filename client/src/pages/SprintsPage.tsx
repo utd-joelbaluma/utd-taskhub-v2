@@ -124,7 +124,7 @@ function NewSprintDialog({
 				<DialogHeader>
 					<DialogTitle>New Sprint</DialogTitle>
 					<DialogDescription>
-						Sprints cover one full week (Mon – Sun).
+						Sprints cover one work week (Mon – Fri).
 					</DialogDescription>
 				</DialogHeader>
 
@@ -269,7 +269,7 @@ function EditSprintDialog({
 				<DialogHeader>
 					<DialogTitle>Edit Sprint</DialogTitle>
 					<DialogDescription>
-						Sprints cover one full week (Mon – Sun).
+						Sprints cover one work week (Mon – Fri).
 					</DialogDescription>
 				</DialogHeader>
 
@@ -417,7 +417,7 @@ export default function SprintsPage() {
 						Sprints
 					</h1>
 					<p className="text-sm text-muted mt-1">
-						Org-level sprints span one week (Mon – Sun). Assign projects to a sprint from the project page.
+						Org-level sprints span one work week (Mon – Fri). Assign projects to a sprint from the project page.
 					</p>
 				</div>
 				<Button className="flex items-center gap-2" onClick={() => setNewOpen(true)}>

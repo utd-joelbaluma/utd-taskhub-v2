@@ -15,6 +15,7 @@ import UsersPage from '@/pages/UsersPage'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
 import AcceptInvitationPage from '@/pages/AcceptInvitationPage'
+import AuthCallbackPage from '@/pages/AuthCallbackPage'
 import ProfilePage from '@/pages/ProfilePage'
 import SprintsPage from '@/pages/SprintsPage'
 import TermsPage from '@/pages/TermsPage'
@@ -31,6 +32,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/invitations/accept" element={<AcceptInvitationPage />} />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/contact" element={<ContactPage />} />

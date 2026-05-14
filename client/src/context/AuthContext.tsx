@@ -23,8 +23,15 @@ interface AuthState {
 	loading: boolean;
 }
 
+interface OAuthTokens {
+	access_token: string;
+	refresh_token: string;
+	expires_at?: number;
+}
+
 interface AuthContextValue extends AuthState {
 	login: (email: string, password: string, remember?: boolean) => Promise<void>;
+	establishSession: (tokens: OAuthTokens, remember?: boolean) => Promise<void>;
 	logout: () => Promise<void>;
 	isAuthenticated: boolean;
 }
@@ -63,6 +70,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		[],
 	);
 
+	const establishSession = useCallback(
+		async (tokens: OAuthTokens, remember = false) => {
+			storeAuthTokens(tokens, { remember });
+			try {
+				const user = await getMe();
+				setState({ user, loading: false });
+			} catch (err) {
+				clearStoredAuth();
+				setState({ user: null, loading: false });
+				throw err;
+			}
+		},
+		[],
+	);
+
 	const logout = useCallback(async () => {
 		await logoutService();
 		setState({ user: null, loading: false });
@@ -73,6 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 			value={{
 				...state,
 				login,
+				establishSession,
 				logout,
 				isAuthenticated: !!state.user,
 			}}

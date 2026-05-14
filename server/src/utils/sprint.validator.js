@@ -33,8 +33,8 @@ export function validateCreateSprint(payload) {
   } else if (end_date) {
     if (!isValidDate(end_date)) {
       errors.push('end_date must be a valid ISO date.');
-    } else if (end_date !== addDays(start_date, 6)) {
-      errors.push('end_date must be exactly 6 days after start_date (Sunday of the same week).');
+    } else if (end_date !== addDays(start_date, 4)) {
+      errors.push('end_date must be exactly 4 days after start_date (Friday of the same week).');
     }
   }
 
@@ -63,8 +63,8 @@ export function validateUpdateSprint(payload) {
     } else if (end_date !== undefined) {
       if (!isValidDate(end_date)) {
         errors.push('end_date must be a valid ISO date.');
-      } else if (end_date !== addDays(start_date, 6)) {
-        errors.push('end_date must be exactly 6 days after start_date.');
+      } else if (end_date !== addDays(start_date, 4)) {
+        errors.push('end_date must be exactly 4 days after start_date (Friday of the same week).');
       }
     }
   }
@@ -77,5 +77,5 @@ export function validateUpdateSprint(payload) {
 }
 
 export function computeEndDate(startDate) {
-  return addDays(startDate, 6);
+  return addDays(startDate, 4);
 }
