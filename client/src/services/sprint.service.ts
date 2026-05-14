@@ -51,7 +51,11 @@ export async function deleteSprint(sprintId: string): Promise<void> {
   await api.delete(`/sprints/${sprintId}`);
 }
 
-export type EndSprintActionKind = "keep" | "backlog" | "move";
+export type EndSprintActionKind =
+  | "keep"
+  | "backlog"
+  | "move"
+  | "close_ticket";
 
 export interface EndSprintTaskAction {
   taskId: string;
@@ -66,6 +70,7 @@ export interface EndSprintPayload {
 export interface EndSprintResponse {
   sprint: Sprint;
   updatedTaskIds: string[];
+  closedTicketIds?: string[];
 }
 
 export async function endSprint(

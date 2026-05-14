@@ -55,6 +55,11 @@ export function EndSprintModal({
 
 	const summary = useMemo(() => summarize(tasks), [tasks]);
 	const canConfirm = !submitting && validate(actions);
+	const closingTicketCount = useMemo(
+		() =>
+			Object.values(actions).filter((a) => a.kind === "close_ticket").length,
+		[actions],
+	);
 
 	function updateAction(taskId: string, next: TaskActionState) {
 		setActions((prev) => ({ ...prev, [taskId]: next }));
@@ -97,6 +102,12 @@ export function EndSprintModal({
 					<Badge variant="todo">Total {summary.total}</Badge>
 					<Badge variant="done">Completed {summary.completed}</Badge>
 					<Badge variant="in-progress">Incomplete {summary.incomplete}</Badge>
+					{closingTicketCount > 0 && (
+						<Badge variant="review">
+							{closingTicketCount} linked ticket
+							{closingTicketCount > 1 ? "s" : ""} will be closed
+						</Badge>
+					)}
 				</div>
 
 				{tasks.length === 0 ? (

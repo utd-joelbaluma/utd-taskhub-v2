@@ -23,6 +23,9 @@ export interface Ticket {
 	assigned_to: TicketProfile | null;
 	created_by: TicketProfile;
 	due_date: string | null;
+	resolution: string | null;
+	closed_at: string | null;
+	closed_by: TicketProfile | null;
 	created_at: string;
 	updated_at: string;
 }
@@ -113,6 +116,18 @@ export async function updateTicket(
 
 export async function deleteTicket(projectId: string, ticketId: string): Promise<void> {
 	await api.delete(`/projects/${projectId}/tickets/${ticketId}`);
+}
+
+export async function closeTicket(
+	projectId: string,
+	ticketId: string,
+	resolution?: string
+): Promise<Ticket> {
+	const res = await api.post<{ success: boolean; data: Ticket }>(
+		`/projects/${projectId}/tickets/${ticketId}/close`,
+		resolution !== undefined ? { resolution } : {}
+	);
+	return res.data;
 }
 
 export async function convertTicketToTask(

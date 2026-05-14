@@ -1,10 +1,11 @@
-import { supabase, supabaseAdmin } from "../config/supabase.js";
-import { validateCreateTicket, validateUpdateTicket } from "../utils/ticket.validator.js";
-import { validateCreateTask } from "../utils/task.validator.js";
+import { supabase } from "../config/supabase.js";
 import {
-	createNotifications,
-	NotificationType,
-} from "../services/notification.service.js";
+	validateCreateTicket,
+	validateUpdateTicket,
+	validateCloseTicket,
+} from "../utils/ticket.validator.js";
+import { validateCreateTask } from "../utils/task.validator.js";
+import { notifyTicketClosed } from "../services/ticket-notify.service.js";
 
 const TICKET_SELECT = `
 	id,
@@ -16,6 +17,8 @@ const TICKET_SELECT = `
 	status,
 	priority,
 	due_date,
+	resolution,
+	closed_at,
 	created_at,
 	updated_at,
 	assigned_to:profiles!tickets_assigned_to_fkey (
@@ -24,6 +27,11 @@ const TICKET_SELECT = `
 		email
 	),
 	created_by:profiles!tickets_created_by_fkey (
+		id,
+		full_name,
+		email
+	),
+	closed_by:profiles!tickets_closed_by_fkey (
 		id,
 		full_name,
 		email
@@ -190,39 +198,11 @@ export async function updateTicket(req, res, next) {
 			existing.status !== "closed" &&
 			updateData.status === "closed"
 		) {
-			try {
-				const [{ data: globals }, { data: projMgrs }] = await Promise.all([
-					supabaseAdmin
-						.from("profiles")
-						.select("id")
-						.in("role", ["admin", "manager"])
-						.eq("status", "active"),
-					supabaseAdmin
-						.from("project_members")
-						.select("user_id")
-						.eq("project_id", projectId)
-						.in("role", ["owner", "manager"]),
-				]);
-
-				const recipients = [
-					...new Set([
-						...(globals ?? []).map((g) => g.id),
-						...(projMgrs ?? []).map((p) => p.user_id),
-					]),
-				].filter((id) => id !== req.profile.id);
-
-				if (recipients.length > 0) {
-					createNotifications({
-						userIds: recipients,
-						type: NotificationType.TICKET_CLOSED,
-						title: "Ticket closed",
-						body: data.title,
-						data: { project_id: projectId, ticket_id: data.id },
-					}).catch((e) => console.error("[notif]", e));
-				}
-			} catch (e) {
-				console.error("[notif] ticket.closed recipients:", e.message);
-			}
+			notifyTicketClosed({
+				projectId,
+				ticket: data,
+				actorId: req.profile.id,
+			}).catch((e) => console.error("[notif]", e));
 		}
 
 		res.status(200).json({
@@ -232,6 +212,88 @@ export async function updateTicket(req, res, next) {
 		});
 	} catch (error) {
 		next(error);
+	}
+}
+
+export async function closeTicket(req, res, next) {
+	try {
+		const { projectId, ticketId } = req.params;
+
+		const errors = validateCloseTicket(req.body ?? {});
+		if (errors.length > 0) {
+			return res.status(400).json({
+				success: false,
+				message: "Validation failed.",
+				errors,
+			});
+		}
+
+		const { data: existing, error: findErr } = await supabase
+			.from("tickets")
+			.select("id, status")
+			.eq("id", ticketId)
+			.eq("project_id", projectId)
+			.maybeSingle();
+
+		if (findErr) throw findErr;
+
+		if (!existing) {
+			return res.status(404).json({
+				success: false,
+				message: "Ticket not found.",
+			});
+		}
+
+		if (existing.status === "closed") {
+			return res.status(409).json({
+				success: false,
+				message: "Ticket is already closed.",
+			});
+		}
+
+		const updateData = {
+			status: "closed",
+			closed_at: new Date().toISOString(),
+			closed_by: req.profile.id,
+		};
+		if (req.body?.resolution !== undefined) {
+			const trimmed =
+				typeof req.body.resolution === "string"
+					? req.body.resolution.trim()
+					: "";
+			updateData.resolution = trimmed || null;
+		}
+
+		const { data, error } = await supabase
+			.from("tickets")
+			.update(updateData)
+			.eq("id", ticketId)
+			.eq("project_id", projectId)
+			.select(TICKET_SELECT)
+			.maybeSingle();
+
+		if (error) throw error;
+
+		if (!data) {
+			return res.status(404).json({
+				success: false,
+				message: "Ticket not found.",
+			});
+		}
+
+		notifyTicketClosed({
+			projectId,
+			ticket: data,
+			actorId: req.profile.id,
+		}).catch((e) => console.error("[notif]", e));
+
+		res.status(200).json({
+			success: true,
+			message: "Ticket closed.",
+			data,
+		});
+	} catch (err) {
+		next(err);
 	}
 }
 

@@ -7,6 +7,7 @@ import {
 	ArrowRightCircle,
 	Pencil,
 	Trash2,
+	CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,7 @@ import {
 	listTickets,
 	createTicket,
 	updateTicket,
+	closeTicket,
 	deleteTicket,
 	convertTicketToTask,
 	type Ticket,
@@ -688,6 +690,7 @@ interface TicketRowProps {
 	onEdit: (t: Ticket) => void;
 	onConvert: (t: Ticket) => void;
 	onDelete: (t: Ticket) => void;
+	onClose: (t: Ticket) => void;
 }
 
 function TicketRow({
@@ -699,7 +702,10 @@ function TicketRow({
 	onEdit,
 	onConvert,
 	onDelete,
+	onClose,
 }: TicketRowProps) {
+	const canCloseTicket =
+		canEdit && ticket.status !== "closed" && ticket.status !== "cancelled";
 	return (
 		<tr className="border-b border-border last:border-0 hover:bg-muted-subtle transition-colors">
 			{/* Title */}
@@ -804,9 +810,17 @@ function TicketRow({
 										Edit
 									</DropdownMenuItem>
 								)}
+								{canCloseTicket && (
+									<DropdownMenuItem
+										className="gap-2 text-sm"
+										onSelect={() => onClose(ticket)}
+									>
+										<CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+										Close ticket
+									</DropdownMenuItem>
+								)}
 								{canDelete &&
-									canConvert &&
-									ticket.converted_task_id === null && (
+									(canConvert || canCloseTicket) && (
 										<DropdownMenuSeparator />
 									)}
 								{canDelete && (
@@ -824,6 +838,106 @@ function TicketRow({
 				</div>
 			</td>
 		</tr>
+	);
+}
+
+// ── CloseTicketDialog ─────────────────────────────────────────────────────────
+
+interface CloseTicketDialogProps {
+	open: boolean;
+	ticket: Ticket | null;
+	projectId: string;
+	onClose: () => void;
+	onClosed: () => void;
+}
+
+function CloseTicketDialog({
+	open,
+	ticket,
+	projectId,
+	onClose,
+	onClosed,
+}: CloseTicketDialogProps) {
+	const [resolution, setResolution] = useState("");
+	const [submitting, setSubmitting] = useState(false);
+
+	useEffect(() => {
+		if (open) setResolution("");
+	}, [open]);
+
+	async function handleConfirm() {
+		if (!ticket) return;
+		setSubmitting(true);
+		try {
+			await closeTicket(
+				projectId,
+				ticket.id,
+				resolution.trim() ? resolution.trim() : undefined,
+			);
+			toast.success("Ticket closed.");
+			onClosed();
+			onClose();
+		} catch (err: unknown) {
+			const msg =
+				err instanceof Error ? err.message : "Failed to close ticket.";
+			toast.error(msg);
+		} finally {
+			setSubmitting(false);
+		}
+	}
+
+	return (
+		<Dialog
+			open={open}
+			onOpenChange={(v) => {
+				if (!v) onClose();
+			}}
+		>
+			<DialogContent className="max-w-[480px]">
+				<DialogHeader>
+					<DialogTitle>Close ticket</DialogTitle>
+					<DialogDescription>
+						Closing locks the ticket. Admins and project managers
+						will be notified.
+					</DialogDescription>
+				</DialogHeader>
+
+				<div className="space-y-3">
+					<p className="text-sm text-foreground font-medium truncate">
+						{ticket?.title}
+					</p>
+					<div>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+							Resolution note (optional)
+						</label>
+						<textarea
+							className="w-full min-h-[96px] rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+							placeholder="Summarize what was done, link a PR, etc."
+							maxLength={2000}
+							value={resolution}
+							onChange={(e) => setResolution(e.target.value)}
+						/>
+						<p className="mt-1 text-[10px] text-muted-foreground">
+							{resolution.length}/2000
+						</p>
+					</div>
+				</div>
+
+				<DialogFooter>
+					<DialogClose asChild>
+						<Button variant="outline" disabled={submitting}>
+							Cancel
+						</Button>
+					</DialogClose>
+					<Button onClick={handleConfirm} disabled={submitting}>
+						{submitting && (
+							<Loader2 className="h-4 w-4 animate-spin mr-2" />
+						)}
+						Close ticket
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
 	);
 }
 
@@ -868,6 +982,7 @@ export default function TicketsPage() {
 	const [createOpen, setCreateOpen] = useState(false);
 	const [editTicket, setEditTicket] = useState<Ticket | null>(null);
 	const [convertTicket, setConvertTicket] = useState<Ticket | null>(null);
+	const [closingTicket, setClosingTicket] = useState<Ticket | null>(null);
 	const [deletingId, setDeletingId] = useState<string | null>(null);
 
 	// Load projects on mount
@@ -1158,6 +1273,7 @@ export default function TicketsPage() {
 										onEdit={setEditTicket}
 										onConvert={setConvertTicket}
 										onDelete={handleDelete}
+										onClose={setClosingTicket}
 									/>
 								))}
 							</tbody>
@@ -1190,6 +1306,14 @@ export default function TicketsPage() {
 				projectId={selectedProjectId}
 				onClose={() => setConvertTicket(null)}
 				onConverted={fetchTickets}
+			/>
+
+			<CloseTicketDialog
+				open={closingTicket !== null}
+				ticket={closingTicket}
+				projectId={selectedProjectId}
+				onClose={() => setClosingTicket(null)}
+				onClosed={fetchTickets}
 			/>
 		</div>
 	);

@@ -13,6 +13,7 @@ export type Columns = Record<ColumnId, UiTask[]>;
 export interface UiTask {
 	id: string;
 	project_id: string;
+	ticket_id: string | null;
 	title: string;
 	description: string | null;
 	developer_notes: string | null;
@@ -136,6 +137,7 @@ export function toUiTask(t: ApiTask): UiTask | null {
 	return {
 		id: t.id,
 		project_id: t.project_id,
+		ticket_id: t.ticket_id ?? null,
 		title: t.title,
 		description: t.description,
 		developer_notes: t.developer_notes,

@@ -1,6 +1,6 @@
 import type { ApiTaskStatus } from "@/services/task.service";
 
-export type ActionKind = "keep" | "backlog" | "move";
+export type ActionKind = "keep" | "backlog" | "move" | "close_ticket";
 
 export type MoveStatus = Exclude<ApiTaskStatus, "cancelled">;
 

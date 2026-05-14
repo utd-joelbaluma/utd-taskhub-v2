@@ -19,12 +19,14 @@ interface Props {
 	value: TaskActionState;
 	onChange: (next: TaskActionState) => void;
 	disabled?: boolean;
+	allowCloseTicket?: boolean;
 }
 
 const ACTION_LABEL: Record<ActionKind, string> = {
 	keep: "Keep on current board",
 	backlog: "Put to backlog",
 	move: "Move to",
+	close_ticket: "Close linked ticket",
 };
 
 const MOVE_COLUMN_IDS: ColumnId[] = COLUMN_IDS.filter((c) => c !== "backlog");
@@ -34,6 +36,7 @@ export function SprintTaskActionSelector({
 	value,
 	onChange,
 	disabled,
+	allowCloseTicket,
 }: Props) {
 	function handleKindChange(kind: string) {
 		const next = kind as ActionKind;
@@ -48,6 +51,10 @@ export function SprintTaskActionSelector({
 		onChange({ kind: "move", targetStatus: status as MoveStatus });
 	}
 
+	const visibleKinds: ActionKind[] = (
+		Object.keys(ACTION_LABEL) as ActionKind[]
+	).filter((k) => k !== "close_ticket" || allowCloseTicket);
+
 	return (
 		<fieldset className="flex flex-col gap-1.5">
 			<legend className="sr-only">Sprint task action</legend>
@@ -57,7 +64,7 @@ export function SprintTaskActionSelector({
 				disabled={disabled}
 				className="grid gap-1.5"
 			>
-				{(Object.keys(ACTION_LABEL) as ActionKind[]).map((kind) => {
+				{visibleKinds.map((kind) => {
 					const itemId = `${id}-${kind}`;
 					return (
 						<div key={kind} className="flex items-center gap-2">

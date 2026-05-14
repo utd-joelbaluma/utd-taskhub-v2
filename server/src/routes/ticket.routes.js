@@ -4,6 +4,7 @@ import {
 	getTicketById,
 	createTicket,
 	updateTicket,
+	closeTicket,
 	deleteTicket,
 	convertTicketToTask,
 } from "../controllers/ticket.controller.js";
@@ -33,6 +34,14 @@ router.patch(
 	requireProjectMember,
 	requireProjectPermission("tickets.update"),
 	updateTicket
+);
+
+router.post(
+	"/:ticketId/close",
+	requireAuth,
+	requireProjectMember,
+	requireProjectPermission("tickets.update"),
+	closeTicket
 );
 
 router.delete(

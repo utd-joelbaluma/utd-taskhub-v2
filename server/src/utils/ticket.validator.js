@@ -71,3 +71,17 @@ export function validateUpdateTicket(payload) {
 
 	return errors;
 }
+
+export function validateCloseTicket(payload) {
+	const errors = [];
+
+	if (payload.resolution !== undefined && payload.resolution !== null) {
+		if (typeof payload.resolution !== "string") {
+			errors.push("resolution must be a string.");
+		} else if (payload.resolution.length > 2000) {
+			errors.push("resolution must be 2000 characters or fewer.");
+		}
+	}
+
+	return errors;
+}

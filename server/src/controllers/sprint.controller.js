@@ -8,6 +8,7 @@ import {
 	createNotifications,
 	NotificationType,
 } from "../services/notification.service.js";
+import { notifyTicketClosed } from "../services/ticket-notify.service.js";
 
 async function getActiveProfileIds(excludeId) {
 	const { data, error } = await supabaseAdmin
@@ -173,7 +174,7 @@ export async function updateSprint(req, res, next) {
 	}
 }
 
-const VALID_END_ACTIONS = ["keep", "backlog", "move"];
+const VALID_END_ACTIONS = ["keep", "backlog", "move", "close_ticket"];
 const VALID_MOVE_STATUSES = ["backlog", "todo", "in_progress", "review", "done"];
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -248,7 +249,7 @@ export async function endSprint(req, res, next) {
 
 		const { data: sprintTasks, error: tasksErr } = await supabase
 			.from("tasks")
-			.select("id, status")
+			.select("id, status, ticket_id, project_id")
 			.eq("sprint_id", sprintId);
 
 		if (tasksErr) throw tasksErr;
@@ -266,12 +267,56 @@ export async function endSprint(req, res, next) {
 					message: `Task ${entry.taskId} is not part of this sprint.`,
 				});
 			}
+			if (entry.action === "close_ticket") {
+				const task = sprintTasks.find((t) => t.id === entry.taskId);
+				if (!task || task.status !== "done" || !task.ticket_id) {
+					return res.status(400).json({
+						success: false,
+						message: `close_ticket is only allowed for done tasks that have a linked ticket (taskId=${entry.taskId}).`,
+					});
+				}
+			}
 		}
 
 		const updatedTaskIds = [];
+		const closedTicketIds = [];
 		for (const task of sprintTasks) {
 			const isDone = task.status === "done";
 			const action = actionsByTaskId.get(task.id) ?? { action: "keep" };
+
+			if (action.action === "close_ticket") {
+				if (!task.ticket_id) continue;
+
+				const { data: ticket, error: tFindErr } = await supabase
+					.from("tickets")
+					.select("id, project_id, title, status, resolution")
+					.eq("id", task.ticket_id)
+					.maybeSingle();
+				if (tFindErr) throw tFindErr;
+				if (!ticket || ticket.status === "closed") continue;
+
+				const { data: closed, error: tUpdErr } = await supabase
+					.from("tickets")
+					.update({
+						status: "closed",
+						closed_at: new Date().toISOString(),
+						closed_by: req.profile.id,
+					})
+					.eq("id", ticket.id)
+					.select("id, project_id, title, resolution")
+					.maybeSingle();
+				if (tUpdErr) throw tUpdErr;
+
+				if (closed) {
+					closedTicketIds.push(closed.id);
+					notifyTicketClosed({
+						projectId: closed.project_id,
+						ticket: closed,
+						actorId: req.profile.id,
+					}).catch((e) => console.error("[notif]", e));
+				}
+				continue;
+			}
 
 			let updates = null;
 			if (action.action === "backlog") {
@@ -317,7 +362,7 @@ export async function endSprint(req, res, next) {
 		res.status(200).json({
 			success: true,
 			message: "Sprint ended.",
-			data: { sprint: updatedSprint, updatedTaskIds },
+			data: { sprint: updatedSprint, updatedTaskIds, closedTicketIds },
 		});
 	} catch (error) {
 		next(error);

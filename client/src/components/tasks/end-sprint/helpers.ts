@@ -46,3 +46,7 @@ export function toPayload(actions: TaskActionMap): EndSprintTaskAction[] {
 		return { taskId, action: state.kind };
 	});
 }
+
+export function canCloseLinkedTicket(task: UiTask): boolean {
+	return task.apiStatus === "done" && !!task.ticket_id;
+}

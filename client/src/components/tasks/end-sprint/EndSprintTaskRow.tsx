@@ -6,6 +6,7 @@ import {
 	type UiTask,
 } from "@/components/tasks/types";
 import { SprintTaskActionSelector } from "./SprintTaskActionSelector";
+import { canCloseLinkedTicket } from "./helpers";
 import type { TaskActionState } from "./types";
 
 interface Props {
@@ -53,6 +54,7 @@ export function EndSprintTaskRow({ task, value, onChange, disabled }: Props) {
 					value={value}
 					onChange={onChange}
 					disabled={disabled}
+					allowCloseTicket={canCloseLinkedTicket(task)}
 				/>
 			</div>
 		</div>
