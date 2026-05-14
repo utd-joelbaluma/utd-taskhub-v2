@@ -52,6 +52,7 @@ import { NewTaskDialog } from "@/components/tasks/NewTaskDialog";
 import { EditTaskDialog } from "@/components/tasks/EditTaskDialog";
 import { TaskDetailDialog } from "@/components/tasks/TaskDetailDialog";
 import { EndSprintButton } from "@/components/tasks/end-sprint/EndSprintButton";
+import { StartSprintButton } from "@/components/tasks/start-sprint/StartSprintButton";
 
 export default function TasksPage() {
 	const [columns, setColumns] = useState<Columns>(emptyColumns);
@@ -281,6 +282,14 @@ export default function TasksPage() {
 		[columns, activeSprint],
 	);
 
+	const nextPlannedSprint = useMemo<Sprint | null>(() => {
+		if (activeSprint) return null;
+		const planned = filterSprintOptions
+			.filter((s) => s.status === "planned")
+			.sort((a, b) => a.start_date.localeCompare(b.start_date));
+		return planned[0] ?? null;
+	}, [filterSprintOptions, activeSprint]);
+
 	const activeTask = useMemo(
 		() =>
 			activeTaskId
@@ -343,6 +352,14 @@ export default function TasksPage() {
 		}));
 		setViewTask(updated);
 		toast.success("Notes saved");
+	}, []);
+
+	const handleSprintStarted = useCallback((started: Sprint) => {
+		setFilterSprintOptions((prev) =>
+			prev.map((s) => (s.id === started.id ? started : s)),
+		);
+		setFilterSprint(started.id);
+		didApplyDefaultSprintFilterRef.current = true;
 	}, []);
 
 	const handleSprintEnded = useCallback(async (_result: EndSprintResponse) => {
@@ -423,6 +440,10 @@ export default function TasksPage() {
 					</p>
 				</div>
 				<div className="flex items-center gap-2">
+					<StartSprintButton
+						nextSprint={nextPlannedSprint}
+						onStarted={handleSprintStarted}
+					/>
 					<EndSprintButton
 						activeSprint={activeSprint}
 						sprintTasks={activeSprintTasks}
