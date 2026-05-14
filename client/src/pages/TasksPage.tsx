@@ -27,7 +27,11 @@ import {
 	type UpdateTaskPayload,
 } from "@/services/task.service";
 import { listProjects, type Project } from "@/services/project.service";
-import { listSprints, type Sprint } from "@/services/sprint.service";
+import {
+	listSprints,
+	type Sprint,
+	type EndSprintResponse,
+} from "@/services/sprint.service";
 import { listProfiles, type Profile } from "@/services/profile.service";
 import { PermissionGate } from "@/components/PermissionGate";
 import {
@@ -47,6 +51,7 @@ import { TaskFilters } from "@/components/tasks/TaskFilters";
 import { NewTaskDialog } from "@/components/tasks/NewTaskDialog";
 import { EditTaskDialog } from "@/components/tasks/EditTaskDialog";
 import { TaskDetailDialog } from "@/components/tasks/TaskDetailDialog";
+import { EndSprintButton } from "@/components/tasks/end-sprint/EndSprintButton";
 
 export default function TasksPage() {
 	const [columns, setColumns] = useState<Columns>(emptyColumns);
@@ -261,6 +266,21 @@ export default function TasksPage() {
 		[filterSprintOptions],
 	);
 
+	const activeSprint = useMemo(
+		() => filterSprintOptions.find((s) => s.status === "active") ?? null,
+		[filterSprintOptions],
+	);
+
+	const activeSprintTasks = useMemo<UiTask[]>(
+		() =>
+			activeSprint
+				? COLUMN_IDS.flatMap((c) => columns[c]).filter(
+						(t) => t.sprint?.id === activeSprint.id,
+					)
+				: [],
+		[columns, activeSprint],
+	);
+
 	const activeTask = useMemo(
 		() =>
 			activeTaskId
@@ -325,6 +345,27 @@ export default function TasksPage() {
 		toast.success("Notes saved");
 	}, []);
 
+	const handleSprintEnded = useCallback(async (_result: EndSprintResponse) => {
+		try {
+			const [tasks, sprints] = await Promise.all([
+				listAllTasks(),
+				listSprints(),
+			]);
+			setColumns(
+				buildColumns(
+					tasks.map(toUiTask).filter((u): u is UiTask => u !== null),
+				),
+			);
+			setFilterSprintOptions(sprints);
+			setFilterSprint("all");
+			didApplyDefaultSprintFilterRef.current = true;
+		} catch {
+			toast.error("Sprint ended, but failed to refresh board.", {
+				description: "Reload the page to see latest state.",
+			});
+		}
+	}, []);
+
 	const handleEditTask = useCallback(
 		async (task: UiTask, payload: UpdateTaskPayload) => {
 			const apiTask = await updateTask(task.project_id, task.id, payload);
@@ -381,12 +422,19 @@ export default function TasksPage() {
 						{COLUMN_IDS.reduce((s, c) => s + columns[c].length, 0)} tasks across all projects
 					</p>
 				</div>
-				<PermissionGate feature="Create & edit tasks">
-					<Button className="flex items-center gap-2" onClick={() => setDialogOpen(true)}>
-						<Plus className="h-4 w-4" />
-						New Task
-					</Button>
-				</PermissionGate>
+				<div className="flex items-center gap-2">
+					<EndSprintButton
+						activeSprint={activeSprint}
+						sprintTasks={activeSprintTasks}
+						onEnded={handleSprintEnded}
+					/>
+					<PermissionGate feature="Create & edit tasks">
+						<Button className="flex items-center gap-2" onClick={() => setDialogOpen(true)}>
+							<Plus className="h-4 w-4" />
+							New Task
+						</Button>
+					</PermissionGate>
+				</div>
 			</div>
 
 			<TaskFilters

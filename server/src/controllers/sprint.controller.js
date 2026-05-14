@@ -131,6 +131,137 @@ export async function updateSprint(req, res, next) {
 	}
 }
 
+const VALID_END_ACTIONS = ["keep", "backlog", "move"];
+const VALID_MOVE_STATUSES = ["backlog", "todo", "in_progress", "review", "done"];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function validateEndSprintPayload(taskActions) {
+	const errors = [];
+	if (!Array.isArray(taskActions)) {
+		errors.push("taskActions must be an array.");
+		return errors;
+	}
+	taskActions.forEach((entry, idx) => {
+		if (!entry || typeof entry !== "object") {
+			errors.push(`taskActions[${idx}] must be an object.`);
+			return;
+		}
+		if (!entry.taskId || !UUID_RE.test(entry.taskId)) {
+			errors.push(`taskActions[${idx}].taskId must be a valid UUID.`);
+		}
+		if (!VALID_END_ACTIONS.includes(entry.action)) {
+			errors.push(
+				`taskActions[${idx}].action must be one of: ${VALID_END_ACTIONS.join(", ")}.`,
+			);
+		}
+		if (entry.action === "move") {
+			if (!VALID_MOVE_STATUSES.includes(entry.targetStatus)) {
+				errors.push(
+					`taskActions[${idx}].targetStatus must be one of: ${VALID_MOVE_STATUSES.join(", ")}.`,
+				);
+			}
+		}
+	});
+	return errors;
+}
+
+export async function endSprint(req, res, next) {
+	try {
+		const { sprintId } = req.params;
+		const { taskActions } = req.body ?? {};
+
+		const errors = validateEndSprintPayload(taskActions);
+		if (errors.length > 0) {
+			return res.status(400).json({
+				success: false,
+				message: "Validation failed.",
+				errors,
+			});
+		}
+
+		const { data: sprint, error: sprintErr } = await supabase
+			.from("sprints")
+			.select("id, status")
+			.eq("id", sprintId)
+			.maybeSingle();
+
+		if (sprintErr) throw sprintErr;
+		if (!sprint) {
+			return res.status(404).json({ success: false, message: "Sprint not found." });
+		}
+		if (sprint.status !== "active") {
+			return res.status(400).json({
+				success: false,
+				message: "Only active sprints can be ended.",
+			});
+		}
+
+		const { data: sprintTasks, error: tasksErr } = await supabase
+			.from("tasks")
+			.select("id, status")
+			.eq("sprint_id", sprintId);
+
+		if (tasksErr) throw tasksErr;
+
+		const actionsByTaskId = new Map();
+		for (const entry of taskActions) {
+			actionsByTaskId.set(entry.taskId, entry);
+		}
+
+		const validTaskIds = new Set(sprintTasks.map((t) => t.id));
+		for (const entry of taskActions) {
+			if (!validTaskIds.has(entry.taskId)) {
+				return res.status(400).json({
+					success: false,
+					message: `Task ${entry.taskId} is not part of this sprint.`,
+				});
+			}
+		}
+
+		const updatedTaskIds = [];
+		for (const task of sprintTasks) {
+			const isDone = task.status === "done";
+			const action = actionsByTaskId.get(task.id) ?? { action: "keep" };
+
+			let updates = null;
+			if (action.action === "backlog") {
+				updates = { status: "backlog", sprint_id: null };
+			} else if (action.action === "move") {
+				updates = isDone
+					? { status: action.targetStatus }
+					: { status: action.targetStatus, sprint_id: null };
+			}
+
+			if (!updates) continue;
+
+			const { error: updErr } = await supabase
+				.from("tasks")
+				.update(updates)
+				.eq("id", task.id);
+
+			if (updErr) throw updErr;
+			updatedTaskIds.push(task.id);
+		}
+
+		const { data: updatedSprint, error: closeErr } = await supabase
+			.from("sprints")
+			.update({ status: "completed" })
+			.eq("id", sprintId)
+			.select(SPRINT_SELECT)
+			.maybeSingle();
+
+		if (closeErr) throw closeErr;
+
+		res.status(200).json({
+			success: true,
+			message: "Sprint ended.",
+			data: { sprint: updatedSprint, updatedTaskIds },
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+
 export async function deleteSprint(req, res, next) {
 	try {
 		const { sprintId } = req.params;

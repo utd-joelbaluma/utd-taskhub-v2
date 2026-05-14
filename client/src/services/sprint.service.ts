@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import type { ApiTaskStatus } from "@/services/task.service";
 
 export type SprintStatus = "planned" | "active" | "completed";
 
@@ -48,4 +49,32 @@ export async function updateSprint(sprintId: string, payload: UpdateSprintPayloa
 
 export async function deleteSprint(sprintId: string): Promise<void> {
   await api.delete(`/sprints/${sprintId}`);
+}
+
+export type EndSprintActionKind = "keep" | "backlog" | "move";
+
+export interface EndSprintTaskAction {
+  taskId: string;
+  action: EndSprintActionKind;
+  targetStatus?: Exclude<ApiTaskStatus, "cancelled">;
+}
+
+export interface EndSprintPayload {
+  taskActions: EndSprintTaskAction[];
+}
+
+export interface EndSprintResponse {
+  sprint: Sprint;
+  updatedTaskIds: string[];
+}
+
+export async function endSprint(
+  sprintId: string,
+  payload: EndSprintPayload,
+): Promise<EndSprintResponse> {
+  const res = await api.post<{ success: boolean; data: EndSprintResponse }>(
+    `/sprints/${sprintId}/end`,
+    payload,
+  );
+  return res.data;
 }
