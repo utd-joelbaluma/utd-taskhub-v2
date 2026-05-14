@@ -22,6 +22,7 @@ import TermsPage from '@/pages/TermsPage'
 import PrivacyPage from '@/pages/PrivacyPage'
 import ContactPage from '@/pages/ContactPage'
 import NotFoundPage from '@/pages/NotFoundPage'
+import ReportsPage from '@/pages/admin/ReportsPage'
 
 function App() {
   return (
@@ -54,6 +55,7 @@ function App() {
             <Route path="/profile" element={<ProfilePage />} />
             <Route element={<RoleGuard feature="Workspace settings" />}>
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/admin/reports" element={<ReportsPage />} />
             </Route>
             <Route path="/design-system" element={<DesignSystemPage />} />
             <Route path="*" element={<NotFoundPage />} />
