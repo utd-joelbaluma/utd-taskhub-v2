@@ -9,6 +9,9 @@ export const env = {
 	apiVersion: process.env.API_VERSION || "v1",
 
 	appUrl: process.env.APP_URL || "http://localhost:5173",
+	apiUrl: process.env.API_URL || `http://localhost:${process.env.PORT || 5050}`,
+
+	cookieSecret: process.env.COOKIE_SECRET || "dev-only-cookie-secret-change-me",
 
 	supabaseUrl: process.env.SUPABASE_URL,
 	supabaseSecretKey: process.env.SUPABASE_SECRET_KEY,

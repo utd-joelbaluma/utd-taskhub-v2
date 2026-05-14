@@ -1,9 +1,43 @@
 import { supabase, supabaseAdmin } from "../config/supabase.js";
+import { env } from "../config/env.js";
+import {
+	createMemoryStorage,
+	extractCodeVerifier,
+	createOAuthClient,
+} from "../utils/oauth.js";
 import {
 	validateRegister,
 	validateLogin,
 	validateRefreshSession,
 } from "../utils/auth.validator.js";
+
+const PKCE_COOKIE_NAME = "sb_pkce";
+const PKCE_COOKIE_MAX_AGE_MS = 10 * 60 * 1000;
+
+function clientRedirect(res, params) {
+	const query = new URLSearchParams(params).toString();
+	return res.redirect(`${env.appUrl}/auth/callback?${query}`);
+}
+
+function clientRedirectWithSession(res, session) {
+	const hash = new URLSearchParams({
+		access_token: session.access_token,
+		refresh_token: session.refresh_token,
+		expires_at: String(session.expires_at ?? ""),
+	}).toString();
+	return res.redirect(`${env.appUrl}/auth/callback#${hash}`);
+}
+
+function pkceCookieOptions() {
+	return {
+		httpOnly: true,
+		signed: true,
+		secure: env.nodeEnv !== "development",
+		sameSite: "lax",
+		path: "/",
+		maxAge: PKCE_COOKIE_MAX_AGE_MS,
+	};
+}
 
 export async function register(req, res, next) {
 	try {
@@ -260,20 +294,100 @@ export async function completeInvite(req, res, next) {
 	}
 }
 
-// ----------------------------------------------------------------
-// Google Sign-In — not yet implemented.
-// When ready, this will:
-//   1. Generate a Supabase OAuth URL for Google.
-//   2. Return the URL to the client.
-//   3. A separate /auth/google/callback route will exchange the
-//      code for a session via supabase.auth.exchangeCodeForSession().
-// ----------------------------------------------------------------
-export async function googleSignIn(req, res, next) {
+// Server-initiated Google sign-in (PKCE).
+// 1. startGoogleSignIn: builds the Supabase auth URL, stores the PKCE verifier
+//    in a signed HTTP-only cookie, redirects the browser to Google.
+// 2. googleSignInCallback: Supabase redirects back with `?code=...`. We exchange
+//    the code for a session using the verifier cookie, validate the profile,
+//    then redirect to the client with tokens in the URL fragment.
+export async function startGoogleSignIn(req, res, next) {
 	try {
-		res.status(501).json({
-			success: false,
-			message: "Google sign-in is not yet implemented.",
+		const storage = createMemoryStorage();
+		const client = createOAuthClient(storage);
+
+		const redirectTo = `${env.apiUrl}/api/${env.apiVersion}/auth/google/callback`;
+
+		const { data, error } = await client.auth.signInWithOAuth({
+			provider: "google",
+			options: {
+				redirectTo,
+				skipBrowserRedirect: true,
+			},
 		});
+
+		if (error || !data?.url) {
+			return clientRedirect(res, { error: "oauth_failed" });
+		}
+
+		const { verifier } = extractCodeVerifier(storage);
+		if (!verifier) {
+			return clientRedirect(res, { error: "oauth_failed" });
+		}
+
+		res.cookie(PKCE_COOKIE_NAME, verifier, pkceCookieOptions());
+		return res.redirect(data.url);
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function googleSignInCallback(req, res, next) {
+	try {
+		const { code, error: providerError } = req.query;
+		const verifier = req.signedCookies?.[PKCE_COOKIE_NAME];
+
+		const clearCookie = () =>
+			res.clearCookie(PKCE_COOKIE_NAME, { path: "/" });
+
+		if (providerError) {
+			clearCookie();
+			return clientRedirect(res, { error: "oauth_failed" });
+		}
+
+		if (!code || !verifier) {
+			clearCookie();
+			return clientRedirect(res, { error: "oauth_failed" });
+		}
+
+		// supabase-js reads the verifier from its `storage` adapter. The
+		// storage key is `sb-<project-ref>-auth-token-code-verifier`; we
+		// seed it from our cookie under a deterministic key, then call
+		// exchangeCodeForSession which will look it up.
+		const projectRef = new URL(env.supabaseUrl).hostname.split(".")[0];
+		const verifierKey = `sb-${projectRef}-auth-token-code-verifier`;
+		const storage = createMemoryStorage({ [verifierKey]: verifier });
+		const client = createOAuthClient(storage);
+
+		const { data, error } = await client.auth.exchangeCodeForSession(code);
+
+		if (error || !data?.session || !data?.user) {
+			clearCookie();
+			return clientRedirect(res, { error: "oauth_failed" });
+		}
+
+		const { data: profile, error: profileError } = await supabaseAdmin
+			.from("profiles")
+			.select("id, status")
+			.eq("id", data.user.id)
+			.maybeSingle();
+
+		if (profileError) {
+			clearCookie();
+			throw profileError;
+		}
+
+		if (!profile) {
+			clearCookie();
+			return clientRedirect(res, { error: "profile_missing" });
+		}
+
+		if (profile.status === "disabled") {
+			clearCookie();
+			return clientRedirect(res, { error: "account_disabled" });
+		}
+
+		clearCookie();
+		return clientRedirectWithSession(res, data.session);
 	} catch (error) {
 		next(error);
 	}

@@ -8,7 +8,10 @@ import {
 	completeInvite,
 } from "@/services/auth.service";
 import { useAuth } from "@/context/AuthContext";
-import { InvitationLoading, InvitationError } from "@/components/auth-components/InvitationStateViews";
+import {
+	InvitationLoading,
+	InvitationError,
+} from "@/components/auth-components/InvitationStateViews";
 import {
 	CompleteAccountForm,
 	type CompleteAccountValues,
@@ -148,20 +151,21 @@ export default function AcceptInvitationPage() {
 				values.password,
 				invitedRole || undefined,
 			);
-			const session = await loginWithEmail(invitedEmail, values.password);
-			storeAuthTokens(session, { remember: true });
-			setTimeout(() => {
-				navigate("/", {
-					state: { toast: "Welcome! Account successfully set up!" },
-				});
-			}, 1500);
+			console.log("inviteSession", inviteSession);
+			// const session = await loginWithEmail(invitedEmail, values.password);
+			// storeAuthTokens(session, { remember: true });
+			// setTimeout(() => {
+			// 	navigate("/", {
+			// 		state: { toast: "Welcome! Account successfully set up!" },
+			// 	});
+			// }, 1500);
 		} catch (err) {
 			setCompleteError(
 				err instanceof Error ? err.message : "Something went wrong.",
 			);
 		} finally {
 			setTimeout(() => {
-				setCompleteLoading(false);
+				// setCompleteLoading(false);
 			}, 2000);
 		}
 	}

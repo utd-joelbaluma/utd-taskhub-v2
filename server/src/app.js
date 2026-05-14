@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
+import cookieParser from "cookie-parser";
 
 import { env } from "./config/env.js";
 import healthRoutes from "./routes/health.routes.js";
@@ -49,6 +50,7 @@ app.use(
 );
 app.use(express.json({ limit: "3mb" }));
 app.use(express.urlencoded({ extended: true, limit: "3mb" }));
+app.use(cookieParser(env.cookieSecret));
 app.use(bindSupabaseContext);
 
 if (env.nodeEnv === "development") {

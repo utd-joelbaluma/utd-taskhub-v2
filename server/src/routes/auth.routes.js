@@ -6,7 +6,8 @@ import {
 	logout,
 	me,
 	completeInvite,
-	googleSignIn,
+	startGoogleSignIn,
+	googleSignInCallback,
 } from "../controllers/auth.controller.js";
 import { requireAuth } from "../middlewares/auth.middleware.js";
 
@@ -19,7 +20,7 @@ router.post("/logout", requireAuth, logout);
 router.post("/complete-invite", requireAuth, completeInvite);
 router.get("/me", requireAuth, me);
 
-// Prepared — not yet implemented
-router.post("/google", googleSignIn);
+router.get("/google", startGoogleSignIn);
+router.get("/google/callback", googleSignInCallback);
 
 export default router;
