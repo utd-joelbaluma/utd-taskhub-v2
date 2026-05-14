@@ -316,13 +316,27 @@ export async function startGoogleSignIn(req, res, next) {
 		});
 
 		if (error || !data?.url) {
+			console.error("[google-oauth] signInWithOAuth failed", {
+				error,
+				hasUrl: !!data?.url,
+				redirectTo,
+			});
 			return clientRedirect(res, { error: "oauth_failed" });
 		}
 
-		const { verifier } = extractCodeVerifier(storage);
+		const { key, verifier } = extractCodeVerifier(storage);
 		if (!verifier) {
+			console.error("[google-oauth] no PKCE verifier in storage", {
+				keys: Object.keys(storage._dump()),
+			});
 			return clientRedirect(res, { error: "oauth_failed" });
 		}
+
+		console.log("[google-oauth] start ok", {
+			verifierKey: key,
+			redirectTo,
+			authUrl: data.url,
+		});
 
 		res.cookie(PKCE_COOKIE_NAME, verifier, pkceCookieOptions());
 		return res.redirect(data.url);
@@ -333,34 +347,77 @@ export async function startGoogleSignIn(req, res, next) {
 
 export async function googleSignInCallback(req, res, next) {
 	try {
-		const { code, error: providerError } = req.query;
+		const {
+			code,
+			error: providerError,
+			error_description: providerErrorDescription,
+			error_code: providerErrorCode,
+		} = req.query;
 		const verifier = req.signedCookies?.[PKCE_COOKIE_NAME];
 
 		const clearCookie = () =>
 			res.clearCookie(PKCE_COOKIE_NAME, { path: "/" });
 
+		console.log("[google-oauth] callback received", {
+			hasCode: !!code,
+			hasVerifierCookie: !!verifier,
+			cookieKeys: Object.keys(req.cookies || {}),
+			signedCookieKeys: Object.keys(req.signedCookies || {}),
+			providerError: providerError || null,
+			providerErrorCode: providerErrorCode || null,
+			providerErrorDescription: providerErrorDescription || null,
+		});
+
 		if (providerError) {
+			console.error("[google-oauth] provider returned error", {
+				providerError,
+				providerErrorCode,
+				providerErrorDescription,
+			});
 			clearCookie();
 			return clientRedirect(res, { error: "oauth_failed" });
 		}
 
-		if (!code || !verifier) {
+		if (!code) {
+			console.error("[google-oauth] missing code in callback query");
+			clearCookie();
+			return clientRedirect(res, { error: "oauth_failed" });
+		}
+
+		if (!verifier) {
+			console.error(
+				"[google-oauth] missing PKCE verifier cookie on callback",
+				{
+					rawCookieHeader: req.headers.cookie || null,
+				},
+			);
 			clearCookie();
 			return clientRedirect(res, { error: "oauth_failed" });
 		}
 
 		// supabase-js reads the verifier from its `storage` adapter. The
 		// storage key is `sb-<project-ref>-auth-token-code-verifier`; we
-		// seed it from our cookie under a deterministic key, then call
+		// seed it under a few plausible key variants and call
 		// exchangeCodeForSession which will look it up.
-		const projectRef = new URL(env.supabaseUrl).hostname.split(".")[0];
-		const verifierKey = `sb-${projectRef}-auth-token-code-verifier`;
-		const storage = createMemoryStorage({ [verifierKey]: verifier });
+		const host = new URL(env.supabaseUrl).hostname;
+		const projectRef = host.split(".")[0];
+		const candidateKeys = [
+			`sb-${projectRef}-auth-token-code-verifier`,
+			`sb-${host}-auth-token-code-verifier`,
+		];
+		const seed = Object.fromEntries(candidateKeys.map((k) => [k, verifier]));
+		const storage = createMemoryStorage(seed);
 		const client = createOAuthClient(storage);
 
 		const { data, error } = await client.auth.exchangeCodeForSession(code);
 
 		if (error || !data?.session || !data?.user) {
+			console.error("[google-oauth] exchangeCodeForSession failed", {
+				error,
+				hasSession: !!data?.session,
+				hasUser: !!data?.user,
+				triedKeys: candidateKeys,
+			});
 			clearCookie();
 			return clientRedirect(res, { error: "oauth_failed" });
 		}

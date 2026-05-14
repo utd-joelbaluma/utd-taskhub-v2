@@ -33,7 +33,8 @@ export default function LoginPage() {
 	if (isAuthenticated) return <Navigate to="/" replace />;
 
 	function handleGoogleSignIn() {
-		const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:5050/api/v1";
+		const apiUrl =
+			import.meta.env.VITE_API_URL ?? "http://localhost:5050/api/v1";
 		window.location.href = `${apiUrl}/auth/google`;
 	}
 

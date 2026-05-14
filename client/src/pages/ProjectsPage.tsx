@@ -604,9 +604,14 @@ function NewProjectDialog({
 												{getInitials(profile.full_name)}
 											</AvatarFallback>
 										</Avatar>
-										<span className="min-w-0 truncate text-sm text-foreground">
-											{profile.full_name ?? profile.email}
-										</span>
+										<div className="flex min-w-0 flex-col">
+											<span className="truncate text-sm text-foreground">
+												{profile.full_name ?? profile.email}
+											</span>
+											<span className="truncate text-[10px] text-muted-foreground">
+												{profile.email}
+											</span>
+										</div>
 									</label>
 								))}
 							</div>
