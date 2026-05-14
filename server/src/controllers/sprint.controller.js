@@ -1,9 +1,27 @@
-import { supabase } from "../config/supabase.js";
+import { supabase, supabaseAdmin } from "../config/supabase.js";
 import {
 	validateCreateSprint,
 	validateUpdateSprint,
 	computeEndDate,
 } from "../utils/sprint.validator.js";
+import {
+	createNotifications,
+	NotificationType,
+} from "../services/notification.service.js";
+
+async function getActiveProfileIds(excludeId) {
+	const { data, error } = await supabaseAdmin
+		.from("profiles")
+		.select("id")
+		.eq("status", "active");
+	if (error) {
+		console.error("[notif] sprint recipients:", error.message);
+		return [];
+	}
+	return (data ?? [])
+		.map((p) => p.id)
+		.filter((id) => id !== excludeId);
+}
 
 const SPRINT_SELECT = `
 	id,
@@ -104,6 +122,12 @@ export async function updateSprint(req, res, next) {
 			return res.status(400).json({ success: false, message: "No fields to update." });
 		}
 
+		const { data: existing } = await supabase
+			.from("sprints")
+			.select("id, status")
+			.eq("id", sprintId)
+			.maybeSingle();
+
 		const { data, error } = await supabase
 			.from("sprints")
 			.update(updates)
@@ -123,6 +147,24 @@ export async function updateSprint(req, res, next) {
 
 		if (!data) {
 			return res.status(404).json({ success: false, message: "Sprint not found." });
+		}
+
+		if (
+			existing &&
+			existing.status !== "active" &&
+			updates.status === "active"
+		) {
+			getActiveProfileIds(req.profile.id)
+				.then((ids) =>
+					createNotifications({
+						userIds: ids,
+						type: NotificationType.SPRINT_STARTED,
+						title: "Sprint started",
+						body: data.name,
+						data: { sprint_id: data.id },
+					}),
+				)
+				.catch((e) => console.error("[notif]", e));
 		}
 
 		res.status(200).json({ success: true, message: "Sprint updated.", data });
@@ -167,6 +209,14 @@ function validateEndSprintPayload(taskActions) {
 
 export async function endSprint(req, res, next) {
 	try {
+		const roleKey = req.profile?.global_role?.key ?? req.profile?.role;
+		if (roleKey !== "admin" && roleKey !== "manager") {
+			return res.status(403).json({
+				success: false,
+				message: "Only admins and managers can end a sprint.",
+			});
+		}
+
 		const { sprintId } = req.params;
 		const { taskActions } = req.body ?? {};
 
@@ -251,6 +301,18 @@ export async function endSprint(req, res, next) {
 			.maybeSingle();
 
 		if (closeErr) throw closeErr;
+
+		getActiveProfileIds(req.profile.id)
+			.then((ids) =>
+				createNotifications({
+					userIds: ids,
+					type: NotificationType.SPRINT_ENDED,
+					title: "Sprint ended",
+					body: updatedSprint?.name ?? "Sprint ended",
+					data: { sprint_id: sprintId },
+				}),
+			)
+			.catch((e) => console.error("[notif]", e));
 
 		res.status(200).json({
 			success: true,

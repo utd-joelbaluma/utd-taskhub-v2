@@ -1,5 +1,9 @@
 import { supabase, supabaseAdmin } from "../config/supabase.js";
 import { env } from "../config/env.js";
+import {
+	createNotifications,
+	NotificationType,
+} from "../services/notification.service.js";
 
 export async function listUsers(req, res, next) {
 	try {
@@ -102,6 +106,16 @@ export async function updateUserRole(req, res, next) {
 				success: false,
 				message: "User not found.",
 			});
+		}
+
+		if (userId && userId !== req.profile.id) {
+			createNotifications({
+				userIds: [userId],
+				type: NotificationType.ROLE_CHANGED,
+				title: "Your role was updated",
+				body: `Your role is now ${role.key}.`,
+				data: { scope: "global", role_key: role.key },
+			}).catch((e) => console.error("[notif]", e));
 		}
 
 		res.status(200).json({

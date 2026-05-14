@@ -5,6 +5,10 @@ import {
 	validateMoveTask,
 } from "../utils/task.validator.js";
 import { refreshUserCapacity } from "../services/sprintCapacity.service.js";
+import {
+	createNotifications,
+	NotificationType,
+} from "../services/notification.service.js";
 
 const TASK_SELECT = `
 	id,
@@ -178,6 +182,19 @@ export async function createTask(req, res, next) {
 			}
 		}
 
+		if (
+			data.assigned_to?.id &&
+			data.assigned_to.id !== req.profile.id
+		) {
+			createNotifications({
+				userIds: [data.assigned_to.id],
+				type: NotificationType.TASK_ASSIGNED,
+				title: "New task assigned",
+				body: data.title,
+				data: { project_id: data.project_id, task_id: data.id },
+			}).catch((e) => console.error("[notif]", e));
+		}
+
 		res.status(201).json({
 			success: true,
 			message: "Task created successfully.",
@@ -312,6 +329,23 @@ export async function updateTask(req, res, next) {
 				} catch (e) {
 					console.error("[capacity] updateTask:", e.message);
 				}
+			}
+
+			const oldAssigneeId = existing.assigned_to;
+			const newAssigneeId = data.assigned_to?.id ?? null;
+			if (
+				"assigned_to" in updateData &&
+				newAssigneeId &&
+				newAssigneeId !== oldAssigneeId &&
+				newAssigneeId !== req.profile.id
+			) {
+				createNotifications({
+					userIds: [newAssigneeId],
+					type: NotificationType.TASK_ASSIGNED,
+					title: "Task assigned to you",
+					body: data.title,
+					data: { project_id: data.project_id, task_id: data.id },
+				}).catch((e) => console.error("[notif]", e));
 			}
 		}
 

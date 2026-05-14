@@ -20,6 +20,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { usePermission } from "@/hooks/usePermission";
+import { useNotificationStream } from "@/hooks/useNotificationStream";
+import type { Notification } from "@/services/notification.service";
 import SprintCapacity from "@/components/users/SprintCapacity";
 
 const navLinks = [
@@ -32,51 +34,38 @@ const navLinks = [
 	{ to: "/settings", label: "Settings", feature: "Workspace settings" },
 ];
 
-const SAMPLE_NOTIFICATIONS = [
-	{
-		id: 1,
-		title: "New task assigned",
-		description: 'You\'ve been assigned to "Fix login bug"',
-		time: "2m ago",
-		unread: true,
-	},
-	{
-		id: 2,
-		title: "Project deadline approaching",
-		description: "TaskHub v2 is due in 3 days",
-		time: "1h ago",
-		unread: true,
-	},
-	{
-		id: 3,
-		title: "Comment on your task",
-		description: 'Alex left a comment on "API integration"',
-		time: "3h ago",
-		unread: true,
-	},
-	{
-		id: 4,
-		title: "Task completed",
-		description: '"Setup CI pipeline" was marked complete',
-		time: "Yesterday",
-		unread: false,
-	},
-	{
-		id: 5,
-		title: "New team member",
-		description: "Jordan Kim joined the project",
-		time: "2d ago",
-		unread: false,
-	},
-];
+function formatRelativeTime(iso: string): string {
+	const diffMs = Date.now() - new Date(iso).getTime();
+	const sec = Math.max(1, Math.floor(diffMs / 1000));
+	if (sec < 60) return `${sec}s ago`;
+	const min = Math.floor(sec / 60);
+	if (min < 60) return `${min}m ago`;
+	const hr = Math.floor(min / 60);
+	if (hr < 24) return `${hr}h ago`;
+	const day = Math.floor(hr / 24);
+	if (day < 7) return `${day}d ago`;
+	return new Date(iso).toLocaleDateString();
+}
 
-const unreadCount = SAMPLE_NOTIFICATIONS.filter((n) => n.unread).length;
+function routeForNotification(n: Notification): string | null {
+	const d = n.data ?? {};
+	if (d.task_id && d.project_id) return `/projects/${d.project_id}?task=${d.task_id}`;
+	if (d.ticket_id && d.project_id)
+		return `/projects/${d.project_id}?ticket=${d.ticket_id}`;
+	if (d.project_id) return `/projects/${d.project_id}`;
+	if (d.sprint_id) return `/sprints`;
+	if (n.type === "user.signed_up") return "/users";
+	if (n.type === "role.changed") return "/profile";
+	return null;
+}
 
 export default function AppLayout() {
 	const { user, logout } = useAuth();
 	const { can } = usePermission();
 	const navigate = useNavigate();
 	const [mobileNavOpen, setMobileNavOpen] = useState(false);
+	const { notifications, unreadCount, markRead, markAllRead } =
+		useNotificationStream();
 
 	const visibleNavLinks = navLinks.filter(
 		(l) => !l.feature || can(l.feature),
@@ -99,6 +88,14 @@ export default function AppLayout() {
 	async function handleLogout() {
 		await logout();
 		navigate("/login");
+	}
+
+	async function handleNotificationClick(n: Notification) {
+		if (!n.read) {
+			await markRead(n.id);
+		}
+		const route = routeForNotification(n);
+		if (route) navigate(route);
 	}
 
 	return (
@@ -159,7 +156,7 @@ export default function AppLayout() {
 									{unreadCount > 0 && (
 										<>
 											<span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground leading-none z-20">
-												{unreadCount}
+												{unreadCount > 99 ? "99+" : unreadCount}
 											</span>
 											<span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary/50 text-[9px] font-bold text-primary-foreground leading-none animate-ping"></span>
 										</>
@@ -182,35 +179,43 @@ export default function AppLayout() {
 								</DropdownMenuLabel>
 								<DropdownMenuSeparator />
 								<div className="max-h-72 overflow-y-auto">
-									{SAMPLE_NOTIFICATIONS.map((notif) => (
-										<DropdownMenuItem
-											key={notif.id}
-											className="flex flex-col items-start gap-0.5 px-3 py-2.5 cursor-pointer"
-										>
-											<div className="flex w-full items-start gap-2">
-												{notif.unread && (
-													<span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-												)}
-												<div
-													className={cn(
-														"flex-1",
-														!notif.unread &&
-															"pl-3.5",
+									{notifications.length === 0 ? (
+										<div className="px-3 py-6 text-center text-xs text-muted-foreground">
+											You're all caught up.
+										</div>
+									) : (
+										notifications.slice(0, 8).map((notif) => (
+											<DropdownMenuItem
+												key={notif.id}
+												className="flex flex-col items-start gap-0.5 px-3 py-2.5 cursor-pointer"
+												onSelect={() => handleNotificationClick(notif)}
+											>
+												<div className="flex w-full items-start gap-2">
+													{!notif.read && (
+														<span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
 													)}
-												>
-													<p className="text-xs font-medium text-foreground leading-snug">
-														{notif.title}
-													</p>
-													<p className="text-xs text-muted-foreground leading-snug mt-0.5">
-														{notif.description}
-													</p>
+													<div
+														className={cn(
+															"flex-1",
+															notif.read && "pl-3.5",
+														)}
+													>
+														<p className="text-xs font-medium text-foreground leading-snug">
+															{notif.title}
+														</p>
+														{notif.body && (
+															<p className="text-xs text-muted-foreground leading-snug mt-0.5 truncate">
+																{notif.body}
+															</p>
+														)}
+													</div>
+													<span className="shrink-0 text-[10px] text-muted-foreground">
+														{formatRelativeTime(notif.created_at)}
+													</span>
 												</div>
-												<span className="shrink-0 text-[10px] text-muted-foreground">
-													{notif.time}
-												</span>
-											</div>
-										</DropdownMenuItem>
-									))}
+											</DropdownMenuItem>
+										))
+									)}
 								</div>
 								<DropdownMenuSeparator />
 								<DropdownMenuItem
@@ -285,13 +290,6 @@ export default function AppLayout() {
 									<User className="h-4 w-4 text-muted-foreground" />
 									Profile
 								</DropdownMenuItem>
-								{/* <DropdownMenuItem
-									className="gap-2 px-3"
-									onSelect={() => navigate("/settings")}
-								>
-									<Settings className="h-4 w-4 text-muted-foreground" />
-									Settings
-								</DropdownMenuItem> */}
 								<DropdownMenuSeparator />
 								<DropdownMenuItem
 									className="gap-2 px-3 text-danger focus:text-danger focus:bg-danger/10"
@@ -396,46 +394,70 @@ export default function AppLayout() {
 						<span className="text-sm font-medium text-foreground">
 							All notifications
 						</span>
-						{unreadCount > 0 && (
-							<span className="rounded-full bg-primary-subtle px-2.5 py-1 text-xs font-medium text-primary">
-								{unreadCount} unread
-							</span>
-						)}
+						<div className="flex items-center gap-3">
+							{unreadCount > 0 && (
+								<span className="rounded-full bg-primary-subtle px-2.5 py-1 text-xs font-medium text-primary">
+									{unreadCount} unread
+								</span>
+							)}
+							{unreadCount > 0 && (
+								<button
+									type="button"
+									onClick={() => markAllRead()}
+									className="text-xs font-medium text-primary hover:underline"
+								>
+									Mark all read
+								</button>
+							)}
+						</div>
 					</div>
 
 					<div className="max-h-[60vh] overflow-y-auto py-2">
-						{SAMPLE_NOTIFICATIONS.map((notif) => (
-							<div
-								key={notif.id}
-								className={cn(
-									"flex gap-3 border-b border-border py-3 last:border-b-0",
-									notif.unread && "bg-primary-subtle/30",
-								)}
-							>
-								<span
-									className={cn(
-										"mt-2 h-2 w-2 shrink-0 rounded-full",
-										notif.unread
-											? "bg-primary"
-											: "bg-transparent",
-									)}
-									aria-hidden="true"
-								/>
-								<div className="min-w-0 flex-1">
-									<div className="flex items-start justify-between gap-3">
-										<p className="text-sm font-medium leading-snug text-foreground">
-											{notif.title}
-										</p>
-										<span className="shrink-0 text-xs text-muted-foreground">
-											{notif.time}
-										</span>
-									</div>
-									<p className="mt-1 text-sm leading-snug text-muted-foreground">
-										{notif.description}
-									</p>
-								</div>
+						{notifications.length === 0 ? (
+							<div className="py-6 text-center text-sm text-muted-foreground">
+								No notifications yet.
 							</div>
-						))}
+						) : (
+							notifications.map((notif) => (
+								<button
+									key={notif.id}
+									type="button"
+									onClick={() => {
+										setNotificationsDialogOpen(false);
+										handleNotificationClick(notif);
+									}}
+									className={cn(
+										"flex w-full gap-3 border-b border-border py-3 last:border-b-0 text-left transition-colors hover:bg-muted-subtle",
+										!notif.read && "bg-primary-subtle/30",
+									)}
+								>
+									<span
+										className={cn(
+											"mt-2 h-2 w-2 shrink-0 rounded-full",
+											!notif.read
+												? "bg-primary"
+												: "bg-transparent",
+										)}
+										aria-hidden="true"
+									/>
+									<div className="min-w-0 flex-1">
+										<div className="flex items-start justify-between gap-3">
+											<p className="text-sm font-medium leading-snug text-foreground">
+												{notif.title}
+											</p>
+											<span className="shrink-0 text-xs text-muted-foreground">
+												{formatRelativeTime(notif.created_at)}
+											</span>
+										</div>
+										{notif.body && (
+											<p className="mt-1 text-sm leading-snug text-muted-foreground">
+												{notif.body}
+											</p>
+										)}
+									</div>
+								</button>
+							))
+						)}
 					</div>
 				</DialogContent>
 			</Dialog>

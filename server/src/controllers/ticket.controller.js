@@ -1,6 +1,10 @@
-import { supabase } from "../config/supabase.js";
+import { supabase, supabaseAdmin } from "../config/supabase.js";
 import { validateCreateTicket, validateUpdateTicket } from "../utils/ticket.validator.js";
 import { validateCreateTask } from "../utils/task.validator.js";
+import {
+	createNotifications,
+	NotificationType,
+} from "../services/notification.service.js";
 
 const TICKET_SELECT = `
 	id,
@@ -157,6 +161,13 @@ export async function updateTicket(req, res, next) {
 			});
 		}
 
+		const { data: existing } = await supabase
+			.from("tickets")
+			.select("id, status")
+			.eq("id", ticketId)
+			.eq("project_id", projectId)
+			.maybeSingle();
+
 		const { data, error } = await supabase
 			.from("tickets")
 			.update(updateData)
@@ -172,6 +183,46 @@ export async function updateTicket(req, res, next) {
 				success: false,
 				message: "Ticket not found.",
 			});
+		}
+
+		if (
+			existing &&
+			existing.status !== "closed" &&
+			updateData.status === "closed"
+		) {
+			try {
+				const [{ data: globals }, { data: projMgrs }] = await Promise.all([
+					supabaseAdmin
+						.from("profiles")
+						.select("id")
+						.in("role", ["admin", "manager"])
+						.eq("status", "active"),
+					supabaseAdmin
+						.from("project_members")
+						.select("user_id")
+						.eq("project_id", projectId)
+						.in("role", ["owner", "manager"]),
+				]);
+
+				const recipients = [
+					...new Set([
+						...(globals ?? []).map((g) => g.id),
+						...(projMgrs ?? []).map((p) => p.user_id),
+					]),
+				].filter((id) => id !== req.profile.id);
+
+				if (recipients.length > 0) {
+					createNotifications({
+						userIds: recipients,
+						type: NotificationType.TICKET_CLOSED,
+						title: "Ticket closed",
+						body: data.title,
+						data: { project_id: projectId, ticket_id: data.id },
+					}).catch((e) => console.error("[notif]", e));
+				}
+			} catch (e) {
+				console.error("[notif] ticket.closed recipients:", e.message);
+			}
 		}
 
 		res.status(200).json({

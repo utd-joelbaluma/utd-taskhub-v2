@@ -3,6 +3,10 @@ import {
 	validateAddMember,
 	validateUpdateMemberRole,
 } from "../utils/project-member.validator.js";
+import {
+	createNotifications,
+	NotificationType,
+} from "../services/notification.service.js";
 
 export async function listMembers(req, res, next) {
 	try {
@@ -63,6 +67,18 @@ export async function addMember(req, res, next) {
 			throw error;
 		}
 
+		if (user_id && user_id !== req.profile.id) {
+			createNotifications({
+				userIds: [user_id],
+				type: NotificationType.PROJECT_MEMBER_ADDED,
+				title: "Added to a project",
+				body: data?.profiles?.full_name
+					? `You were added to a project by ${req.profile.full_name ?? "a teammate"}.`
+					: "You were added to a project.",
+				data: { project_id: projectId, role },
+			}).catch((e) => console.error("[notif]", e));
+		}
+
 		res.status(201).json({
 			success: true,
 			message: "Member added successfully.",
@@ -106,6 +122,20 @@ export async function updateMemberRole(req, res, next) {
 				success: false,
 				message: "Member not found.",
 			});
+		}
+
+		if (userId && userId !== req.profile.id) {
+			createNotifications({
+				userIds: [userId],
+				type: NotificationType.ROLE_CHANGED,
+				title: "Project role updated",
+				body: `Your role in this project was changed to ${data.role}.`,
+				data: {
+					scope: "project",
+					project_id: projectId,
+					role: data.role,
+				},
+			}).catch((e) => console.error("[notif]", e));
 		}
 
 		res.status(200).json({

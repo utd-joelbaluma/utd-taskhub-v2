@@ -20,6 +20,7 @@ import roleRoutes from "./routes/role.routes.js";
 import sprintRoutes from "./routes/sprint.routes.js";
 import systemLogRoutes from "./routes/system-log.routes.js";
 import workspaceSettingsRoutes from "./routes/workspace-settings.routes.js";
+import notificationRoutes from "./routes/notifications.routes.js";
 import {
 	notFoundHandler,
 	errorHandler,
@@ -54,7 +55,12 @@ app.use(cookieParser(env.cookieSecret));
 app.use(bindSupabaseContext);
 
 if (env.nodeEnv === "development") {
-	app.use(morgan("dev"));
+	app.use(
+		morgan("dev", {
+			skip: (req) =>
+				req.originalUrl.startsWith(`/api/${env.apiVersion}/notifications/stream`),
+		}),
+	);
 }
 
 app.get("/", (req, res) => {
@@ -80,6 +86,7 @@ app.use(`/api/${env.apiVersion}/users`, userRoutes);
 app.use(`/api/${env.apiVersion}/roles`, roleRoutes);
 app.use(`/api/${env.apiVersion}/system-logs`, systemLogRoutes);
 app.use(`/api/${env.apiVersion}/workspace-settings`, workspaceSettingsRoutes);
+app.use(`/api/${env.apiVersion}/notifications`, notificationRoutes);
 
 app.get(`/api/${env.apiVersion}/tasks`, requireAuth, getAllTasks);
 app.get(`/api/${env.apiVersion}/dashboard`, requireAuth, getDashboard);
