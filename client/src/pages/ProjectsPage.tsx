@@ -702,9 +702,7 @@ export default function ProjectsPage() {
 			.then((data) => {
 				if (!active) return;
 				setSprints(data);
-				setSprintFilter(
-					data.find((s) => s.status === "active")?.id ?? "all",
-				);
+				setSprintFilter("all");
 			})
 			.catch(() => {
 				if (!active) return;
