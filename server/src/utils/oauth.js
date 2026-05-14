@@ -1,47 +1,59 @@
-import { createClient } from "@supabase/supabase-js";
+import crypto from "node:crypto";
 import { env } from "../config/env.js";
 
-// Supabase-js PKCE flow writes the code verifier to its configured `storage`
-// adapter. On the server we have no localStorage, so we hand it an in-memory
-// object that conforms to the Web Storage interface it expects.
-export function createMemoryStorage(seed = {}) {
-	const store = new Map(Object.entries(seed));
-	return {
-		getItem: (key) => (store.has(key) ? store.get(key) : null),
-		setItem: (key, value) => {
-			store.set(key, value);
-		},
-		removeItem: (key) => {
-			store.delete(key);
-		},
-		_dump: () => Object.fromEntries(store),
-	};
+// We manage PKCE ourselves and call Supabase's auth REST endpoints directly.
+// supabase-js v2 server-side PKCE via a custom storage adapter proved
+// unreliable (storage adapter never received the verifier write), so we
+// generate the verifier/challenge here, set the verifier in a signed cookie,
+// and exchange the code through `/auth/v1/token?grant_type=pkce`.
+
+function base64urlEncode(buf) {
+	return buf
+		.toString("base64")
+		.replace(/=+$/g, "")
+		.replace(/\+/g, "-")
+		.replace(/\//g, "_");
 }
 
-// The verifier key supabase-js uses is `sb-<project-ref>-auth-token-code-verifier`.
-// We don't need to compute it precisely — we just sweep the storage map and
-// pull out whichever entry ends with `-code-verifier`.
-export function extractCodeVerifier(storage) {
-	const entries = storage._dump();
-	for (const [key, value] of Object.entries(entries)) {
-		if (key.endsWith("-code-verifier") && typeof value === "string") {
-			return { key, verifier: value };
-		}
-	}
-	return { key: null, verifier: null };
+export function generatePKCEPair() {
+	const verifier = base64urlEncode(crypto.randomBytes(64));
+	const challenge = base64urlEncode(
+		crypto.createHash("sha256").update(verifier).digest(),
+	);
+	return { verifier, challenge };
 }
 
-export function createOAuthClient(storage) {
+export function buildGoogleAuthorizeUrl({ redirectTo, codeChallenge }) {
+	const params = new URLSearchParams({
+		provider: "google",
+		redirect_to: redirectTo,
+		code_challenge: codeChallenge,
+		code_challenge_method: "s256",
+		flow_type: "pkce",
+	});
+	return `${env.supabaseUrl}/auth/v1/authorize?${params.toString()}`;
+}
+
+export async function exchangePKCEForSession({ code, verifier }) {
 	if (!env.supabaseAnonKey) {
 		throw new Error("Missing SUPABASE_ANON_KEY in environment variables.");
 	}
-	return createClient(env.supabaseUrl, env.supabaseAnonKey, {
-		auth: {
-			flowType: "pkce",
-			persistSession: false,
-			autoRefreshToken: false,
-			detectSessionInUrl: false,
-			storage,
+	const url = `${env.supabaseUrl}/auth/v1/token?grant_type=pkce`;
+	const res = await fetch(url, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			apikey: env.supabaseAnonKey,
+			Authorization: `Bearer ${env.supabaseAnonKey}`,
 		},
+		body: JSON.stringify({
+			auth_code: code,
+			code_verifier: verifier,
+		}),
 	});
+	const json = await res.json().catch(() => ({}));
+	if (!res.ok) {
+		return { data: null, error: { status: res.status, body: json } };
+	}
+	return { data: json, error: null };
 }

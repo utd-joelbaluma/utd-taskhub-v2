@@ -1,9 +1,9 @@
 import { supabase, supabaseAdmin } from "../config/supabase.js";
 import { env } from "../config/env.js";
 import {
-	createMemoryStorage,
-	extractCodeVerifier,
-	createOAuthClient,
+	generatePKCEPair,
+	buildGoogleAuthorizeUrl,
+	exchangePKCEForSession,
 } from "../utils/oauth.js";
 import {
 	validateRegister,
@@ -295,51 +295,29 @@ export async function completeInvite(req, res, next) {
 }
 
 // Server-initiated Google sign-in (PKCE).
-// 1. startGoogleSignIn: builds the Supabase auth URL, stores the PKCE verifier
-//    in a signed HTTP-only cookie, redirects the browser to Google.
+// 1. startGoogleSignIn: generates PKCE verifier + challenge, stores the
+//    verifier in a signed HTTP-only cookie, redirects the browser to Supabase
+//    /auth/v1/authorize (which forwards to Google).
 // 2. googleSignInCallback: Supabase redirects back with `?code=...`. We exchange
-//    the code for a session using the verifier cookie, validate the profile,
-//    then redirect to the client with tokens in the URL fragment.
+//    the code via /auth/v1/token?grant_type=pkce, validate the profile, then
+//    redirect to the client with tokens in the URL fragment.
 export async function startGoogleSignIn(req, res, next) {
 	try {
-		const storage = createMemoryStorage();
-		const client = createOAuthClient(storage);
-
+		const { verifier, challenge } = generatePKCEPair();
 		const redirectTo = `${env.apiUrl}/api/${env.apiVersion}/auth/google/callback`;
-
-		const { data, error } = await client.auth.signInWithOAuth({
-			provider: "google",
-			options: {
-				redirectTo,
-				skipBrowserRedirect: true,
-			},
+		const url = buildGoogleAuthorizeUrl({
+			redirectTo,
+			codeChallenge: challenge,
 		});
 
-		if (error || !data?.url) {
-			console.error("[google-oauth] signInWithOAuth failed", {
-				error,
-				hasUrl: !!data?.url,
-				redirectTo,
-			});
-			return clientRedirect(res, { error: "oauth_failed" });
-		}
-
-		const { key, verifier } = extractCodeVerifier(storage);
-		if (!verifier) {
-			console.error("[google-oauth] no PKCE verifier in storage", {
-				keys: Object.keys(storage._dump()),
-			});
-			return clientRedirect(res, { error: "oauth_failed" });
-		}
-
-		console.log("[google-oauth] start ok", {
-			verifierKey: key,
+		console.log("[google-oauth] start", {
 			redirectTo,
-			authUrl: data.url,
+			verifierLength: verifier.length,
+			challengeLength: challenge.length,
 		});
 
 		res.cookie(PKCE_COOKIE_NAME, verifier, pkceCookieOptions());
-		return res.redirect(data.url);
+		return res.redirect(url);
 	} catch (error) {
 		next(error);
 	}
@@ -395,28 +373,22 @@ export async function googleSignInCallback(req, res, next) {
 			return clientRedirect(res, { error: "oauth_failed" });
 		}
 
-		// supabase-js reads the verifier from its `storage` adapter. The
-		// storage key is `sb-<project-ref>-auth-token-code-verifier`; we
-		// seed it under a few plausible key variants and call
-		// exchangeCodeForSession which will look it up.
-		const host = new URL(env.supabaseUrl).hostname;
-		const projectRef = host.split(".")[0];
-		const candidateKeys = [
-			`sb-${projectRef}-auth-token-code-verifier`,
-			`sb-${host}-auth-token-code-verifier`,
-		];
-		const seed = Object.fromEntries(candidateKeys.map((k) => [k, verifier]));
-		const storage = createMemoryStorage(seed);
-		const client = createOAuthClient(storage);
+		const { data, error } = await exchangePKCEForSession({
+			code,
+			verifier,
+		});
 
-		const { data, error } = await client.auth.exchangeCodeForSession(code);
-
-		if (error || !data?.session || !data?.user) {
-			console.error("[google-oauth] exchangeCodeForSession failed", {
+		if (
+			error ||
+			!data?.access_token ||
+			!data?.refresh_token ||
+			!data?.user
+		) {
+			console.error("[google-oauth] token exchange failed", {
 				error,
-				hasSession: !!data?.session,
+				hasAccessToken: !!data?.access_token,
+				hasRefreshToken: !!data?.refresh_token,
 				hasUser: !!data?.user,
-				triedKeys: candidateKeys,
 			});
 			clearCookie();
 			return clientRedirect(res, { error: "oauth_failed" });
@@ -443,8 +415,14 @@ export async function googleSignInCallback(req, res, next) {
 			return clientRedirect(res, { error: "account_disabled" });
 		}
 
+		console.log("[google-oauth] success", { userId: data.user.id });
+
 		clearCookie();
-		return clientRedirectWithSession(res, data.session);
+		return clientRedirectWithSession(res, {
+			access_token: data.access_token,
+			refresh_token: data.refresh_token,
+			expires_at: data.expires_at,
+		});
 	} catch (error) {
 		next(error);
 	}
