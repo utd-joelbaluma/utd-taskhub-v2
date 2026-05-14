@@ -284,8 +284,14 @@ export default function TasksPage() {
 
 	const nextPlannedSprint = useMemo<Sprint | null>(() => {
 		if (activeSprint) return null;
+		const today = new Date().toISOString().slice(0, 10);
 		const planned = filterSprintOptions
-			.filter((s) => s.status === "planned")
+			.filter(
+				(s) =>
+					s.status === "planned" &&
+					s.start_date <= today &&
+					today <= s.end_date,
+			)
 			.sort((a, b) => a.start_date.localeCompare(b.start_date));
 		return planned[0] ?? null;
 	}, [filterSprintOptions, activeSprint]);

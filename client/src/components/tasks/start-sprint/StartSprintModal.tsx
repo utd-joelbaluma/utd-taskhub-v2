@@ -58,6 +58,9 @@ export function StartSprintModal({ open, onClose, sprint, onStarted }: Props) {
 			<DialogContent className="max-w-md">
 				<DialogHeader>
 					<DialogTitle>Start Sprint</DialogTitle>
+					<p className="text-xs text-muted mt-0.5">
+						Today, {format(new Date(), "MMM d, yyyy")}
+					</p>
 					<DialogDescription>
 						Review sprint details before activating.
 					</DialogDescription>
