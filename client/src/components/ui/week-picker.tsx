@@ -98,9 +98,12 @@ export function WeekPicker({ value, onChange, placeholder = "Pick a week" }: Wee
             }}
             onDayMouseLeave={() => setHovered(null)}
             defaultMonth={value?.start ?? new Date()}
-            weekStartsOn={1}
+            weekStartsOn={0}
             showOutsideDays
             disabled={{ dayOfWeek: [0, 6] }}
+            classNames={{
+              month_caption: "rdp-month_caption pl-3",
+            }}
             modifiersClassNames={{
               today: "font-bold",
             }}
