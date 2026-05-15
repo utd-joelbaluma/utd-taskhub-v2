@@ -51,6 +51,7 @@ import {
 	DEFAULT_PROJECT_ICON,
 	type ProjectIconType,
 } from "@/components/projects/project-icon-options";
+import { GeneralSection as ProjectGeneralSection } from "@/components/project-settings/GeneralSection";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -100,7 +101,7 @@ const AVATAR_COLORS = [
 	"bg-danger",
 ];
 
-const TABS = ["Overview", "Tasks", "Teams", "Activity"] as const;
+const TABS = ["Overview", "Tasks", "Teams", "Activity", "Settings"] as const;
 type Tab = (typeof TABS)[number];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -1787,6 +1788,17 @@ export default function ProjectPage() {
 						No activity yet.
 					</p>
 				</Card>
+			)}
+
+			{activeTab === "Settings" && (
+				<ProjectGeneralSection
+					project={project}
+					onSaved={(updated) =>
+						setProject((prev) =>
+							prev ? { ...prev, ...updated } : prev,
+						)
+					}
+				/>
 			)}
 
 			{/* ── Dialogs ──────────────────────────────────────────── */}

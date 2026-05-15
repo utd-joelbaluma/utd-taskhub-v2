@@ -188,7 +188,8 @@ export function profileColorClass(id: string): string {
 
 export function formatTime(minutes: number): string {
 	if (!minutes) return "0 min";
-	if (minutes < 60) return `${minutes} min`;
+	if (minutes == 1) return "1 min";
+	if (minutes < 60) return `${minutes} mins`;
 	const hours = Math.floor(minutes / 60);
 	const rem = minutes % 60;
 	if (rem === 0) return `${hours} hr${hours > 1 ? "s" : ""}`;

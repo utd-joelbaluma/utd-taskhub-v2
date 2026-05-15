@@ -46,6 +46,7 @@ import {
 	type UiTask,
 	STATUS_BADGE,
 	formatTime,
+	TIME_INCREMENTS,
 	getInitials,
 	profileColorClass,
 } from "./types";
@@ -60,12 +61,7 @@ const STATUS_OPTIONS: ApiTaskStatus[] = [
 	"cancelled",
 ];
 
-const PRIORITY_OPTIONS: ApiTaskPriority[] = [
-	"urgent",
-	"high",
-	"medium",
-	"low",
-];
+const PRIORITY_OPTIONS: ApiTaskPriority[] = ["urgent", "high", "medium", "low"];
 
 const PRIORITY_LABEL: Record<ApiTaskPriority, string> = {
 	low: "LOW PRIORITY",
@@ -266,7 +262,7 @@ export function TaskDetailDialogV2({
 				{/* Body */}
 				<div className="grid grid-cols-1 md:grid-cols-[1fr_300px] max-h-[80vh] overflow-hidden">
 					{/* Main column */}
-					<div className="overflow-y-auto px-6 py-6 space-y-7">
+					<div className="overflow-y-auto px-6 py-6 space-y-7 max-h-[80vh]">
 						{/* Title + description */}
 						<div>
 							{task && (
@@ -445,7 +441,7 @@ export function TaskDetailDialogV2({
 								</div>
 								<PermissionGate feature="Create & edit tasks">
 									<Button
-										variant="ghost"
+										variant="primary_outline"
 										size="sm"
 										onClick={() =>
 											setShowNotesEditor((v) => !v)
@@ -544,9 +540,7 @@ export function TaskDetailDialogV2({
 									assignee={task.assigned_to}
 									profiles={profiles}
 									canEdit={canEdit}
-									onSave={(v) =>
-										persist({ assigned_to: v })
-									}
+									onSave={(v) => persist({ assigned_to: v })}
 								/>
 							)}
 						</div>
@@ -716,9 +710,7 @@ function InlineTitle({
 				}}
 				className="text-2xl font-semibold h-11"
 			/>
-			{saving && (
-				<Loader2 className="h-4 w-4 animate-spin text-muted" />
-			)}
+			{saving && <Loader2 className="h-4 w-4 animate-spin text-muted" />}
 		</div>
 	);
 }
@@ -900,9 +892,7 @@ function InlinePriority({
 					))}
 				</SelectContent>
 			</Select>
-			{saving && (
-				<Loader2 className="h-3 w-3 animate-spin text-muted" />
-			)}
+			{saving && <Loader2 className="h-3 w-3 animate-spin text-muted" />}
 		</div>
 	);
 }
@@ -984,9 +974,7 @@ function InlineAssignee({
 					<SelectValue />
 				</SelectTrigger>
 				<SelectContent>
-					<SelectItem value={UNASSIGNED_VALUE}>
-						Unassigned
-					</SelectItem>
+					<SelectItem value={UNASSIGNED_VALUE}>Unassigned</SelectItem>
 					{profiles.map((p) => (
 						<SelectItem key={p.id} value={p.id}>
 							{p.full_name ?? p.email}
@@ -1100,6 +1088,7 @@ function InlineEstimatedTime({
 	onSave: (v: number) => Promise<void>;
 }) {
 	const [editing, setEditing] = useState(false);
+	const [inputMode, setInputMode] = useState(false);
 	const [draft, setDraft] = useState(String(value || ""));
 	const [saving, setSaving] = useState(false);
 
@@ -1151,33 +1140,88 @@ function InlineEstimatedTime({
 	}
 
 	return (
-		<div className="flex items-center gap-2">
-			<Input
-				type="number"
-				autoFocus
-				min={0}
-				value={draft}
-				disabled={saving}
-				onChange={(e) => setDraft(e.target.value)}
-				onBlur={commit}
-				onKeyDown={(e) => {
-					if (e.key === "Enter") {
-						e.preventDefault();
-						commit();
-					} else if (e.key === "Escape") {
-						e.preventDefault();
-						e.stopPropagation();
-						cancel();
-					}
-				}}
-				className="h-8 text-xs"
-				placeholder="Minutes"
-			/>
-			<span className="text-[11px] text-muted">min</span>
-			{saving && (
-				<Loader2 className="h-3.5 w-3.5 animate-spin text-muted" />
-			)}
-		</div>
+		<>
+			<div className="flex flex-col gap-2 bg-white p-2 border rounded-md border-border">
+				{inputMode ? (
+					<div className="flex flex-col gap-2 pt-2">
+						<span className="text-xs absolute mt-2 right-10 text-center">
+							min{parseFloat(draft) > 1 ? "s" : ""}
+						</span>
+						<Input
+							autoFocus
+							value={draft}
+							disabled={saving}
+							onChange={(e) => setDraft(e.target.value)}
+							onKeyDown={(e) => {
+								if (e.key === "Enter") {
+									e.preventDefault();
+									setInputMode(false);
+									commit();
+								} else if (e.key === "Escape") {
+									e.preventDefault();
+									e.stopPropagation();
+									setInputMode(false);
+									cancel();
+								}
+							}}
+							className="text-sm h-8 text-center"
+						/>
+					</div>
+				) : (
+					<div
+						className={`text-center text-xl font-bold ${inputMode ? "text-foreground bg-backround" : "text-muted"} cursor-pointer`}
+						onClick={() => {
+							setInputMode(true);
+						}}
+						title="click to edit"
+					>
+						{formatTime(parseFloat(draft))}
+					</div>
+				)}
+				<div className="flex items-center justify-center flex-wrap gap-2">
+					{TIME_INCREMENTS.map(({ label, delta }) => (
+						<span
+							key={label}
+							className="text-xs text-secondary cursor-pointer shadow-xs border border-secondary/50 px-1.5 py-1 rounded-md hover:bg-primary hover:text-white transition-all duration-200"
+							onClick={() => {
+								setDraft(
+									draft
+										? String(parseFloat(draft) + delta)
+										: String(delta),
+								);
+								// onChange(value + delta)
+							}}
+						>
+							{label}
+						</span>
+					))}
+					<span
+						className="text-xs text-accent cursor-pointer shadow-xs border border-reset px-1.5 py-1 rounded-md hover:bg-primary hover:text-white transition-all duration-200"
+						onClick={() => setDraft("")}
+					>
+						Reset
+					</span>
+				</div>
+			</div>
+			<div className="flex items-center justify-end pt-2 gap-2">
+				<Button
+					disabled={saving}
+					size="sm"
+					variant={"ghost"}
+					onClick={cancel}
+				>
+					<span className="text-xs">Cancel</span>
+				</Button>
+				<Button
+					disabled={saving}
+					size="sm"
+					variant={"default"}
+					onClick={commit}
+				>
+					<span className="text-xs">Save</span>
+				</Button>
+			</div>
+		</>
 	);
 }
 
