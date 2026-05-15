@@ -29,8 +29,9 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  deleter UUID;
-  label   TEXT;
+  deleter  UUID;
+  label    TEXT;
+  row_json JSONB;
 BEGIN
   -- Skip if a recent trash row already exists for this record
   -- (handles user delete which manually inserts before cascade fires the trigger)
@@ -53,17 +54,21 @@ BEGIN
     deleter := auth.uid();
   END IF;
 
+  row_json := to_jsonb(OLD);
+
+  -- Source the label via JSON so missing columns on a given table
+  -- (e.g. tasks has no `name`) do not raise a parse-time error.
   label := CASE TG_TABLE_NAME
-    WHEN 'projects' THEN OLD.name
-    WHEN 'tasks'    THEN OLD.title
-    WHEN 'tickets'  THEN OLD.title
-    WHEN 'sprints'  THEN OLD.name
-    WHEN 'profiles' THEN COALESCE(OLD.full_name, OLD.email)
+    WHEN 'projects' THEN row_json->>'name'
+    WHEN 'tasks'    THEN row_json->>'title'
+    WHEN 'tickets'  THEN row_json->>'title'
+    WHEN 'sprints'  THEN row_json->>'name'
+    WHEN 'profiles' THEN COALESCE(row_json->>'full_name', row_json->>'email')
     ELSE NULL
   END;
 
   INSERT INTO public.trash (record_type, record_id, name, payload, deleted_by)
-  VALUES (TG_TABLE_NAME, OLD.id, label, to_jsonb(OLD), deleter);
+  VALUES (TG_TABLE_NAME, OLD.id, label, row_json, deleter);
 
   RETURN OLD;
 END;
