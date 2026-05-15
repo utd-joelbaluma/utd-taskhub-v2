@@ -27,6 +27,7 @@ const TASK_SELECT = `
 	updated_at,
 	estimated_time,
 	sprint_id,
+	parent_task_id,
 	sprint:sprints (
 		id,
 		name,
@@ -126,7 +127,23 @@ export async function createTask(req, res, next) {
 			ticket_id,
 			estimated_time,
 			sprint_id,
+			parent_task_id,
 		} = req.body;
+
+		if (parent_task_id) {
+			const { data: parent, error: parentError } = await supabase
+				.from("tasks")
+				.select("id, project_id")
+				.eq("id", parent_task_id)
+				.maybeSingle();
+			if (parentError) throw parentError;
+			if (!parent || parent.project_id !== projectId) {
+				return res.status(400).json({
+					success: false,
+					message: "parent_task_id must reference a task in the same project.",
+				});
+			}
+		}
 
 		// Derive position: place at end of the target column (or project-level if no column)
 		let positionQuery = supabase
@@ -162,6 +179,7 @@ export async function createTask(req, res, next) {
 				due_date: due_date || null,
 				estimated_time: estimated_time || 0,
 				sprint_id: sprint_id || null,
+				parent_task_id: parent_task_id || null,
 				tags: Array.isArray(tags)
 					? tags.map((t) => t.trim()).filter(Boolean)
 					: [],
@@ -231,6 +249,7 @@ export async function updateTask(req, res, next) {
 			"estimated_time",
 			"sprint_id",
 			"project_id",
+			"parent_task_id",
 		];
 		const updateData = {};
 

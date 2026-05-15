@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Loader2 } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Loader2, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -16,6 +16,7 @@ import {
 	ProjectDescriptionPreview,
 } from "@/components/projects/project-description";
 import { projectDescriptionText } from "@/components/projects/project-description-utils";
+import { PermissionGate } from "@/components/PermissionGate";
 import { type Project } from "@/services/project.service";
 import {
 	type UiTask,
@@ -28,13 +29,19 @@ import {
 export function TaskDetailDialog({
 	task,
 	projects,
+	allTasks = [],
 	onClose,
 	onSaveNotes,
+	onAddChild,
+	onOpenTask,
 }: {
 	task: UiTask | null;
 	projects: Project[];
+	allTasks?: UiTask[];
 	onClose: () => void;
 	onSaveNotes: (task: UiTask, notes: string) => Promise<void>;
+	onAddChild?: (parent: UiTask) => void;
+	onOpenTask?: (task: UiTask) => void;
 }) {
 	const [notes, setNotes] = useState("");
 	const [saving, setSaving] = useState(false);
@@ -45,6 +52,11 @@ export function TaskDetailDialog({
 
 	const project = projects.find((p) => p.id === task?.project_id);
 	const assignee = task?.assigned_to;
+
+	const children = useMemo(
+		() => (task ? allTasks.filter((t) => t.parent_task_id === task.id) : []),
+		[allTasks, task],
+	);
 
 	async function handleSave() {
 		if (!task) return;
@@ -184,6 +196,77 @@ export function TaskDetailDialog({
 								</div>
 							</div>
 						)}
+
+					{/* Child tasks */}
+					<div>
+						<div className="flex items-center justify-between mb-1.5">
+							<p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+								Child tasks ({children.length})
+							</p>
+							{task && onAddChild && (
+								<PermissionGate feature="Create & edit tasks">
+									<Button
+										variant="outline"
+										size="sm"
+										className="!text-xs h-7"
+										onClick={() => onAddChild(task)}
+									>
+										<Plus className="h-3 w-3 mr-1" />
+										Add child
+									</Button>
+								</PermissionGate>
+							)}
+						</div>
+						{children.length === 0 ? (
+							<p className="text-xs text-muted">No child tasks yet.</p>
+						) : (
+							<ul className="space-y-1">
+								{children.map((child) => (
+									<li
+										key={child.id}
+										className="flex items-center gap-2 px-2 py-1.5 rounded border border-border hover:bg-muted-subtle"
+									>
+										<Badge
+											variant={STATUS_BADGE[child.apiStatus].variant}
+											className="text-[9px] shrink-0"
+										>
+											{STATUS_BADGE[child.apiStatus].label}
+										</Badge>
+										<button
+											type="button"
+											onClick={() => onOpenTask?.(child)}
+											className="flex-1 text-left text-sm text-foreground font-medium truncate hover:text-primary transition-colors"
+										>
+											{child.title}
+										</button>
+										<Badge
+											variant={child.priority}
+											className="text-[9px] shrink-0"
+										>
+											{child.priority.charAt(0).toUpperCase() +
+												child.priority.slice(1)}
+										</Badge>
+										{child.assigned_to ? (
+											<Avatar className="h-5 w-5 shrink-0">
+												<AvatarFallback
+													className={`text-[9px] text-white ${profileColorClass(child.assigned_to.id)}`}
+												>
+													{getInitials(
+														child.assigned_to.full_name ??
+															child.assigned_to.email,
+													)}
+												</AvatarFallback>
+											</Avatar>
+										) : (
+											<span className="text-[10px] text-muted shrink-0">
+												—
+											</span>
+										)}
+									</li>
+								))}
+							</ul>
+						)}
+					</div>
 
 					{/* Developer's Notes */}
 					<div>

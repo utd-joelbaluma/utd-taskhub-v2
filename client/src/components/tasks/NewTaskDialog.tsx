@@ -62,12 +62,16 @@ export function NewTaskDialog({
 	onCreate,
 	projects,
 	profiles,
+	parentTaskId,
+	lockedProjectId,
 }: {
 	open: boolean;
 	onClose: () => void;
 	onCreate: (projectId: string, payload: CreateTaskPayload) => Promise<void>;
 	projects: Project[];
 	profiles: Profile[];
+	parentTaskId?: string;
+	lockedProjectId?: string;
 }) {
 	const [form, setForm] = useState(EMPTY_TASK_FORM);
 	const [errors, setErrors] = useState<{
@@ -81,6 +85,13 @@ export function NewTaskDialog({
 	const [capacityMap, setCapacityMap] = useState<
 		Map<string, SprintCapacitySummary>
 	>(new Map());
+
+	useEffect(() => {
+		if (!open) return;
+		if (lockedProjectId) {
+			setForm((prev) => ({ ...prev, projectId: lockedProjectId }));
+		}
+	}, [open, lockedProjectId]);
 
 	useEffect(() => {
 		if (!open) return;
@@ -170,6 +181,7 @@ export function NewTaskDialog({
 				project_id: form.projectId,
 				sprint_id: form.sprintId || undefined,
 				estimated_time: estimatedTime > 0 ? estimatedTime : 0,
+				parent_task_id: parentTaskId || undefined,
 			});
 			setForm(EMPTY_TASK_FORM);
 			setErrors({});
@@ -197,9 +209,11 @@ export function NewTaskDialog({
 		<Dialog open={open} onOpenChange={handleOpenChange}>
 			<DialogContent className="w-[600px] max-w-full">
 				<DialogHeader>
-					<DialogTitle>New Task</DialogTitle>
+					<DialogTitle>{parentTaskId ? "New Child Task" : "New Task"}</DialogTitle>
 					<DialogDescription>
-						Fill in the details to create a new task.
+						{parentTaskId
+							? "This task will be linked to the selected parent."
+							: "Fill in the details to create a new task."}
 					</DialogDescription>
 				</DialogHeader>
 
@@ -214,6 +228,7 @@ export function NewTaskDialog({
 							<Select
 								value={form.projectId}
 								onValueChange={handleProjectChange}
+								disabled={!!lockedProjectId}
 							>
 								<SelectTrigger
 									className={

@@ -65,6 +65,7 @@ export default function TasksPage() {
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [editTask, setEditTask] = useState<UiTask | null>(null);
 	const [viewTask, setViewTask] = useState<UiTask | null>(null);
+	const [childParent, setChildParent] = useState<UiTask | null>(null);
 	const [view, setView] = useState<"board" | "list">("board");
 
 	const [filterProject, setFilterProject] = useState("all");
@@ -260,6 +261,11 @@ export default function TasksPage() {
 	const allFilteredTasks = useMemo(
 		() => (view === "list" ? COLUMN_IDS.flatMap((c) => filteredColumns[c]) : []),
 		[view, filteredColumns],
+	);
+
+	const allTasks = useMemo(
+		() => COLUMN_IDS.flatMap((c) => columns[c]),
+		[columns],
 	);
 
 	const defaultSprintFilter = useMemo(
@@ -535,10 +541,15 @@ export default function TasksPage() {
 
 			<NewTaskDialog
 				open={dialogOpen}
-				onClose={() => setDialogOpen(false)}
+				onClose={() => {
+					setDialogOpen(false);
+					setChildParent(null);
+				}}
 				onCreate={handleCreateTask}
 				projects={projects}
 				profiles={profiles}
+				parentTaskId={childParent?.id}
+				lockedProjectId={childParent?.project_id}
 			/>
 
 			<EditTaskDialog
@@ -552,8 +563,14 @@ export default function TasksPage() {
 			<TaskDetailDialog
 				task={viewTask}
 				projects={projects}
+				allTasks={allTasks}
 				onClose={() => setViewTask(null)}
 				onSaveNotes={handleSaveNotes}
+				onOpenTask={(t) => setViewTask(t)}
+				onAddChild={(parent) => {
+					setChildParent(parent);
+					setDialogOpen(true);
+				}}
 			/>
 		</div>
 	);

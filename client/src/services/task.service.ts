@@ -42,6 +42,7 @@ export interface Task {
 	sprint_id?: string | null;
 	sprint?: TaskSprint | null;
 	estimated_time?: number;
+	parent_task_id: string | null;
 	created_at: string;
 	updated_at: string;
 }
@@ -57,6 +58,7 @@ export interface CreateTaskPayload {
 	project_id?: string;
 	sprint_id?: string;
 	estimated_time?: number; // in minutes
+	parent_task_id?: string;
 }
 
 export interface UpdateTaskPayload {
@@ -71,6 +73,7 @@ export interface UpdateTaskPayload {
 	project_id?: string;
 	sprint_id?: string;
 	estimated_time?: number; // in minutes
+	parent_task_id?: string | null;
 }
 
 export interface ListAllTasksParams {

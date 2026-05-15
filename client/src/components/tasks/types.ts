@@ -25,6 +25,7 @@ export interface UiTask {
 	tags: string[];
 	estimated_time: number;
 	sprint: TaskSprint | null;
+	parent_task_id: string | null;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -149,6 +150,7 @@ export function toUiTask(t: ApiTask): UiTask | null {
 		tags: t.tags ?? [],
 		estimated_time: t.estimated_time ?? 0,
 		sprint: t.sprint ?? null,
+		parent_task_id: t.parent_task_id ?? null,
 	};
 }
 

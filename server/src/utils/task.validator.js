@@ -58,6 +58,12 @@ export function validateCreateTask(payload) {
 		}
 	}
 
+	if (payload.parent_task_id !== undefined && payload.parent_task_id !== null) {
+		if (typeof payload.parent_task_id !== "string" || !UUID_REGEX.test(payload.parent_task_id)) {
+			errors.push("parent_task_id must be a valid UUID.");
+		}
+	}
+
 	return errors;
 }
 
@@ -119,6 +125,12 @@ export function validateUpdateTask(payload) {
 	if (payload.sprint_id !== undefined && payload.sprint_id !== null) {
 		if (typeof payload.sprint_id !== "string" || !UUID_REGEX.test(payload.sprint_id)) {
 			errors.push("sprint_id must be a valid UUID.");
+		}
+	}
+
+	if (payload.parent_task_id !== undefined && payload.parent_task_id !== null) {
+		if (typeof payload.parent_task_id !== "string" || !UUID_REGEX.test(payload.parent_task_id)) {
+			errors.push("parent_task_id must be a valid UUID.");
 		}
 	}
 
