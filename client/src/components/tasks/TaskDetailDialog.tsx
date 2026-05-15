@@ -54,7 +54,8 @@ export function TaskDetailDialog({
 	const assignee = task?.assigned_to;
 
 	const children = useMemo(
-		() => (task ? allTasks.filter((t) => t.parent_task_id === task.id) : []),
+		() =>
+			task ? allTasks.filter((t) => t.parent_task_id === task.id) : [],
 		[allTasks, task],
 	);
 
@@ -206,19 +207,21 @@ export function TaskDetailDialog({
 							{task && onAddChild && (
 								<PermissionGate feature="Create & edit tasks">
 									<Button
-										variant="outline"
+										variant="primary_outline"
 										size="sm"
 										className="!text-xs h-7"
 										onClick={() => onAddChild(task)}
 									>
-										<Plus className="h-3 w-3 mr-1" />
+										<Plus className="h-3 w-3" />
 										Add child
 									</Button>
 								</PermissionGate>
 							)}
 						</div>
 						{children.length === 0 ? (
-							<p className="text-xs text-muted">No child tasks yet.</p>
+							<p className="text-xs text-muted">
+								No child tasks yet.
+							</p>
 						) : (
 							<ul className="space-y-1">
 								{children.map((child) => (
@@ -227,10 +230,16 @@ export function TaskDetailDialog({
 										className="flex items-center gap-2 px-2 py-1.5 rounded border border-border hover:bg-muted-subtle"
 									>
 										<Badge
-											variant={STATUS_BADGE[child.apiStatus].variant}
+											variant={
+												STATUS_BADGE[child.apiStatus]
+													.variant
+											}
 											className="text-[9px] shrink-0"
 										>
-											{STATUS_BADGE[child.apiStatus].label}
+											{
+												STATUS_BADGE[child.apiStatus]
+													.label
+											}
 										</Badge>
 										<button
 											type="button"
@@ -243,7 +252,9 @@ export function TaskDetailDialog({
 											variant={child.priority}
 											className="text-[9px] shrink-0"
 										>
-											{child.priority.charAt(0).toUpperCase() +
+											{child.priority
+												.charAt(0)
+												.toUpperCase() +
 												child.priority.slice(1)}
 										</Badge>
 										{child.assigned_to ? (
@@ -252,8 +263,10 @@ export function TaskDetailDialog({
 													className={`text-[9px] text-white ${profileColorClass(child.assigned_to.id)}`}
 												>
 													{getInitials(
-														child.assigned_to.full_name ??
-															child.assigned_to.email,
+														child.assigned_to
+															.full_name ??
+															child.assigned_to
+																.email,
 													)}
 												</AvatarFallback>
 											</Avatar>

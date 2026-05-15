@@ -209,7 +209,9 @@ export function NewTaskDialog({
 		<Dialog open={open} onOpenChange={handleOpenChange}>
 			<DialogContent className="w-[600px] max-w-full">
 				<DialogHeader>
-					<DialogTitle>{parentTaskId ? "New Child Task" : "New Task"}</DialogTitle>
+					<DialogTitle>
+						{parentTaskId ? "New Child Task" : "New Task"}
+					</DialogTitle>
 					<DialogDescription>
 						{parentTaskId
 							? "This task will be linked to the selected parent."
@@ -468,7 +470,7 @@ export function NewTaskDialog({
 										{cap !== undefined &&
 											assignedPct !== null && (
 												<div className="w-full flex flex-col gap-0.5">
-													<div className="h-1 w-full rounded-full bg-muted overflow-hidden">
+													<div className="h-1 w-full rounded-full bg-muted/50 overflow-hidden">
 														<div
 															className={cn(
 																"h-full rounded-full transition-all",

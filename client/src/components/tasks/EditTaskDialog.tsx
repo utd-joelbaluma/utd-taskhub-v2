@@ -29,9 +29,7 @@ import { type Profile } from "@/services/profile.service";
 import { listSprints, type Sprint } from "@/services/sprint.service";
 import { getTeamSprintCapacity } from "@/services/capacity.service";
 import { type SprintCapacitySummary } from "@/types/capacity";
-import {
-	ProjectDescriptionEditor,
-} from "@/components/projects/project-description";
+import { ProjectDescriptionEditor } from "@/components/projects/project-description";
 import { projectDescriptionText } from "@/components/projects/project-description-utils";
 import { cn } from "@/lib/utils";
 import { EstimatedTimeField } from "./TaskForm";
@@ -87,12 +85,17 @@ export function EditTaskDialog({
 	profiles: Profile[];
 }) {
 	const [form, setForm] = useState(EMPTY_EDIT_FORM);
-	const [errors, setErrors] = useState<{ title?: string; projectId?: string }>({});
+	const [errors, setErrors] = useState<{
+		title?: string;
+		projectId?: string;
+	}>({});
 	const [submitting, setSubmitting] = useState(false);
 	const [estimatedTime, setEstimatedTime] = useState(0);
 	const [sprints, setSprints] = useState<Sprint[]>([]);
 	const [sprintsLoading, setSprintsLoading] = useState(false);
-	const [capacityMap, setCapacityMap] = useState<Map<string, SprintCapacitySummary>>(new Map());
+	const [capacityMap, setCapacityMap] = useState<
+		Map<string, SprintCapacitySummary>
+	>(new Map());
 
 	useEffect(() => {
 		if (task) {
@@ -114,12 +117,22 @@ export function EditTaskDialog({
 				if (!active) return;
 				setSprints(data);
 				if (!task.sprint) {
-					const activeSprint = data.find((s) => s.status === "active");
-					if (activeSprint) setForm((prev) => ({ ...prev, sprintId: activeSprint.id }));
+					const activeSprint = data.find(
+						(s) => s.status === "active",
+					);
+					if (activeSprint)
+						setForm((prev) => ({
+							...prev,
+							sprintId: activeSprint.id,
+						}));
 				}
 			})
-			.catch(() => { if (active) setSprints([]); })
-			.finally(() => { if (active) setSprintsLoading(false); });
+			.catch(() => {
+				if (active) setSprints([]);
+			})
+			.finally(() => {
+				if (active) setSprintsLoading(false);
+			});
 
 		getTeamSprintCapacity()
 			.then((summaries) => {
@@ -128,7 +141,9 @@ export function EditTaskDialog({
 			})
 			.catch(() => {});
 
-		return () => { active = false; };
+		return () => {
+			active = false;
+		};
 	}, [task]);
 
 	function set<K extends keyof typeof EMPTY_EDIT_FORM>(
@@ -142,13 +157,19 @@ export function EditTaskDialog({
 
 	function addTag() {
 		const tag = form.tagInput.trim();
-		if (!tag || form.tags.includes(tag)) { set("tagInput", ""); return; }
+		if (!tag || form.tags.includes(tag)) {
+			set("tagInput", "");
+			return;
+		}
 		set("tags", [...form.tags, tag]);
 		set("tagInput", "");
 	}
 
 	function removeTag(tag: string) {
-		set("tags", form.tags.filter((t) => t !== tag));
+		set(
+			"tags",
+			form.tags.filter((t) => t !== tag),
+		);
 	}
 
 	function validate() {
@@ -165,7 +186,9 @@ export function EditTaskDialog({
 		try {
 			await onSave(task, {
 				title: form.title.trim(),
-				description: projectDescriptionText(form.description) ? form.description : "",
+				description: projectDescriptionText(form.description)
+					? form.description
+					: "",
 				status: columnIdToApiStatus(form.status),
 				priority: form.priority,
 				assigned_to: form.assigneeId || undefined,
@@ -177,7 +200,9 @@ export function EditTaskDialog({
 			});
 			onClose();
 		} catch {
-			toast.error("Failed to update task", { description: "Please try again." });
+			toast.error("Failed to update task", {
+				description: "Please try again.",
+			});
 		} finally {
 			setSubmitting(false);
 		}
@@ -188,12 +213,16 @@ export function EditTaskDialog({
 	return (
 		<Dialog
 			open={!!task}
-			onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}
+			onOpenChange={(isOpen) => {
+				if (!isOpen) onClose();
+			}}
 		>
 			<DialogContent className="max-w-[520px]">
 				<DialogHeader>
 					<DialogTitle>Edit Task</DialogTitle>
-					<DialogDescription>Update the task details below.</DialogDescription>
+					<DialogDescription>
+						Update the task details below.
+					</DialogDescription>
 				</DialogHeader>
 
 				<div className="space-y-5">
@@ -206,10 +235,16 @@ export function EditTaskDialog({
 							placeholder="e.g. Refactor authentication middleware"
 							value={form.title}
 							onChange={(e) => set("title", e.target.value)}
-							className={errors.title ? "border-danger focus:ring-danger" : ""}
+							className={
+								errors.title
+									? "border-danger focus:ring-danger"
+									: ""
+							}
 						/>
 						{errors.title && (
-							<p className="text-xs text-danger mt-1">{errors.title}</p>
+							<p className="text-xs text-danger mt-1">
+								{errors.title}
+							</p>
 						)}
 					</div>
 
@@ -224,7 +259,9 @@ export function EditTaskDialog({
 								onValueChange={(v) => set("projectId", v)}
 							>
 								<SelectTrigger
-									className={errors.projectId ? "border-danger" : ""}
+									className={
+										errors.projectId ? "border-danger" : ""
+									}
 								>
 									<SelectValue placeholder="Select project" />
 								</SelectTrigger>
@@ -237,7 +274,9 @@ export function EditTaskDialog({
 								</SelectContent>
 							</Select>
 							{errors.projectId && (
-								<p className="text-xs text-danger mt-1">{errors.projectId}</p>
+								<p className="text-xs text-danger mt-1">
+									{errors.projectId}
+								</p>
 							)}
 						</div>
 
@@ -257,19 +296,31 @@ export function EditTaskDialog({
 								<Select
 									value={form.sprintId || NO_SPRINT_VALUE}
 									onValueChange={(v) =>
-										set("sprintId", v === NO_SPRINT_VALUE ? "" : v)
+										set(
+											"sprintId",
+											v === NO_SPRINT_VALUE ? "" : v,
+										)
 									}
 									disabled={sprintsLoading}
 								>
 									<SelectTrigger>
 										<SelectValue
-											placeholder={sprintsLoading ? "Loading..." : "Select sprint"}
+											placeholder={
+												sprintsLoading
+													? "Loading..."
+													: "Select sprint"
+											}
 										/>
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value={NO_SPRINT_VALUE}>No sprint</SelectItem>
+										<SelectItem value={NO_SPRINT_VALUE}>
+											No sprint
+										</SelectItem>
 										{sprints.map((sprint) => (
-											<SelectItem key={sprint.id} value={sprint.id}>
+											<SelectItem
+												key={sprint.id}
+												value={sprint.id}
+											>
 												{sprint.name}
 											</SelectItem>
 										))}
@@ -299,13 +350,21 @@ export function EditTaskDialog({
 							</label>
 							<Select
 								value={form.priority}
-								onValueChange={(v) => set("priority", v as ApiTaskPriority)}
+								onValueChange={(v) =>
+									set("priority", v as ApiTaskPriority)
+								}
 							>
-								<SelectTrigger><SelectValue /></SelectTrigger>
+								<SelectTrigger>
+									<SelectValue />
+								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="urgent">Urgent</SelectItem>
+									<SelectItem value="urgent">
+										Urgent
+									</SelectItem>
 									<SelectItem value="high">High</SelectItem>
-									<SelectItem value="medium">Medium</SelectItem>
+									<SelectItem value="medium">
+										Medium
+									</SelectItem>
 									<SelectItem value="low">Low</SelectItem>
 								</SelectContent>
 							</Select>
@@ -317,12 +376,18 @@ export function EditTaskDialog({
 							</label>
 							<Select
 								value={form.status}
-								onValueChange={(v) => set("status", v as ColumnId)}
+								onValueChange={(v) =>
+									set("status", v as ColumnId)
+								}
 							>
-								<SelectTrigger><SelectValue /></SelectTrigger>
+								<SelectTrigger>
+									<SelectValue />
+								</SelectTrigger>
 								<SelectContent>
 									<SelectItem value="todo">To Do</SelectItem>
-									<SelectItem value="in-progress">In Progress</SelectItem>
+									<SelectItem value="in-progress">
+										In Progress
+									</SelectItem>
 									<SelectItem value="review">QA</SelectItem>
 									<SelectItem value="done">Done</SelectItem>
 								</SelectContent>
@@ -331,7 +396,10 @@ export function EditTaskDialog({
 					</div>
 
 					{/* Estimated Time */}
-					<EstimatedTimeField value={estimatedTime} onChange={(v) => setEstimatedTime(v)} />
+					<EstimatedTimeField
+						value={estimatedTime}
+						onChange={(v) => setEstimatedTime(v)}
+					/>
 
 					{/* Due Date */}
 					<div>
@@ -351,7 +419,7 @@ export function EditTaskDialog({
 							Assignee
 						</label>
 
-						<div className="flex flex-wrap gap-2">
+						<div className="grid grid-cols-2 gap-2">
 							{profiles.map((profile, idx) => {
 								const cap = capacityMap.get(profile.id);
 								const assignedPct = cap
@@ -398,7 +466,7 @@ export function EditTaskDialog({
 												<span className="font-bold text-primary text-sm">
 													{profile.full_name}
 												</span>
-												<small className="text-xs font-light">
+												<small className="text-[8px] font-light">
 													{profile.email}
 												</small>
 											</div>
@@ -406,7 +474,7 @@ export function EditTaskDialog({
 										{cap !== undefined &&
 											assignedPct !== null && (
 												<div className="w-full flex flex-col gap-0.5">
-													<div className="h-1 w-full rounded-full bg-muted overflow-hidden">
+													<div className="h-1 w-full rounded-full bg-muted/50 overflow-hidden">
 														<div
 															className={cn(
 																"h-full rounded-full transition-all",
@@ -456,11 +524,24 @@ export function EditTaskDialog({
 							<Input
 								placeholder="Add tag..."
 								value={form.tagInput}
-								onChange={(e) => set("tagInput", e.target.value)}
-								onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
+								onChange={(e) =>
+									set("tagInput", e.target.value)
+								}
+								onKeyDown={(e) => {
+									if (e.key === "Enter") {
+										e.preventDefault();
+										addTag();
+									}
+								}}
 								className="flex-1"
 							/>
-							<Button type="button" variant="outline" size="sm" onClick={addTag} className="shrink-0">
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={addTag}
+								className="shrink-0"
+							>
 								Add
 							</Button>
 						</div>
@@ -488,10 +569,14 @@ export function EditTaskDialog({
 
 				<DialogFooter>
 					<DialogClose asChild>
-						<Button variant="outline" disabled={submitting}>Cancel</Button>
+						<Button variant="outline" disabled={submitting}>
+							Cancel
+						</Button>
 					</DialogClose>
 					<Button onClick={handleSubmit} disabled={submitting}>
-						{submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+						{submitting && (
+							<Loader2 className="h-4 w-4 animate-spin mr-2" />
+						)}
 						Save Changes
 					</Button>
 				</DialogFooter>
