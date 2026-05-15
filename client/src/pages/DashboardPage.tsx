@@ -14,7 +14,14 @@ import {
 	Target,
 	Timer,
 	Zap,
+	BarChart3,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { usePermission } from "@/hooks/usePermission";
+import {
+	getAdminReports,
+	type AdminReportPayload,
+} from "@/services/admin-report.service";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -98,9 +105,16 @@ function formatSprintTimeLeft(endDate: string): string {
 
 export default function DashboardPage() {
 	const { user } = useAuth();
+	const navigate = useNavigate();
+	const { can } = usePermission();
+	const isAdmin = can("Workspace settings");
 	const [data, setData] = useState<DashboardData | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const [reportsSummary, setReportsSummary] = useState<
+		AdminReportPayload["projectStatusSummary"] | null
+	>(null);
+	const [reportsLoading, setReportsLoading] = useState(false);
 
 	useEffect(() => {
 		getDashboard()
@@ -108,6 +122,15 @@ export default function DashboardPage() {
 			.catch((err: Error) => setError(err.message))
 			.finally(() => setLoading(false));
 	}, []);
+
+	useEffect(() => {
+		if (!isAdmin) return;
+		setReportsLoading(true);
+		getAdminReports()
+			.then((p) => setReportsSummary(p.projectStatusSummary))
+			.catch(() => setReportsSummary(null))
+			.finally(() => setReportsLoading(false));
+	}, [isAdmin]);
 
 	const firstName = user?.full_name?.split(" ")[0] ?? "there";
 
@@ -569,6 +592,114 @@ export default function DashboardPage() {
 							})}
 						</div>
 					</Card>
+
+					{/* Reports Summary (admin only) */}
+					{isAdmin && (
+						<Card className="p-5">
+							<div className="mb-5 flex items-start justify-between">
+								<div className="flex items-center gap-2">
+									<BarChart3 className="h-4 w-4 text-primary" />
+									<h2 className="text-base font-semibold text-foreground">
+										Reports Summary
+									</h2>
+								</div>
+							</div>
+
+							{reportsLoading && (
+								<div className="space-y-3">
+									<SkeletonLoader className="h-4 w-full" />
+									<SkeletonLoader className="h-4 w-full" />
+									<SkeletonLoader className="h-4 w-full" />
+									<SkeletonLoader className="h-2 w-full rounded-full" />
+								</div>
+							)}
+
+							{!reportsLoading && reportsSummary && (
+								<>
+									<div className="space-y-4">
+										{[
+											{
+												label: "On Track",
+												count: reportsSummary.totals.onTrack,
+												barClass: "bg-secondary",
+											},
+											{
+												label: "At Risk",
+												count: reportsSummary.totals.atRisk,
+												barClass: "bg-warning",
+											},
+											{
+												label: "Blocked",
+												count: reportsSummary.totals.blocked,
+												barClass: "bg-danger",
+											},
+										].map((row) => {
+											const denom =
+												reportsSummary.totals.totalProjects || 1;
+											const pct = Math.round(
+												(row.count / denom) * 100,
+											);
+											return (
+												<div key={row.label}>
+													<div className="mb-1.5 flex items-center justify-between">
+														<span className="text-sm text-foreground">
+															{row.label}
+														</span>
+														<span className="text-sm font-medium text-foreground">
+															{row.count}
+														</span>
+													</div>
+													<div className="h-1.5 w-full overflow-hidden rounded-full bg-border">
+														<div
+															className={`h-full ${row.barClass} rounded-full transition-all`}
+															style={{ width: `${pct}%` }}
+														/>
+													</div>
+												</div>
+											);
+										})}
+
+										<div className="border-t border-border pt-4">
+											<div className="mb-1.5 flex items-center justify-between">
+												<span className="text-sm text-muted">
+													Overall Progress
+												</span>
+												<span className="text-sm font-semibold text-foreground">
+													{reportsSummary.overallProgressPct}%
+												</span>
+											</div>
+											<div className="h-2 w-full overflow-hidden rounded-full bg-border">
+												<div
+													className="h-full rounded-full bg-primary transition-all"
+													style={{
+														width: `${reportsSummary.overallProgressPct}%`,
+													}}
+												/>
+											</div>
+										</div>
+									</div>
+
+									<Button
+										variant="outline"
+										className="mt-5 w-full text-sm"
+										onClick={() => navigate("/admin/reports")}
+									>
+										View Reports
+									</Button>
+								</>
+							)}
+
+							{!reportsLoading && !reportsSummary && (
+								<Button
+									variant="outline"
+									className="w-full text-sm"
+									onClick={() => navigate("/admin/reports")}
+								>
+									View Reports
+								</Button>
+							)}
+						</Card>
+					)}
 				</div>
 			</div>
 

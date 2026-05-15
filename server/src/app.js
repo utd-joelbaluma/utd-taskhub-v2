@@ -22,6 +22,7 @@ import systemLogRoutes from "./routes/system-log.routes.js";
 import workspaceSettingsRoutes from "./routes/workspace-settings.routes.js";
 import notificationRoutes from "./routes/notifications.routes.js";
 import adminReportRoutes from "./routes/admin-report.routes.js";
+import adminReportRealRoutes from "./routes/admin-report-real.routes.js";
 import {
 	notFoundHandler,
 	errorHandler,
@@ -88,6 +89,7 @@ app.use(`/api/${env.apiVersion}/roles`, roleRoutes);
 app.use(`/api/${env.apiVersion}/system-logs`, systemLogRoutes);
 app.use(`/api/${env.apiVersion}/workspace-settings`, workspaceSettingsRoutes);
 app.use(`/api/${env.apiVersion}/notifications`, notificationRoutes);
+app.use(`/api/${env.apiVersion}/admin`, adminReportRealRoutes);
 app.use(`/api/${env.apiVersion}/admin`, adminReportRoutes);
 
 app.get(`/api/${env.apiVersion}/tasks`, requireAuth, getAllTasks);
