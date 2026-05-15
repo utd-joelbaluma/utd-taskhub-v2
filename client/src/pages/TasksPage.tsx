@@ -50,7 +50,7 @@ import { TaskTable } from "@/components/tasks/TaskTable";
 import { TaskFilters } from "@/components/tasks/TaskFilters";
 import { NewTaskDialog } from "@/components/tasks/NewTaskDialog";
 import { EditTaskDialog } from "@/components/tasks/EditTaskDialog";
-import { TaskDetailDialog } from "@/components/tasks/TaskDetailDialog";
+import { TaskDetailDialogV2 } from "@/components/tasks/TaskDetailDialogV2";
 import { EndSprintButton } from "@/components/tasks/end-sprint/EndSprintButton";
 import { StartSprintButton } from "@/components/tasks/start-sprint/StartSprintButton";
 
@@ -594,7 +594,7 @@ export default function TasksPage() {
 				profiles={profiles}
 			/>
 
-			<TaskDetailDialog
+			<TaskDetailDialogV2
 				task={viewTask}
 				projects={projects}
 				allTasks={allTasks}
@@ -605,6 +605,14 @@ export default function TasksPage() {
 				onAddChild={(parent) => {
 					setChildParent(parent);
 					setDialogOpen(true);
+				}}
+				onEdit={(t) => {
+					setViewTask(null);
+					setEditTask(t);
+				}}
+				onDelete={(t) => {
+					handleDeleteTask(t);
+					setViewTask(null);
 				}}
 			/>
 		</div>

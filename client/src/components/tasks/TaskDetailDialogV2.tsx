@@ -24,11 +24,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import {
-	Dialog,
-	DialogContent,
-	DialogClose,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import {
 	ProjectDescriptionEditor,
@@ -127,7 +123,8 @@ export function TaskDetailDialogV2({
 	const assignee = task?.assigned_to;
 
 	const children = useMemo(
-		() => (task ? allTasks.filter((t) => t.parent_task_id === task.id) : []),
+		() =>
+			task ? allTasks.filter((t) => t.parent_task_id === task.id) : [],
 		[allTasks, task],
 	);
 
@@ -171,7 +168,9 @@ export function TaskDetailDialogV2({
 		navigator.clipboard
 			.writeText(url)
 			.then(() =>
-				toast.success("Link copied", { description: "Task URL on clipboard" }),
+				toast.success("Link copied", {
+					description: "Task URL on clipboard",
+				}),
 			)
 			.catch(() => toast.error("Failed to copy link"));
 	}
@@ -191,9 +190,7 @@ export function TaskDetailDialogV2({
 				{/* Top bar */}
 				<div className="flex items-center justify-between gap-3 border-b border-border bg-surface px-5 py-3">
 					<div className="flex items-center gap-3 min-w-0">
-						<DialogClose className="rounded-md p-1 text-muted hover:text-foreground hover:bg-muted-subtle">
-							<span className="sr-only">Close</span>
-						</DialogClose>
+						<DialogClose className="rounded-md p-1 text-danger hover:text-foreground hover:bg-muted-subtle"></DialogClose>
 						{task && (
 							<>
 								<span
@@ -208,30 +205,30 @@ export function TaskDetailDialogV2({
 							</>
 						)}
 					</div>
-					<div className="flex items-center gap-2 shrink-0">
+					<div className="flex items-center gap-2 shrink-0 pr-8">
 						{task && onEdit && (
 							<PermissionGate feature="Create & edit tasks">
 								<Button
-									variant="ghost"
+									variant="primary_outline"
 									size="sm"
 									className="text-foreground"
 									onClick={() => onEdit(task)}
 								>
-									<Pencil className="h-3.5 w-3.5 mr-1.5" />
-									Edit
+									<Pencil className="h-3.5 w-3.5" />
+									<span className="text-[12px]">Edit</span>
 								</Button>
 							</PermissionGate>
 						)}
 						{task && onDelete && (
 							<PermissionGate feature="Create & edit tasks">
 								<Button
-									variant="ghost"
+									variant="destructive_outline"
 									size="sm"
 									className="text-foreground hover:text-danger"
 									onClick={() => onDelete(task)}
 								>
-									<Trash2 className="h-3.5 w-3.5 mr-1.5" />
-									Delete
+									<Trash2 className="h-3.5 w-3.5" />
+									<span className="text-[12px]">Delete</span>
 								</Button>
 							</PermissionGate>
 						)}
@@ -250,7 +247,9 @@ export function TaskDetailDialogV2({
 							{task?.description &&
 							projectDescriptionText(task.description) ? (
 								<div className="text-sm text-muted leading-relaxed">
-									<ProjectDescriptionPreview value={task.description} />
+									<ProjectDescriptionPreview
+										value={task.description}
+									/>
 								</div>
 							) : (
 								<p className="text-sm text-muted italic">
@@ -314,22 +313,34 @@ export function TaskDetailDialogV2({
 											>
 												<button
 													type="button"
-													onClick={() => onToggleChildDone?.(child)}
+													onClick={() =>
+														onToggleChildDone?.(
+															child,
+														)
+													}
 													className={`h-4 w-4 rounded shrink-0 flex items-center justify-center border transition-colors ${
 														done
 															? "bg-primary border-primary text-white"
 															: "border-border-strong bg-surface hover:border-primary"
 													}`}
 													aria-label={
-														done ? "Mark not done" : "Mark done"
+														done
+															? "Mark not done"
+															: "Mark done"
 													}
-													disabled={!onToggleChildDone}
+													disabled={
+														!onToggleChildDone
+													}
 												>
-													{done && <Check className="h-3 w-3" />}
+													{done && (
+														<Check className="h-3 w-3" />
+													)}
 												</button>
 												<button
 													type="button"
-													onClick={() => onOpenTask?.(child)}
+													onClick={() =>
+														onOpenTask?.(child)
+													}
 													className={`flex-1 text-left text-sm truncate transition-colors ${
 														done
 															? "line-through text-muted"
@@ -339,10 +350,18 @@ export function TaskDetailDialogV2({
 													{child.title}
 												</button>
 												<Badge
-													variant={STATUS_BADGE[child.apiStatus].variant}
+													variant={
+														STATUS_BADGE[
+															child.apiStatus
+														].variant
+													}
 													className="text-[9px] shrink-0"
 												>
-													{STATUS_BADGE[child.apiStatus].label}
+													{
+														STATUS_BADGE[
+															child.apiStatus
+														].label
+													}
 												</Badge>
 											</div>
 										);
@@ -378,7 +397,9 @@ export function TaskDetailDialogV2({
 									className="aspect-[4/3] rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center text-muted hover:border-primary hover:text-primary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
 								>
 									<Plus className="h-5 w-5 mb-1" />
-									<span className="text-xs font-medium">Add New</span>
+									<span className="text-xs font-medium">
+										Add New
+									</span>
 								</button>
 							</div>
 							<p className="text-[11px] text-muted mt-2 italic">
@@ -399,9 +420,13 @@ export function TaskDetailDialogV2({
 									<Button
 										variant="ghost"
 										size="sm"
-										onClick={() => setShowNotesEditor((v) => !v)}
+										onClick={() =>
+											setShowNotesEditor((v) => !v)
+										}
 									>
-										{showNotesEditor ? "Cancel" : "Edit notes"}
+										{showNotesEditor
+											? "Cancel"
+											: "Edit notes"}
 									</Button>
 								</PermissionGate>
 							</div>
@@ -413,7 +438,10 @@ export function TaskDetailDialogV2({
 										placeholder="Add implementation details, technical context, or notes for the dev team..."
 									/>
 									<div className="flex justify-end mt-3">
-										<Button onClick={handleSave} disabled={saving}>
+										<Button
+											onClick={handleSave}
+											disabled={saving}
+										>
 											{saving && (
 												<Loader2 className="h-4 w-4 animate-spin mr-2" />
 											)}
@@ -464,9 +492,15 @@ export function TaskDetailDialogV2({
 								</div>
 							) : (
 								<Badge
-									variant={STATUS_BADGE[task?.apiStatus ?? "todo"].variant}
+									variant={
+										STATUS_BADGE[task?.apiStatus ?? "todo"]
+											.variant
+									}
 								>
-									{STATUS_BADGE[task?.apiStatus ?? "todo"].label}
+									{
+										STATUS_BADGE[task?.apiStatus ?? "todo"]
+											.label
+									}
 								</Badge>
 							)}
 						</div>
@@ -484,7 +518,10 @@ export function TaskDetailDialogV2({
 										<AvatarFallback
 											className={`text-[10px] text-white ${profileColorClass(assignee.id)}`}
 										>
-											{getInitials(assignee.full_name ?? assignee.email)}
+											{getInitials(
+												assignee.full_name ??
+													assignee.email,
+											)}
 										</AvatarFallback>
 									</Avatar>
 									<span className="text-sm font-medium text-foreground truncate">
