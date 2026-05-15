@@ -3,6 +3,7 @@ import {
 	validateCreateProject,
 	validateUpdateProject,
 } from "../utils/project.validator.js";
+import { generateUniqueProjectKey } from "../utils/ticket-code.helper.js";
 
 export async function getProjects(req, res, next) {
 	try {
@@ -98,7 +99,12 @@ export async function createProject(req, res, next) {
 			sprint_end_date,
 			sprint_id,
 			tags,
+			key,
 		} = req.body;
+
+		const projectKey = key?.trim()
+			? key.trim().toUpperCase()
+			: await generateUniqueProjectKey(supabase, name);
 
 		const { data, error } = await supabase
 			.from("projects")
@@ -112,12 +118,21 @@ export async function createProject(req, res, next) {
 				sprint_end_date: sprint_end_date || null,
 				sprint_id: sprint_id || null,
 				tags: Array.isArray(tags) ? tags : [],
+				key: projectKey,
 				created_by: req.profile.id,
 			})
 			.select()
 			.single();
 
-		if (error) throw error;
+		if (error) {
+			if (error.code === "23505") {
+				return res.status(409).json({
+					success: false,
+					message: "Project key already in use.",
+				});
+			}
+			throw error;
+		}
 
 		const { error: memberError } = await supabase
 			.from("project_members")
@@ -191,6 +206,10 @@ export async function updateProject(req, res, next) {
 			updateData.sprint_id = req.body.sprint_id || null;
 		}
 
+		if (req.body.key !== undefined) {
+			updateData.key = req.body.key?.trim().toUpperCase() || null;
+		}
+
 		if (Object.keys(updateData).length === 0) {
 			return res.status(400).json({
 				success: false,
@@ -205,7 +224,15 @@ export async function updateProject(req, res, next) {
 			.select()
 			.maybeSingle();
 
-		if (error) throw error;
+		if (error) {
+			if (error.code === "23505") {
+				return res.status(409).json({
+					success: false,
+					message: "Project key already in use.",
+				});
+			}
+			throw error;
+		}
 
 		if (!data) {
 			return res.status(404).json({

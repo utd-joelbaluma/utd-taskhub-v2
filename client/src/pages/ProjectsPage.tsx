@@ -85,6 +85,7 @@ const AVATAR_COLORS = [
 
 const EMPTY_FORM = {
 	name: "",
+	key: "",
 	status: "planning" as ProjectStatus,
 	description: "",
 	iconType: "icon" as ProjectIconType,
@@ -371,6 +372,7 @@ function NewProjectDialog({
 		try {
 			const project = await createProject({
 				name: form.name.trim(),
+				key: form.key.trim().toUpperCase() || undefined,
 				description: projectDescriptionText(form.description)
 					? form.description
 					: undefined,
@@ -446,6 +448,25 @@ function NewProjectDialog({
 								{errors.name}
 							</p>
 						)}
+					</div>
+
+					{/* Project Key */}
+					<div>
+						<label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+							Project Key
+						</label>
+						<Input
+							placeholder="Auto-generated, e.g. WEB"
+							value={form.key}
+							onChange={(e) =>
+								set("key", e.target.value.toUpperCase())
+							}
+							className="font-mono uppercase"
+							maxLength={10}
+						/>
+						<p className="text-xs text-muted-foreground mt-1">
+							2-10 uppercase letters or digits. Used as ticket code prefix (e.g. WEB-001).
+						</p>
 					</div>
 
 					{/* Status + Sprint Name */}

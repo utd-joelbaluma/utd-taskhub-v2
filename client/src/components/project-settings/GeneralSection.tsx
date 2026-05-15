@@ -22,6 +22,7 @@ import { projectDescriptionText } from "@/components/projects/project-descriptio
 
 type FormState = {
 	name: string;
+	key: string;
 	status: ProjectStatus;
 	description: string;
 	tags: string[];
@@ -31,6 +32,7 @@ type FormState = {
 function buildInitialForm(project: Project): FormState {
 	return {
 		name: project.name,
+		key: project.key,
 		status: project.status,
 		description: project.description ?? "",
 		tags: [...(project.tags ?? [])],
@@ -85,6 +87,8 @@ export function GeneralSection({
 		const diff: UpdateProjectPayload = {};
 		const trimmedName = form.name.trim();
 		if (trimmedName !== project.name) diff.name = trimmedName;
+		const trimmedKey = form.key.trim().toUpperCase();
+		if (trimmedKey !== project.key) diff.key = trimmedKey;
 		if (form.status !== project.status) diff.status = form.status;
 
 		const currentDesc = project.description ?? "";
@@ -143,6 +147,26 @@ export function GeneralSection({
 							}
 						/>
 					</div>
+					<div>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+							Project Key
+						</label>
+						<Input
+							value={form.key}
+							onChange={(e) =>
+								setField("key", e.target.value.toUpperCase())
+							}
+							disabled={saving}
+							maxLength={10}
+							className="font-mono uppercase"
+						/>
+						<p className="text-[11px] text-muted-foreground mt-1">
+							Prefix for ticket codes (e.g. WEB-001).
+						</p>
+					</div>
+				</div>
+
+				<div className="grid grid-cols-2 gap-4">
 					<div>
 						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
 							Status

@@ -46,6 +46,8 @@ import {
 	closeTicket,
 	deleteTicket,
 	convertTicketToTask,
+	checkTicketCode,
+	getNextTicketCode,
 	type Ticket,
 	type TicketType,
 	type TicketStatus,
@@ -190,31 +192,88 @@ function TicketDialog({
 	const [status, setStatus] = useState<TicketStatus>("open");
 	const [assignedTo, setAssignedTo] = useState("");
 	const [dueDate, setDueDate] = useState("");
+	const [ticketCode, setTicketCode] = useState("");
+	const [codeStatus, setCodeStatus] = useState<
+		"idle" | "checking" | "available" | "taken" | "invalid"
+	>("idle");
+	const [codeMessage, setCodeMessage] = useState("");
 	const [submitting, setSubmitting] = useState(false);
 	const [titleError, setTitleError] = useState("");
 
 	useEffect(() => {
-		if (open) {
-			if (mode === "edit" && ticket) {
-				setTitle(ticket.title);
-				setDescription(ticket.description ?? "");
-				setType(ticket.type);
-				setPriority(ticket.priority);
-				setStatus(ticket.status);
-				setAssignedTo(ticket.assigned_to?.id ?? "");
-				setDueDate(ticket.due_date ?? "");
-			} else {
-				setTitle("");
-				setDescription("");
-				setType("bug");
-				setPriority("medium");
-				setStatus("open");
-				setAssignedTo("");
-				setDueDate("");
-			}
-			setTitleError("");
+		if (!open) return;
+		setTitleError("");
+		setCodeStatus("idle");
+		setCodeMessage("");
+		if (mode === "edit" && ticket) {
+			setTitle(ticket.title);
+			setDescription(ticket.description ?? "");
+			setType(ticket.type);
+			setPriority(ticket.priority);
+			setStatus(ticket.status);
+			setAssignedTo(ticket.assigned_to?.id ?? "");
+			setDueDate(ticket.due_date ?? "");
+			setTicketCode(ticket.ticket_code);
+		} else {
+			setTitle("");
+			setDescription("");
+			setType("bug");
+			setPriority("medium");
+			setStatus("open");
+			setAssignedTo("");
+			setDueDate("");
+			setTicketCode("");
+			getNextTicketCode(projectId)
+				.then((code) => setTicketCode(code))
+				.catch(() => {
+					/* fallback: leave blank, server will autogen on submit */
+				});
 		}
-	}, [open, mode, ticket]);
+	}, [open, mode, ticket, projectId]);
+
+	useEffect(() => {
+		if (!open) return;
+		const trimmed = ticketCode.trim().toUpperCase();
+		if (!trimmed) {
+			setCodeStatus("idle");
+			setCodeMessage("");
+			return;
+		}
+		if (mode === "edit" && ticket && trimmed === ticket.ticket_code) {
+			setCodeStatus("available");
+			setCodeMessage("");
+			return;
+		}
+		if (!/^[A-Z0-9][A-Z0-9-]{0,29}$/.test(trimmed)) {
+			setCodeStatus("invalid");
+			setCodeMessage("Use uppercase letters, digits, dashes (e.g. WEB-001).");
+			return;
+		}
+		setCodeStatus("checking");
+		setCodeMessage("");
+		const handle = setTimeout(async () => {
+			try {
+				const res = await checkTicketCode(
+					projectId,
+					trimmed,
+					mode === "edit" ? ticket?.id : undefined
+				);
+				if (res.available) {
+					setCodeStatus("available");
+					setCodeMessage("");
+				} else {
+					setCodeStatus("taken");
+					setCodeMessage(
+						res.reason ?? "Already used in this project."
+					);
+				}
+			} catch {
+				setCodeStatus("idle");
+				setCodeMessage("");
+			}
+		}, 350);
+		return () => clearTimeout(handle);
+	}, [ticketCode, open, mode, ticket, projectId]);
 
 	async function handleSubmit() {
 		if (!title.trim()) {
@@ -224,6 +283,7 @@ function TicketDialog({
 		setSubmitting(true);
 		setTitleError("");
 		try {
+			const codeForPayload = ticketCode.trim().toUpperCase() || undefined;
 			if (mode === "create") {
 				const payload: CreateTicketPayload = {
 					title: title.trim(),
@@ -234,6 +294,7 @@ function TicketDialog({
 					status,
 					assigned_to: assignedTo.trim() || undefined,
 					due_date: dueDate || undefined,
+					ticket_code: codeForPayload,
 				};
 				await createTicket(projectId, payload);
 				toast.success("Ticket created.");
@@ -247,6 +308,7 @@ function TicketDialog({
 					status,
 					assigned_to: assignedTo.trim() || undefined,
 					due_date: dueDate || undefined,
+					ticket_code: codeForPayload,
 				};
 				await updateTicket(projectId, ticket.id, payload);
 				toast.success("Ticket updated.");
@@ -282,6 +344,42 @@ function TicketDialog({
 				</DialogHeader>
 
 				<div className="space-y-4">
+					<div>
+						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+							Ticket Code
+						</label>
+						<Input
+							placeholder="e.g. WEB-001"
+							value={ticketCode}
+							onChange={(e) =>
+								setTicketCode(e.target.value.toUpperCase())
+							}
+							className={
+								codeStatus === "taken" || codeStatus === "invalid"
+									? "border-danger focus:ring-danger font-mono"
+									: "font-mono"
+							}
+						/>
+						<p
+							className={`text-xs mt-1 ${
+								codeStatus === "available"
+									? "text-success"
+									: codeStatus === "taken" ||
+									  codeStatus === "invalid"
+									? "text-danger"
+									: "text-muted-foreground"
+							}`}
+						>
+							{codeStatus === "checking" && "Checking…"}
+							{codeStatus === "available" && "Available."}
+							{(codeStatus === "taken" ||
+								codeStatus === "invalid") &&
+								codeMessage}
+							{codeStatus === "idle" &&
+								"Autofilled. Edit to customize."}
+						</p>
+					</div>
+
 					<div>
 						<label className="text-sm font-medium text-muted-foreground mb-1.5 block">
 							Title <span className="text-danger">*</span>
@@ -421,7 +519,15 @@ function TicketDialog({
 							Cancel
 						</Button>
 					</DialogClose>
-					<Button onClick={handleSubmit} disabled={submitting}>
+					<Button
+						onClick={handleSubmit}
+						disabled={
+							submitting ||
+							codeStatus === "checking" ||
+							codeStatus === "taken" ||
+							codeStatus === "invalid"
+						}
+					>
 						{submitting && (
 							<Loader2 className="h-4 w-4 animate-spin mr-2" />
 						)}
@@ -710,9 +816,14 @@ function TicketRow({
 		<tr className="border-b border-border last:border-0 hover:bg-muted-subtle transition-colors">
 			{/* Title */}
 			<td className="px-5 py-3.5 max-w-[240px]">
-				<p className="text-sm font-semibold text-foreground truncate">
-					{ticket.title}
-				</p>
+				<div className="flex items-center gap-2">
+					<span className="text-[10px] font-mono font-semibold text-muted-foreground bg-muted-subtle px-1.5 py-0.5 rounded shrink-0">
+						{ticket.ticket_code}
+					</span>
+					<p className="text-sm font-semibold text-foreground truncate">
+						{ticket.title}
+					</p>
+				</div>
 				{ticket.description && (
 					<p className="text-xs text-muted truncate mt-0.5">
 						{ticket.description}

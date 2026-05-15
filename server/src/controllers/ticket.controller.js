@@ -3,14 +3,17 @@ import {
 	validateCreateTicket,
 	validateUpdateTicket,
 	validateCloseTicket,
+	validateTicketCode,
 } from "../utils/ticket.validator.js";
 import { validateCreateTask } from "../utils/task.validator.js";
 import { notifyTicketClosed } from "../services/ticket-notify.service.js";
+import { generateTicketCode } from "../utils/ticket-code.helper.js";
 
 const TICKET_SELECT = `
 	id,
 	project_id,
 	converted_task_id,
+	ticket_code,
 	title,
 	description,
 	type,
@@ -109,12 +112,17 @@ export async function createTicket(req, res, next) {
 			});
 		}
 
-		const { title, description, type, status, priority, assigned_to, due_date } = req.body;
+		const { title, description, type, status, priority, assigned_to, due_date, ticket_code } = req.body;
+
+		const code = ticket_code?.trim()
+			? ticket_code.trim().toUpperCase()
+			: await generateTicketCode(supabase, projectId);
 
 		const { data, error } = await supabase
 			.from("tickets")
 			.insert({
 				project_id: projectId,
+				ticket_code: code,
 				title: title.trim(),
 				description: description?.trim() || null,
 				type: type || "issue",
@@ -127,7 +135,15 @@ export async function createTicket(req, res, next) {
 			.select(TICKET_SELECT)
 			.single();
 
-		if (error) throw error;
+		if (error) {
+			if (error.code === "23505") {
+				return res.status(409).json({
+					success: false,
+					message: "Ticket code already exists in this project.",
+				});
+			}
+			throw error;
+		}
 
 		res.status(201).json({
 			success: true,
@@ -161,6 +177,7 @@ export async function updateTicket(req, res, next) {
 		if (req.body.priority !== undefined) updateData.priority = req.body.priority;
 		if (req.body.assigned_to !== undefined) updateData.assigned_to = req.body.assigned_to || null;
 		if (req.body.due_date !== undefined) updateData.due_date = req.body.due_date || null;
+		if (req.body.ticket_code !== undefined) updateData.ticket_code = req.body.ticket_code?.trim().toUpperCase() || null;
 
 		if (Object.keys(updateData).length === 0) {
 			return res.status(400).json({
@@ -184,7 +201,15 @@ export async function updateTicket(req, res, next) {
 			.select(TICKET_SELECT)
 			.maybeSingle();
 
-		if (error) throw error;
+		if (error) {
+			if (error.code === "23505") {
+				return res.status(409).json({
+					success: false,
+					message: "Ticket code already exists in this project.",
+				});
+			}
+			throw error;
+		}
 
 		if (!data) {
 			return res.status(404).json({
@@ -456,6 +481,61 @@ export async function convertTicketToTask(req, res, next) {
 				ticket: updatedTicket,
 				task,
 			},
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function checkTicketCode(req, res, next) {
+	try {
+		const { projectId } = req.params;
+		const { code, excludeId } = req.query;
+
+		if (!code) {
+			return res.status(400).json({
+				success: false,
+				message: "code query param is required.",
+			});
+		}
+
+		const normalized = String(code).trim().toUpperCase();
+		const formatError = validateTicketCode(normalized);
+		if (formatError) {
+			return res.status(200).json({
+				success: true,
+				data: { available: false, reason: formatError },
+			});
+		}
+
+		let query = supabase
+			.from("tickets")
+			.select("id")
+			.eq("project_id", projectId)
+			.eq("ticket_code", normalized)
+			.limit(1);
+
+		if (excludeId) query = query.neq("id", excludeId);
+
+		const { data, error } = await query;
+		if (error) throw error;
+
+		res.status(200).json({
+			success: true,
+			data: { available: (data?.length ?? 0) === 0 },
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+
+export async function getNextTicketCode(req, res, next) {
+	try {
+		const { projectId } = req.params;
+		const code = await generateTicketCode(supabase, projectId);
+		res.status(200).json({
+			success: true,
+			data: { ticket_code: code },
 		});
 	} catch (error) {
 		next(error);

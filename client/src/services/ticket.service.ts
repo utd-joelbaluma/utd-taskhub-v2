@@ -15,6 +15,7 @@ export interface Ticket {
 	id: string;
 	project_id: string;
 	converted_task_id: string | null;
+	ticket_code: string;
 	title: string;
 	description: string | null;
 	type: TicketType;
@@ -45,6 +46,7 @@ export interface CreateTicketPayload {
 	status?: TicketStatus;
 	assigned_to?: string;
 	due_date?: string;
+	ticket_code?: string;
 }
 
 export interface UpdateTicketPayload {
@@ -55,6 +57,7 @@ export interface UpdateTicketPayload {
 	status?: TicketStatus;
 	assigned_to?: string;
 	due_date?: string;
+	ticket_code?: string;
 }
 
 export interface ConvertTicketPayload {
@@ -128,6 +131,28 @@ export async function closeTicket(
 		resolution !== undefined ? { resolution } : {}
 	);
 	return res.data;
+}
+
+export async function checkTicketCode(
+	projectId: string,
+	code: string,
+	excludeId?: string
+): Promise<{ available: boolean; reason?: string }> {
+	const query = new URLSearchParams({ code });
+	if (excludeId) query.set("excludeId", excludeId);
+	const res = await api.get<{
+		success: boolean;
+		data: { available: boolean; reason?: string };
+	}>(`/projects/${projectId}/tickets/check-code?${query.toString()}`);
+	return res.data;
+}
+
+export async function getNextTicketCode(projectId: string): Promise<string> {
+	const res = await api.get<{
+		success: boolean;
+		data: { ticket_code: string };
+	}>(`/projects/${projectId}/tickets/next-code`);
+	return res.data.ticket_code;
 }
 
 export async function convertTicketToTask(

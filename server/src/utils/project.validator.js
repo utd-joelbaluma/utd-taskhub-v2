@@ -1,6 +1,15 @@
 const allowedStatuses = ["planning", "in-progress", "on-hold", "completed"];
 const allowedIconTypes = ["icon", "image"];
 const maxIconValueLength = 1_000_000;
+const PROJECT_KEY_RE = /^[A-Z0-9]{2,10}$/;
+
+export function validateProjectKey(key) {
+	if (typeof key !== "string") return "Project key must be a string.";
+	if (!PROJECT_KEY_RE.test(key)) {
+		return "Project key must be 2-10 uppercase letters or digits.";
+	}
+	return null;
+}
 
 function validateSprintFields(payload, errors) {
 	if (
@@ -71,6 +80,11 @@ export function validateCreateProject(payload) {
 		errors.push(`Status must be one of: ${allowedStatuses.join(", ")}.`);
 	}
 
+	if (payload.key !== undefined && payload.key !== null && payload.key !== "") {
+		const err = validateProjectKey(payload.key);
+		if (err) errors.push(err);
+	}
+
 	validateSprintFields(payload, errors);
 	validateIconFields(payload, errors);
 
@@ -94,6 +108,11 @@ export function validateUpdateProject(payload) {
 		!allowedStatuses.includes(payload.status)
 	) {
 		errors.push(`Status must be one of: ${allowedStatuses.join(", ")}.`);
+	}
+
+	if (payload.key !== undefined && payload.key !== null) {
+		const err = validateProjectKey(payload.key);
+		if (err) errors.push(err);
 	}
 
 	validateSprintFields(payload, errors);

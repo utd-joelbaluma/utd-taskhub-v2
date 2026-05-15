@@ -1,6 +1,19 @@
 const VALID_TYPES = ["bug", "feature_request", "issue", "support", "other"];
 const VALID_STATUSES = ["open", "in_review", "resolved", "closed", "cancelled"];
 const VALID_PRIORITIES = ["low", "medium", "high", "urgent"];
+const TICKET_CODE_RE = /^[A-Z0-9][A-Z0-9-]{0,29}$/;
+
+export function validateTicketCode(code) {
+	if (typeof code !== "string") return "Ticket code must be a string.";
+	const trimmed = code.trim();
+	if (trimmed.length < 2 || trimmed.length > 30) {
+		return "Ticket code must be between 2 and 30 characters.";
+	}
+	if (!TICKET_CODE_RE.test(trimmed)) {
+		return "Ticket code must be uppercase letters, digits, and dashes (e.g. WEB-001).";
+	}
+	return null;
+}
 
 export function validateCreateTicket(payload) {
 	const errors = [];
@@ -32,6 +45,11 @@ export function validateCreateTicket(payload) {
 		if (isNaN(d.getTime())) {
 			errors.push("due_date must be a valid ISO date string.");
 		}
+	}
+
+	if (payload.ticket_code !== undefined && payload.ticket_code !== null && payload.ticket_code !== "") {
+		const err = validateTicketCode(payload.ticket_code);
+		if (err) errors.push(err);
 	}
 
 	return errors;
@@ -67,6 +85,11 @@ export function validateUpdateTicket(payload) {
 		if (isNaN(d.getTime())) {
 			errors.push("due_date must be a valid ISO date string.");
 		}
+	}
+
+	if (payload.ticket_code !== undefined && payload.ticket_code !== null) {
+		const err = validateTicketCode(payload.ticket_code);
+		if (err) errors.push(err);
 	}
 
 	return errors;

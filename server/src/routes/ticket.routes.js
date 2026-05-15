@@ -7,6 +7,8 @@ import {
 	closeTicket,
 	deleteTicket,
 	convertTicketToTask,
+	checkTicketCode,
+	getNextTicketCode,
 } from "../controllers/ticket.controller.js";
 import {
 	makeGetComments,
@@ -23,6 +25,10 @@ import { requireProjectPermission } from "../middlewares/permission.middleware.j
 const router = express.Router({ mergeParams: true });
 
 router.get("/", requireAuth, requireProjectMember, requireProjectPermission("tickets.read"), getTickets);
+
+router.get("/check-code", requireAuth, requireProjectMember, requireProjectPermission("tickets.read"), checkTicketCode);
+
+router.get("/next-code", requireAuth, requireProjectMember, requireProjectPermission("tickets.read"), getNextTicketCode);
 
 router.get("/:ticketId", requireAuth, requireProjectMember, requireProjectPermission("tickets.read"), getTicketById);
 
