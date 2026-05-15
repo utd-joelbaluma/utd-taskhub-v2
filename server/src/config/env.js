@@ -21,4 +21,8 @@ export const env = {
 	GMAIL_USER: process.env.GMAIL_USER,
 	GMAIL_APP_PASSWORD: process.env.GMAIL_APP_PASSWORD,
 	MAIL_SENDER_NAME: process.env.MAIL_SENDER_NAME,
+
+	sentryDsn: process.env.SENTRY_DSN,
+	sentryTracesSampleRate: process.env.SENTRY_TRACES_SAMPLE_RATE,
+	sentryProfilesSampleRate: process.env.SENTRY_PROFILES_SAMPLE_RATE,
 };

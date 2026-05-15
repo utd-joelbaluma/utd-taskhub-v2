@@ -31,6 +31,7 @@ import { getAllTasks } from "./controllers/task.controller.js";
 import { getDashboard } from "./controllers/dashboard.controller.js";
 import { requireAuth } from "./middlewares/auth.middleware.js";
 import { bindSupabaseContext } from "./config/supabase.js";
+import { Sentry } from "./config/sentry.js";
 
 const app = express();
 
@@ -95,6 +96,7 @@ app.use(`/api/${env.apiVersion}/admin`, adminReportRoutes);
 app.get(`/api/${env.apiVersion}/tasks`, requireAuth, getAllTasks);
 app.get(`/api/${env.apiVersion}/dashboard`, requireAuth, getDashboard);
 
+Sentry.setupExpressErrorHandler(app);
 app.use(notFoundHandler);
 app.use(errorHandler);
 

@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/react";
 import {
 	clearStoredAuth,
 	getStoredAccessToken,
@@ -85,15 +86,19 @@ async function request<T>(
 		}
 
 		clearStoredAuth();
-		throw new Error(
+		const err = new Error(
 			(json as { message?: string }).message ?? "Session expired.",
 		);
+		Sentry.captureException(err, { tags: { source: "api", status: 401, path } });
+		throw err;
 	}
 
 	if (!res.ok) {
-		throw new Error(
+		const err = new Error(
 			(json as { message?: string }).message ?? "Request failed.",
 		);
+		Sentry.captureException(err, { tags: { source: "api", status: res.status, path } });
+		throw err;
 	}
 
 	return json as T;
