@@ -149,6 +149,26 @@ export async function deleteUser(req, res, next) {
 			});
 		}
 
+		// Pre-record trash row so deleted_by is captured. auth.admin.deleteUser
+		// cascades to profiles, but service-role calls don't populate auth.uid()
+		// so the BEFORE DELETE trigger would otherwise lose the deleter id.
+		// The trigger dedup window (60s) suppresses the duplicate insert.
+		const { data: profile } = await supabaseAdmin
+			.from("profiles")
+			.select("*")
+			.eq("id", id)
+			.maybeSingle();
+
+		if (profile) {
+			await supabaseAdmin.from("trash").insert({
+				record_type: "profiles",
+				record_id: id,
+				name: profile.full_name || profile.email,
+				payload: profile,
+				deleted_by: req.profile.id,
+			});
+		}
+
 		const { error } = await supabaseAdmin.auth.admin.deleteUser(id);
 
 		if (error) throw error;

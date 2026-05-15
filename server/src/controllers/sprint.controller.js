@@ -373,16 +373,15 @@ export async function deleteSprint(req, res, next) {
 	try {
 		const { sprintId } = req.params;
 
-		const { data, error } = await supabase
-			.from("sprints")
-			.delete()
-			.eq("id", sprintId)
-			.select("id")
-			.maybeSingle();
+		const { data: deleted, error } = await supabase.rpc("delete_with_trash", {
+			table_name: "sprints",
+			record_id: sprintId,
+			deleter: req.profile.id,
+		});
 
 		if (error) throw error;
 
-		if (!data) {
+		if (!deleted) {
 			return res.status(404).json({ success: false, message: "Sprint not found." });
 		}
 

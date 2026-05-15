@@ -211,6 +211,13 @@ export const PERMISSION_GROUPS: PermGroup[] = [
 				developer: NONE,
 				user: NONE,
 			},
+			{
+				feature: "Manage trash",
+				admin: FULL,
+				manager: NONE,
+				developer: NONE,
+				user: NONE,
+			},
 		],
 	},
 ];

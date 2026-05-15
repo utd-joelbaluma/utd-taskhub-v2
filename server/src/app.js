@@ -23,6 +23,7 @@ import workspaceSettingsRoutes from "./routes/workspace-settings.routes.js";
 import notificationRoutes from "./routes/notifications.routes.js";
 import adminReportRoutes from "./routes/admin-report.routes.js";
 import adminReportRealRoutes from "./routes/admin-report-real.routes.js";
+import trashRoutes from "./routes/trash.routes.js";
 import {
 	notFoundHandler,
 	errorHandler,
@@ -92,6 +93,7 @@ app.use(`/api/${env.apiVersion}/workspace-settings`, workspaceSettingsRoutes);
 app.use(`/api/${env.apiVersion}/notifications`, notificationRoutes);
 app.use(`/api/${env.apiVersion}/admin`, adminReportRealRoutes);
 app.use(`/api/${env.apiVersion}/admin`, adminReportRoutes);
+app.use(`/api/${env.apiVersion}/trash`, trashRoutes);
 
 app.get(`/api/${env.apiVersion}/tasks`, requireAuth, getAllTasks);
 app.get(`/api/${env.apiVersion}/dashboard`, requireAuth, getDashboard);

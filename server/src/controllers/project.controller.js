@@ -243,7 +243,11 @@ export async function deleteProject(req, res, next) {
 			});
 		}
 
-		const { error } = await supabase.from("projects").delete().eq("id", id);
+		const { error } = await supabase.rpc("delete_with_trash", {
+			table_name: "projects",
+			record_id: id,
+			deleter: req.profile.id,
+		});
 
 		if (error) throw error;
 

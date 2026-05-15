@@ -398,10 +398,11 @@ export async function deleteTask(req, res, next) {
 				.json({ success: false, message: "Task not found." });
 		}
 
-		const { error } = await supabase
-			.from("tasks")
-			.delete()
-			.eq("id", taskId);
+		const { error } = await supabase.rpc("delete_with_trash", {
+			table_name: "tasks",
+			record_id: taskId,
+			deleter: req.profile.id,
+		});
 		if (error) throw error;
 
 		if (existing.sprint_id && existing.assigned_to) {

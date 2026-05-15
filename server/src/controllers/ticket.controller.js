@@ -317,10 +317,11 @@ export async function deleteTicket(req, res, next) {
 			});
 		}
 
-		const { error } = await supabase
-			.from("tickets")
-			.delete()
-			.eq("id", ticketId);
+		const { error } = await supabase.rpc("delete_with_trash", {
+			table_name: "tickets",
+			record_id: ticketId,
+			deleter: req.profile.id,
+		});
 
 		if (error) throw error;
 
