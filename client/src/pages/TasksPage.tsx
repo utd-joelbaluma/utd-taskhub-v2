@@ -366,6 +366,40 @@ export default function TasksPage() {
 		toast.success("Notes saved");
 	}, []);
 
+	const handleChangeStatus = useCallback(
+		async (task: UiTask, status: ApiTaskStatus) => {
+			const apiTask = await updateTask(task.project_id, task.id, { status });
+			const updated = toUiTask(apiTask);
+			if (!updated) {
+				setColumns((prev) => ({
+					...prev,
+					[task.columnId]: prev[task.columnId].filter((t) => t.id !== task.id),
+				}));
+				setViewTask(null);
+				toast.success("Status updated");
+				return;
+			}
+			setColumns((prev) => {
+				const withoutOld = {
+					...prev,
+					[task.columnId]: prev[task.columnId].filter((t) => t.id !== task.id),
+				};
+				return {
+					...withoutOld,
+					[updated.columnId]: [
+						updated,
+						...withoutOld[updated.columnId].filter((t) => t.id !== updated.id),
+					],
+				};
+			});
+			setViewTask(updated);
+			toast.success("Status updated", {
+				description: COLUMN_LABELS[updated.columnId],
+			});
+		},
+		[],
+	);
+
 	const handleSprintStarted = useCallback((started: Sprint) => {
 		setFilterSprintOptions((prev) =>
 			prev.map((s) => (s.id === started.id ? started : s)),
@@ -566,6 +600,7 @@ export default function TasksPage() {
 				allTasks={allTasks}
 				onClose={() => setViewTask(null)}
 				onSaveNotes={handleSaveNotes}
+				onChangeStatus={handleChangeStatus}
 				onOpenTask={(t) => setViewTask(t)}
 				onAddChild={(parent) => {
 					setChildParent(parent);

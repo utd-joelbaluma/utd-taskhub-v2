@@ -1178,7 +1178,9 @@ export default function ProjectPage() {
 				setTasks(taskList);
 
 				if (!proj.sprint_id) {
-					const active = sprintList.find((s) => s.status === "active");
+					const active = sprintList.find(
+						(s) => s.status === "active",
+					);
 					if (active) {
 						try {
 							const updated = await updateProject(proj.id, {
@@ -1780,7 +1782,7 @@ export default function ProjectPage() {
 
 			{/* ── ACTIVITY TAB ─────────────────────────────────────── */}
 			{activeTab === "Activity" && (
-				<Card className="p-5 max-w-2xl">
+				<Card className="p-5 w-full">
 					<p className="text-sm text-muted text-center py-8">
 						No activity yet.
 					</p>

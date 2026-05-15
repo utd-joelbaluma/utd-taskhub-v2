@@ -11,6 +11,7 @@ import {
 	AlignCenter,
 	AlignRight,
 	AlignJustify,
+	Code2,
 } from "lucide-react";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
@@ -24,8 +25,18 @@ import {
 	FORMAT_ELEMENT_COMMAND,
 	UNDO_COMMAND,
 	REDO_COMMAND,
+	$getSelection,
+	$isRangeSelection,
 	type EditorState,
 } from "lexical";
+import {
+	$createCodeNode,
+	$isCodeNode,
+	CodeHighlightNode,
+	CodeNode,
+} from "@lexical/code-core";
+import { $setBlocksType } from "@lexical/selection";
+import { $createParagraphNode } from "lexical";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -33,6 +44,8 @@ import {
 	parseLexicalDescription,
 	type SerializedDescriptionNode,
 } from "./project-description-utils";
+import { ImageNode } from "./ImageNode";
+import { ImagePastePlugin } from "./ImagePastePlugin";
 
 function renderText(node: SerializedDescriptionNode, key: string): ReactNode {
 	const text = node.text ?? "";
@@ -56,6 +69,16 @@ function renderText(node: SerializedDescriptionNode, key: string): ReactNode {
 }
 
 function renderNode(node: SerializedDescriptionNode, key: string): ReactNode {
+	if (node.type === "image" && typeof node.src === "string") {
+		return (
+			<img
+				key={key}
+				src={node.src}
+				alt={node.alt ?? ""}
+				className="max-w-full rounded-md border border-border my-1"
+			/>
+		);
+	}
 	if (typeof node.text === "string") return renderText(node, key);
 	if (!Array.isArray(node.children)) return null;
 
@@ -68,6 +91,19 @@ function renderNode(node: SerializedDescriptionNode, key: string): ReactNode {
 				{children}
 			</p>
 		);
+	}
+	if (node.type === "code") {
+		return (
+			<pre
+				key={key}
+				className="block rounded-md bg-slate-900 text-slate-100 px-3 py-2 my-2 font-mono text-xs whitespace-pre overflow-x-auto"
+			>
+				<code>{children}</code>
+			</pre>
+		);
+	}
+	if (node.type === "code-highlight") {
+		return <span key={key}>{children}</span>;
 	}
 
 	return <span key={key}>{children}</span>;
@@ -126,6 +162,23 @@ function ToolbarSeparator() {
 function DescriptionToolbar() {
 	const [editor] = useLexicalComposerContext();
 
+	function toggleCodeBlock() {
+		editor.update(() => {
+			const selection = $getSelection();
+			if (!$isRangeSelection(selection)) return;
+			const anchorNode = selection.anchor.getNode();
+			const block =
+				anchorNode.getKey() === "root"
+					? anchorNode
+					: anchorNode.getTopLevelElementOrThrow();
+			if ($isCodeNode(block)) {
+				$setBlocksType(selection, () => $createParagraphNode());
+			} else {
+				$setBlocksType(selection, () => $createCodeNode());
+			}
+		});
+	}
+
 	return (
 		<div className="flex items-center gap-1 border-b border-border bg-muted-subtle/40 px-2 py-2">
 			<ToolbarButton
@@ -172,6 +225,9 @@ function DescriptionToolbar() {
 				}
 			>
 				<Strikethrough className="h-3.5 w-3.5" />
+			</ToolbarButton>
+			<ToolbarButton label="Code block" onClick={toggleCodeBlock}>
+				<Code2 className="h-3.5 w-3.5" />
 			</ToolbarButton>
 			<ToolbarSeparator />
 			<ToolbarButton
@@ -222,6 +278,7 @@ export function ProjectDescriptionEditor({
 	const [initialConfig] = useState(() => ({
 		namespace: "ProjectDescription",
 		editorState: makeInitialEditorState(value),
+		nodes: [CodeNode, CodeHighlightNode, ImageNode],
 		onError(error: Error) {
 			throw error;
 		},
@@ -233,6 +290,7 @@ export function ProjectDescriptionEditor({
 				strikethrough: "line-through",
 				code: "rounded bg-muted-subtle px-1 font-mono text-[0.95em]",
 			},
+			code: "block rounded-md bg-slate-900 text-slate-100 px-3 py-2 my-2 font-mono text-xs whitespace-pre overflow-x-auto",
 		},
 	}));
 
@@ -257,6 +315,7 @@ export function ProjectDescriptionEditor({
 					/>
 				</div>
 				<HistoryPlugin />
+				<ImagePastePlugin />
 				<OnChangePlugin
 					onChange={(editorState: EditorState) => {
 						onChange(JSON.stringify(editorState.toJSON()));

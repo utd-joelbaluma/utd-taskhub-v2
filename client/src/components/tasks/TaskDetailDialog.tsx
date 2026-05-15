@@ -4,6 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import {
 	Dialog,
 	DialogContent,
 	DialogHeader,
@@ -17,7 +24,10 @@ import {
 } from "@/components/projects/project-description";
 import { projectDescriptionText } from "@/components/projects/project-description-utils";
 import { PermissionGate } from "@/components/PermissionGate";
+import { usePermission } from "@/hooks/usePermission";
 import { type Project } from "@/services/project.service";
+import { type ApiTaskStatus } from "@/services/task.service";
+import { toast } from "sonner";
 import {
 	type UiTask,
 	STATUS_BADGE,
@@ -26,12 +36,22 @@ import {
 	profileColorClass,
 } from "./types";
 
+const STATUS_OPTIONS: ApiTaskStatus[] = [
+	"backlog",
+	"todo",
+	"in_progress",
+	"review",
+	"done",
+	"cancelled",
+];
+
 export function TaskDetailDialog({
 	task,
 	projects,
 	allTasks = [],
 	onClose,
 	onSaveNotes,
+	onChangeStatus,
 	onAddChild,
 	onOpenTask,
 }: {
@@ -40,11 +60,15 @@ export function TaskDetailDialog({
 	allTasks?: UiTask[];
 	onClose: () => void;
 	onSaveNotes: (task: UiTask, notes: string) => Promise<void>;
+	onChangeStatus?: (task: UiTask, status: ApiTaskStatus) => Promise<void>;
 	onAddChild?: (parent: UiTask) => void;
 	onOpenTask?: (task: UiTask) => void;
 }) {
 	const [notes, setNotes] = useState("");
 	const [saving, setSaving] = useState(false);
+	const [statusSaving, setStatusSaving] = useState(false);
+	const { can } = usePermission();
+	const canEditStatus = !!onChangeStatus && can("Create & edit tasks");
 
 	useEffect(() => {
 		if (task) setNotes(task.developer_notes ?? "");
@@ -69,6 +93,22 @@ export function TaskDetailDialog({
 		}
 	}
 
+	async function handleStatusChange(next: string) {
+		if (!task || !onChangeStatus) return;
+		const nextStatus = next as ApiTaskStatus;
+		if (nextStatus === task.apiStatus) return;
+		setStatusSaving(true);
+		try {
+			await onChangeStatus(task, nextStatus);
+		} catch (e) {
+			toast.error("Failed to update status", {
+				description: (e as Error).message || "Please try again.",
+			});
+		} finally {
+			setStatusSaving(false);
+		}
+	}
+
 	return (
 		<Dialog
 			open={!!task}
@@ -86,13 +126,6 @@ export function TaskDetailDialog({
 				<div className="space-y-5">
 					{/* Status + Priority */}
 					<div className="flex items-center gap-2">
-						<Badge
-							variant={
-								STATUS_BADGE[task?.apiStatus ?? "todo"].variant
-							}
-						>
-							{STATUS_BADGE[task?.apiStatus ?? "todo"].label}
-						</Badge>
 						<Badge variant={task?.priority ?? "medium"}>
 							{task?.priority &&
 								task.priority.charAt(0).toUpperCase() +
@@ -141,6 +174,50 @@ export function TaskDetailDialog({
 							) : (
 								<p className="text-sm text-muted">Unassigned</p>
 							)}
+						</div>
+						<div>
+							<p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
+								Status
+							</p>
+							<div className="relative">
+								{canEditStatus && task ? (
+									<Select
+										value={task.apiStatus}
+										onValueChange={handleStatusChange}
+										disabled={statusSaving}
+									>
+										<SelectTrigger className="h-7 w-[150px] text-xs">
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											{STATUS_OPTIONS.map((s) => (
+												<SelectItem key={s} value={s}>
+													{STATUS_BADGE[s].label}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								) : (
+									<Badge
+										variant={
+											STATUS_BADGE[
+												task?.apiStatus ?? "todo"
+											].variant
+										}
+									>
+										{
+											STATUS_BADGE[
+												task?.apiStatus ?? "todo"
+											].label
+										}
+									</Badge>
+								)}
+								<div className=" absolute top-00">
+									{statusSaving && (
+										<Loader2 className="h-3.5 w-3.5 animate-spin text-muted" />
+									)}
+								</div>
+							</div>
 						</div>
 						<div>
 							<p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">

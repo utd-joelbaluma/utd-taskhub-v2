@@ -3,6 +3,8 @@ export type SerializedDescriptionNode = {
 	text?: string;
 	format?: number;
 	children?: SerializedDescriptionNode[];
+	src?: string;
+	alt?: string;
 };
 
 export const EMPTY_EDITOR_STATE =
