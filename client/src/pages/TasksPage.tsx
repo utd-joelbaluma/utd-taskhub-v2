@@ -447,6 +447,7 @@ export default function TasksPage() {
 					],
 				};
 			});
+			setViewTask((vt) => (vt && vt.id === updated.id ? updated : vt));
 			toast.success("Task updated", { description: apiTask.title });
 		},
 		[],
@@ -597,9 +598,11 @@ export default function TasksPage() {
 			<TaskDetailDialogV2
 				task={viewTask}
 				projects={projects}
+				profiles={profiles}
 				allTasks={allTasks}
 				onClose={() => setViewTask(null)}
 				onSaveNotes={handleSaveNotes}
+				onUpdate={handleEditTask}
 				onChangeStatus={handleChangeStatus}
 				onOpenTask={(t) => setViewTask(t)}
 				onAddChild={(parent) => {

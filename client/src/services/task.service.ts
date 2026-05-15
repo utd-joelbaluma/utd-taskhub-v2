@@ -67,11 +67,11 @@ export interface UpdateTaskPayload {
 	developer_notes?: string;
 	status?: ApiTaskStatus;
 	priority?: ApiTaskPriority;
-	assigned_to?: string;
-	due_date?: string;
+	assigned_to?: string | null;
+	due_date?: string | null;
 	tags?: string[];
 	project_id?: string;
-	sprint_id?: string;
+	sprint_id?: string | null;
 	estimated_time?: number; // in minutes
 	parent_task_id?: string | null;
 }
